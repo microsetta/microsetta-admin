@@ -1,4 +1,4 @@
-from flask import render_template, session, redirect, Flask, request
+from flask import render_template, Flask, request
 import secrets
 from microsetta_admin.config_manager import SERVER_CONFIG
 from microsetta_admin._api import APIRequest
@@ -33,7 +33,8 @@ def search():
     else:
         query = request.form['search_term']
 
-        barcode_result, barcode_status = APIRequest.get('/.../barcode/%s' % query)
+        barcode_result, barcode_status = APIRequest.get(
+                '/.../barcode/%s' % query)
         name_result, name_status = APIRequest.get('/.../name/%s' % query)
         kitid_result, kitid_status = APIRequest.get('/.../kitid/%s' % query)
 
@@ -77,4 +78,3 @@ if __name__ == '__main__':
         debug=SERVER_CONFIG['debug'],
         ssl_context=ssl_context
     )
-
