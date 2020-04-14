@@ -1,0 +1,26 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Microsetta Admin</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<link rel="stylesheet" href="/static/vendor/bootstrap-4.4.1-dist/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/static/css/ma_interface.css" />
+
+</head>
+
+<body>
+    <div class="menu">
+        <h3>Microsetta Utilities</h3>
+        <ul class="mainmenu">
+            <li><a href="/search">Search</a></li>
+            <li><a href="/create">Create Kit</a></li>
+            <li><a href="/scan">Scan Barcode</a></li>
+        </ul>
+    </div>
+
+  <div class="content">
+    {% block content %}
+    {% endblock %}
+  </div>
+  </body>
+</html>
