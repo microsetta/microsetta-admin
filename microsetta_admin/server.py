@@ -26,32 +26,36 @@ def home():
     return render_template('sitebase.html')
 
 
-@app.route('/search', methods=['GET', 'POST'])
+@app.route('/search')
 def search():
-    if request.method == 'GET':
-        return render_template('search.html')
+    return render_template('search.html')
+
+
+@app.route('/search_result', methods=['POST'])
+def search_result():
+    query = request.form['search_term']
+
+    barcode_result, barcode_status = APIRequest.get(
+            '/.../scan/%s' % query)
+    name_result, name_status = APIRequest.get('/.../name/%s' % query)
+    kitid_result, kitid_status = APIRequest.get('/.../kitid/%s' % query)
+
+    error = False
+    status = 200
+    if barcode_status == 200:
+        result = barcode_result
+    elif name_status == 200:
+        result = name_result
+    elif kitid_status == 200:
+        result = kitid_result
     else:
-        query = request.form['search_term']
+        error = True
+        status = 404
+        result = {'message': 'Nothing was found.'}
 
-        barcode_result, barcode_status = APIRequest.get(
-                '/.../barcode/%s' % query)
-        name_result, name_status = APIRequest.get('/.../name/%s' % query)
-        kitid_result, kitid_status = APIRequest.get('/.../kitid/%s' % query)
-
-        error = False
-        if barcode_status == 200:
-            result = barcode_result
-        elif name_status == 200:
-            result = name_result
-        elif kitid_status == 200:
-            result = kitid_result
-        else:
-            error = True
-            result = {'message': 'Nothing was found.'}
-
-        return render_template('search_result.html',
-                               result=result,
-                               error=error)
+    return render_template('search_result.html',
+                           result=result,
+                           error=error), status
 
 
 @app.route('/create')

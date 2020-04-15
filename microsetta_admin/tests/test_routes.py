@@ -12,6 +12,22 @@ class RouteTests(TestBase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'<h3>Microsetta Search</h3>', response.data)
 
+    def test_search_specific(self):
+        response = self.app.post('/search_result',
+                                 data={'search_term': '000004216'},
+                                 follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'<h3>Microsetta Search Result</h3>', response.data)
+        self.assertIn(b'd8592c74-9699-2135-e040-8a80115d6401', response.data)
+
+    def test_search_missing(self):
+        response = self.app.post('/search_result',
+                                 data={'search_term': 'missing'},
+                                 follow_redirects=True)
+        print(response.data)
+        self.assertEqual(response.status_code, 404)
+        self.assertIn(b'<h3>Microsetta Search Result</h3>', response.data)
+
     def test_scan_simple(self):
         response = self.app.get('/scan', follow_redirects=True)
         self.assertEqual(response.status_code, 200)

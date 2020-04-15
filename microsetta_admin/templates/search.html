@@ -1,17 +1,5 @@
 {% extends "sitebase.html" %}
 {% block content %}
 <h3>Microsetta Search</h3>
-<div>
-    <form action="/search/" name="agForm" id="agForm" method="post">
-        <table>
-            <tr>
-                <td><input type="text" name="search_term" id="search_term"></td>
-                <td><input type="button" value="Go" style="width:50px;">
-            </tr>
-        </table>
-        <script>
-           document.agForm.search_term.focus()
-        </script>
-    </form>
-</div>
+{% include "search_form.html" %}
 {% endblock %}

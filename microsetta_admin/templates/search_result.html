@@ -1,0 +1,27 @@
+{% extends "sitebase.html" %}
+{% block content %}
+<h3>Microsetta Search Result</h3>
+{% include "search_form.html" %}
+<div>
+    <div class="result_container">
+        <table class="widetable">
+            <th>ID</th>
+            <th>Barcode</th>
+            <th>Sample Site</th>
+            <th>Locked</th>
+            <th>Datetime</th>
+            <th>Notes</th>
+            <th>Projects</th>
+            <tr class="gridrow">
+                <td>{{ result['sample_id'] }}</td>
+                <td>{{ result['sample_barcode'] }}</td>
+                <td>{{ result['sample_site'] }}</td>
+                <td>{{ result['sample_locked'] }}</td>
+                <td>{{ result['sample_datetime'] }}</td>
+                <td>{{ result['sample_notes'] }}</td>
+                <td>{{ ', '.join(result['sample_projects']) }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% endblock %}
