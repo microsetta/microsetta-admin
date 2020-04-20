@@ -1,7 +1,24 @@
-from flask import render_template, Flask, request
+import jwt
+from flask import render_template, Flask, request, session
 import secrets
+
+from werkzeug.utils import redirect
+
 from microsetta_admin.config_manager import SERVER_CONFIG
 from microsetta_admin._api import APIRequest
+import importlib.resources as pkg_resources
+
+
+TOKEN_KEY_NAME = 'token'
+
+PUB_KEY = pkg_resources.read_text(
+    'microsetta_admin',
+    "authrocket.pubkey")
+
+
+def parse_jwt(token):
+    decoded = jwt.decode(token, PUB_KEY, algorithms=['RS256'], verify=True)
+    return decoded
 
 
 def build_app():
@@ -23,7 +40,28 @@ app = build_app()
 
 @app.route('/')
 def home():
-    return render_template('sitebase.html')
+    token_info = None
+
+    if TOKEN_KEY_NAME in session:
+        try:
+            # If user leaves the page open, the token can expire before the
+            # session, so if our token goes back we need to force them to login
+            # again.
+            token_info = parse_jwt(session[TOKEN_KEY_NAME])
+        except jwt.exceptions.ExpiredSignatureError:
+            return redirect('/logout')
+
+    user = None
+    email = None
+    if token_info is not None:
+        user = token_info['name']
+        email = token_info['email']
+
+    return render_template('sitebase.html',
+                           user=user,
+                           email=email,
+                           endpoint=SERVER_CONFIG["endpoint"],
+                           authrocket_url=SERVER_CONFIG["authrocket_url"])
 
 
 @app.route('/search')
@@ -66,6 +104,20 @@ def new_kits():
 @app.route('/scan')
 def scan():
     return render_template('scan.html')
+
+
+@app.route('/authrocket_callback')
+def authrocket_callback():
+    token = request.args.get('token')
+    session[TOKEN_KEY_NAME] = token
+    return redirect("/")
+
+
+@app.route('/logout')
+def logout():
+    if TOKEN_KEY_NAME in session:
+        del session[TOKEN_KEY_NAME]
+    return redirect("/")
 
 
 # If we're running in stand alone mode, run the application
