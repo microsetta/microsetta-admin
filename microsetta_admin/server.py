@@ -65,37 +65,37 @@ def home():
     return render_template('sitebase.html', **build_login_variables())
 
 
-@app.route('/search')
-def search():
-    return render_template('search.html', **build_login_variables())
-
-
-@app.route('/search_result', methods=['POST'])
+@app.route('/search', methods=['GET', 'POST'])
 def search_result():
-    query = request.form['search_term']
+    if request.method == 'GET':
+        return render_template('search.html', **build_login_variables())
+    elif request.method == 'POST':
+        query = request.form['search_term']
 
-    barcode_result, barcode_status = APIRequest.get(
-            '/.../scan/%s' % query)
-    name_result, name_status = APIRequest.get('/.../name/%s' % query)
-    kitid_result, kitid_status = APIRequest.get('/.../kitid/%s' % query)
+        barcode_result, barcode_status = APIRequest.get(
+                '/admin/search/samples/sample_barcode=%s' % query)
+        name_result, name_status = APIRequest.get(
+                '/admin/search/name/name=%s' % query)
+        kitid_result, kitid_status = APIRequest.get(
+                '/admin/search/kit_id/kit_id=%s' % query)
 
-    error = False
-    status = 200
-    if barcode_status == 200:
-        result = barcode_result
-    elif name_status == 200:
-        result = name_result
-    elif kitid_status == 200:
-        result = kitid_result
-    else:
-        error = True
-        status = 404
-        result = {'message': 'Nothing was found.'}
+        error = False
+        status = 200
+        if barcode_status == 200:
+            result = barcode_result
+        elif name_status == 200:
+            result = name_result
+        elif kitid_status == 200:
+            result = kitid_result
+        else:
+            error = True
+            status = 404
+            result = {'message': 'Nothing was found.'}
 
-    return render_template('search_result.html',
-                           **build_login_variables(),
-                           result=result,
-                           error=error), status
+        return render_template('search_result.html',
+                               **build_login_variables(),
+                               result=result,
+                               error=error), status
 
 
 @app.route('/create')
