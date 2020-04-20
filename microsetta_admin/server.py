@@ -1,7 +1,46 @@
-from flask import render_template, Flask, request
+import jwt
+from flask import render_template, Flask, request, session
 import secrets
+
+from werkzeug.utils import redirect
+
 from microsetta_admin.config_manager import SERVER_CONFIG
 from microsetta_admin._api import APIRequest
+import importlib.resources as pkg_resources
+
+
+TOKEN_KEY_NAME = 'token'
+
+PUB_KEY = pkg_resources.read_text(
+    'microsetta_admin',
+    "authrocket.pubkey")
+
+
+def parse_jwt(token):
+    decoded = jwt.decode(token, PUB_KEY, algorithms=['RS256'], verify=True)
+    return decoded
+
+
+def build_login_variables():
+    # Anything that renders sitebase.html must pass down these variables to
+    # jinja2
+    token_info = None
+    if TOKEN_KEY_NAME in session:
+        try:
+            # If user leaves the page open, the token can expire before the
+            # session, so if our token goes back we need to force them to login
+            # again.
+            token_info = parse_jwt(session[TOKEN_KEY_NAME])
+        except jwt.exceptions.ExpiredSignatureError:
+            return redirect('/logout')
+
+    vars = {
+        'endpoint': SERVER_CONFIG["endpoint"],
+        'authrocket_url': SERVER_CONFIG["authrocket_url"]
+    }
+    if token_info is not None:
+        vars['email'] = token_info['email']
+    return vars
 
 
 def build_app():
@@ -23,12 +62,12 @@ app = build_app()
 
 @app.route('/')
 def home():
-    return render_template('sitebase.html')
+    return render_template('sitebase.html', **build_login_variables())
 
 
 @app.route('/search')
 def search():
-    return render_template('search.html')
+    return render_template('search.html', **build_login_variables())
 
 
 @app.route('/search_result', methods=['POST'])
@@ -54,18 +93,33 @@ def search_result():
         result = {'message': 'Nothing was found.'}
 
     return render_template('search_result.html',
+                           **build_login_variables(),
                            result=result,
                            error=error), status
 
 
 @app.route('/create')
 def new_kits():
-    return render_template('create.html')
+    return render_template('create.html', **build_login_variables())
 
 
 @app.route('/scan')
 def scan():
-    return render_template('scan.html')
+    return render_template('scan.html', **build_login_variables())
+
+
+@app.route('/authrocket_callback')
+def authrocket_callback():
+    token = request.args.get('token')
+    session[TOKEN_KEY_NAME] = token
+    return redirect("/")
+
+
+@app.route('/logout')
+def logout():
+    if TOKEN_KEY_NAME in session:
+        del session[TOKEN_KEY_NAME]
+    return redirect("/")
 
 
 # If we're running in stand alone mode, run the application

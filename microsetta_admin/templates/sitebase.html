@@ -11,10 +11,18 @@
 <body>
     <div class="menu">
         <h3>Microsetta Utilities</h3>
+
         <ul class="mainmenu">
+            {% if email %}
             <li><a href="/search">Search</a></li>
             <li><a href="/create">Create Kit</a></li>
             <li><a href="/scan">Scan Barcode</a></li>
+            <li><a href="{{authrocket_url}}/logout?redirect_uri={{endpoint}}/logout">Log Out <br> ({{email |e}})</a></li>
+
+            {% else %}
+            <li><a href="{{authrocket_url}}/login?redirect_uri={{endpoint}}/authrocket_callback">Log In</a></li>
+            {% endif %}
+
         </ul>
     </div>
 
