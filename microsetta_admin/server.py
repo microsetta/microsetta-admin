@@ -21,6 +21,28 @@ def parse_jwt(token):
     return decoded
 
 
+def build_login_variables():
+    # Anything that renders sitebase.html must pass down these variables to
+    # jinja2
+    token_info = None
+    if TOKEN_KEY_NAME in session:
+        try:
+            # If user leaves the page open, the token can expire before the
+            # session, so if our token goes back we need to force them to login
+            # again.
+            token_info = parse_jwt(session[TOKEN_KEY_NAME])
+        except jwt.exceptions.ExpiredSignatureError:
+            return redirect('/logout')
+
+    vars = {
+        'endpoint': SERVER_CONFIG["endpoint"],
+        'authrocket_url': SERVER_CONFIG["authrocket_url"]
+    }
+    if token_info is not None:
+        vars['email'] = token_info['email']
+    return vars
+
+
 def build_app():
     # Create the application instance
     app = Flask(__name__)
@@ -40,33 +62,12 @@ app = build_app()
 
 @app.route('/')
 def home():
-    token_info = None
-
-    if TOKEN_KEY_NAME in session:
-        try:
-            # If user leaves the page open, the token can expire before the
-            # session, so if our token goes back we need to force them to login
-            # again.
-            token_info = parse_jwt(session[TOKEN_KEY_NAME])
-        except jwt.exceptions.ExpiredSignatureError:
-            return redirect('/logout')
-
-    user = None
-    email = None
-    if token_info is not None:
-        user = token_info['name']
-        email = token_info['email']
-
-    return render_template('sitebase.html',
-                           user=user,
-                           email=email,
-                           endpoint=SERVER_CONFIG["endpoint"],
-                           authrocket_url=SERVER_CONFIG["authrocket_url"])
+    return render_template('sitebase.html', **build_login_variables())
 
 
 @app.route('/search')
 def search():
-    return render_template('search.html')
+    return render_template('search.html', **build_login_variables())
 
 
 @app.route('/search_result', methods=['POST'])
@@ -92,18 +93,19 @@ def search_result():
         result = {'message': 'Nothing was found.'}
 
     return render_template('search_result.html',
+                           **build_login_variables(),
                            result=result,
                            error=error), status
 
 
 @app.route('/create')
 def new_kits():
-    return render_template('create.html')
+    return render_template('create.html', **build_login_variables())
 
 
 @app.route('/scan')
 def scan():
-    return render_template('scan.html')
+    return render_template('scan.html', **build_login_variables())
 
 
 @app.route('/authrocket_callback')
