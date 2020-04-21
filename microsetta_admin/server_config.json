@@ -1,5 +1,6 @@
 {
   "endpoint": "http://localhost:5000",
+  "private_api_url": "http://localhost:8082/api",
   "port": 5000,
   "debug": true,
   "ssl_cert_path": null,
