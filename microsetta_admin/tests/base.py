@@ -14,10 +14,12 @@ class TestBase(TestCase):
         self.mock_post_patcher = patch('microsetta_admin._api.requests.post')
         self.mock_post = self.mock_post_patcher.start()
 
-        self.mock_session_patcher = patch('microsetta_admin._api.session')
-        self.mock_post = self.mock_session_patcher.start()
-
+        app.testing = True
         self.app = app.test_client()
+
+        self.mock_session_patcher = patch("microsetta_admin._api.session",
+                                          dict(token='42'))
+        self.mock_session = self.mock_session_patcher.start()
 
     def tearDown(self):
         self.mock_get_patcher.stop()
