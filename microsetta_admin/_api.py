@@ -1,6 +1,5 @@
 """Heavily derived from https://github.com/biocore/microsetta-private-api/blob/minimalInterface/microsetta_private_api/example/client_impl.py"""  # noqa
 
-from ._model import Sample
 import requests
 from microsetta_admin.config_manager import SERVER_CONFIG
 from flask import redirect, render_template, session
