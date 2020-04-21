@@ -2,26 +2,30 @@
 {% block content %}
 <h3>Microsetta Search Result</h3>
 {% include "search_form.html" %}
-<div>
-    <div class="result_container">
-        <table class="widetable">
-            <th>Barcode</th>
-            <th>Sample Site</th>
-            <th>Collected Datetime</th>
-            <th>Scan Date</th>
-            <th>Notes</th>
-            <th>Projects</th>
-            {% for sample in result['kit']['samples'] %}
-                <tr class="gridrow">
-                    <td>{{ sample['barcode'] }}</td>
-                    <td>{{ sample['site'] }}</td>
-                    <td>{{ sample['_scan_date'] }}</td>
-                    <td>{{ sample['datetime_collected'] }}</td>
-                    <td>{{ sample['notes'] }}</td>
-                    <td>{{ ', '.join(sample['sample_projects']) }}</td>
-                </tr>
-            {% endfor %}
-        </table>
+{% if 'error_message' in result %}
+    <p>{{ result['error_message'] }}</p>
+{% else %}
+    <div>
+        <div class="result_container">
+            <table class="widetable">
+                <th>Barcode</th>
+                <th>Sample Site</th>
+                <th>Collected Datetime</th>
+                <th>Scan Date</th>
+                <th>Notes</th>
+                <th>Projects</th>
+                {% for sample in result['kit']['samples'] %}
+                    <tr class="gridrow">
+                        <td>{{ sample['barcode'] }}</td>
+                        <td>{{ sample['site'] }}</td>
+                        <td>{{ sample['_scan_date'] }}</td>
+                        <td>{{ sample['datetime_collected'] }}</td>
+                        <td>{{ sample['notes'] }}</td>
+                        <td>{{ ', '.join(sample['sample_projects']) }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
     </div>
-</div>
+{% endif %}
 {% endblock %}

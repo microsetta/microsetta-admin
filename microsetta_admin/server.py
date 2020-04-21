@@ -72,12 +72,20 @@ def search_result():
     elif request.method == 'POST':
         query = request.form['search_term']
 
-        _, barcode_result = APIRequest.get(
-                '/admin/search/samples/%s' % query)
+        status, result = APIRequest.get(
+                '/api/admin/search/samples/%s' % query)
 
-        return render_template('search_result.html',
-                               **build_login_variables(),
-                               result=barcode_result), 200
+        if result['kit'] is None:
+            # a sample has to be associated with a kit, so if there is no kit
+            # then the sample doesn't exist
+            result['error_message'] = '%s not found' % query
+
+        if status == 200:
+            return render_template('search_result.html',
+                                   **build_login_variables(),
+                                   result=result), 200
+        else:
+            return result
 
 
 @app.route('/create')

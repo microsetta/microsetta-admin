@@ -4,7 +4,7 @@ from ._model import Sample
 import requests
 from microsetta_admin.config_manager import SERVER_CONFIG
 from flask import redirect, render_template, session
-from urllib.parse import quote
+from urllib.parse import quote, urljoin
 
 
 TOKEN_KEY_NAME = 'token'
@@ -21,7 +21,7 @@ class BearerAuth(requests.auth.AuthBase):
 
 class APIRequest:
     API_URL = SERVER_CONFIG["private_api_url"]
-    DEFAULT_PARAMS = {} # {'language_tag': 'en-US'}
+    DEFAULT_PARAMS = {'language_tag': 'en-US'}
     CAfile = SERVER_CONFIG["CAfile"]
 
     @classmethod
@@ -35,7 +35,6 @@ class APIRequest:
 
     @staticmethod
     def _check_response(response):
-        do_return = True
         output = None
 
         if response.status_code == 401:
@@ -52,30 +51,15 @@ class APIRequest:
                                      mailto_url=mailto_url,
                                      error_msg=response.text)
         else:
-            do_return = False
             if response.text:
                 output = response.json()
 
-        return do_return, output
-
-    def get_mock(self, url):
-        # TODO: replace mock with real stuff...
-        if 'search/samples' in url:
-            if '000004216' in url:
-                mock = Sample('d8592c74-9699-2135-e040-8a80115d6401',
-                              '2013-10-15 09:30:00', 'Stool', 'stuff',
-                              '000004216', '2013-10-16',
-                              ['American Gut Project'])
-                return (mock.to_api(), 200)
-            else:
-                return ({}, 404)
-        else:
-            return ({}, 404)
+        return response.status_code, output
 
     @classmethod
     def get(cls, path, params=None):
         response = requests.get(
-            cls.API_URL + path,
+            urljoin(cls.API_URL, path),
             auth=BearerAuth(session[TOKEN_KEY_NAME]),
             verify=cls.CAfile,
             params=cls.build_params(params))
@@ -85,7 +69,7 @@ class APIRequest:
     @classmethod
     def put(cls, path, params=None, json=None):
         response = requests.put(
-            cls.API_URL + path,
+            urljoin(cls.API_URL, path),
             auth=BearerAuth(session[TOKEN_KEY_NAME]),
             verify=cls.CAfile,
             params=cls.build_params(params),
@@ -96,10 +80,9 @@ class APIRequest:
     @classmethod
     def post(cls, path, params=None, json=None):
         response = requests.post(
-            cls.API_URL + path,
+            urljoin(cls.API_URL, path),
             auth=BearerAuth(session[TOKEN_KEY_NAME]),
             verify=cls.CAfile,
             params=cls.build_params(params),
             json=json)
-
         return cls._check_response(response)
