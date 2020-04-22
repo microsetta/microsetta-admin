@@ -2,5 +2,64 @@
 {% block content %}
 <h3>Microsetta Scan</h3>
 <div>
+    <form action="/scan_result" name="agForm" id="agForm" method="post">
+        <table>
+            <tr>
+                <td><label for="sample_barcode">Barcode: </label></td>
+                <td><input type="text" name="sample_barcode" id="sample_barcode" {% if info %} value="{{info[0].barcode}}"{% endif %}></td>
+                <td><input type="submit" value="Find Sample"></td>
+            </tr>
+        </table>
+        {% if error %}
+            <p style="color:red">
+            {{error |e}}
+            </p>
+        {% endif %}
+        <script>
+           document.agForm.sample_barcode.focus()
+        </script>
+    </form>
+
+    {% if info %}
+        <form action="/scan_update" name="agForm" id="agForm" method="post">
+        <table>
+            <tr>
+                <td>Barcode: </td>
+                <td>{{info[0].barcode}}</td>
+            </tr>
+            <tr>
+                <td>Project: </td>
+                <td>{{info[0].project}}</td>
+            </tr>
+            <tr>
+                <td>Sample Site: </td>
+                <select id="sample_site"
+                {% for site in ["Blood (skin prick)", "Ear wax", "Forehead",
+                    "Fur", "Hair", "Left hand", "Left leg", "Mouth", "Nares",
+                    "Nasal mucus", "Right hand", "Right leg", "Stool", "Tears",
+                    "Torso", "Vaginal mucus", null] %}
+
+                {% endfor %}
+
+
+
+                <td></td>
+
+            </tr>
+        </table>
+        {% if error %}
+            <p style="color:red">
+            {{error |e}}
+            </p>
+        {% endif %}
+        <script>
+           document.agForm.sample_barcode.focus()
+        </script>
+    </form>
+
+    {% endif %}
+    {% if extended_info %}
+    {{extended_info}}
+    {% endif %}
 </div>
 {% endblock %}

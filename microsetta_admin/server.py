@@ -4,6 +4,7 @@ import secrets
 
 from werkzeug.utils import redirect
 
+
 from microsetta_admin.config_manager import SERVER_CONFIG
 from microsetta_admin._api import APIRequest
 import importlib.resources as pkg_resources
@@ -106,6 +107,35 @@ def new_kits():
 @app.route('/scan')
 def scan():
     return render_template('scan.html', **build_login_variables())
+
+@app.route('/scan_result', methods=['POST'])
+def scan_result():
+    sample_barcode = request.form['sample_barcode']
+
+    # response = requests.get(
+    #     "http://localhost:8082/api/admin/search/samples/%s" % sample_barcode,
+    #     auth=BearerAuth(session[TOKEN_KEY_NAME]),
+    #     verify=ApiRequest.CAfile,
+    #     params=None)
+
+    if response.status_code == 200:
+        result = response.json()
+        return render_template(
+            'scan.html',
+            **build_login_variables(),
+            info=result['barcode_info'],
+            extended_info=result
+        )
+    elif response.status_code == 401:
+        return redirect('/logout')
+    elif response.status_code == 404:
+        return render_template('scan.html',
+                               **build_login_variables(),
+                               error="Barcode %s Not Found" % sample_barcode)
+
+
+    print(response)
+    print(response.text)
 
 
 @app.route('/authrocket_callback')
