@@ -4,7 +4,6 @@ import secrets
 
 from werkzeug.utils import redirect
 
-
 from microsetta_admin.config_manager import SERVER_CONFIG
 from microsetta_admin._api import APIRequest
 import importlib.resources as pkg_resources
@@ -94,38 +93,67 @@ def new_kits():
     return render_template('create.html', **build_login_variables())
 
 
-@app.route('/scan')
+@app.route('/scan', methods=['GET', 'POST'])
 def scan():
-    return render_template('scan.html', **build_login_variables())
+    update_error = None
+    sample_barcode = None
 
-@app.route('/scan_result', methods=['POST'])
-def scan_result():
-    sample_barcode = request.form['sample_barcode']
+    # If its a get, grab the sample_barcode from the query string rather than
+    # form parameters
+    if request.method == 'GET':
+        sample_barcode = request.args.get('sample_barcode')
+        # If there is no sample_barcode in the GET
+        # they still need to enter one in the box, so show empty page
+        if sample_barcode is None:
+            return render_template('scan.html', **build_login_variables())
 
-    # response = requests.get(
-    #     "http://localhost:8082/api/admin/search/samples/%s" % sample_barcode,
-    #     auth=BearerAuth(session[TOKEN_KEY_NAME]),
-    #     verify=ApiRequest.CAfile,
-    #     params=None)
+    # If its a post, make the changes, then refresh the page
+    if request.method == 'POST':
+        sample_barcode = request.form['sample_barcode']
+        technician_notes = request.form['technician_notes']
+        sample_status = request.form['sample_status']
 
-    if response.status_code == 200:
-        result = response.json()
+        # Do the actual update
+        status, response = APIRequest.post(
+            '/api/admin/scan/%s' % sample_barcode,
+            json={
+                "sample_status": sample_status,
+                "technician_notes": technician_notes
+            }
+        )
+
+        # if the update failed, keep track of the error
+        if status != 201:
+            update_error = response
+
+    # Now, whether its a post or a get, gather up the model objects to show
+    # all the data to the user.
+
+    # Grab the sample information
+    status, result = APIRequest.get(
+        '/api/admin/search/samples/%s' % sample_barcode)
+
+    # If we successfully grab it, show the page to the user
+    if status == 200:
         return render_template(
             'scan.html',
             **build_login_variables(),
             info=result['barcode_info'],
-            extended_info=result
+            extended_info=result,
+            update_error=update_error
         )
-    elif response.status_code == 401:
+    elif status == 401:
+        # If we fail due to unauthorized, need the user to log in again
         return redirect('/logout')
-    elif response.status_code == 404:
-        return render_template('scan.html',
-                               **build_login_variables(),
-                               error="Barcode %s Not Found" % sample_barcode)
-
-
-    print(response)
-    print(response.text)
+    elif status == 404:
+        # If we fail due to not found, need to tell the user to pick a diff
+        # barcode
+        return render_template(
+            'scan.html',
+            **build_login_variables(),
+            search_error="Barcode %s Not Found" % sample_barcode,
+            update_error=update_error
+        )
 
 
 @app.route('/authrocket_callback')

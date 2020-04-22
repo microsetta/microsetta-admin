@@ -2,17 +2,20 @@
 {% block content %}
 <h3>Microsetta Scan</h3>
 <div>
-    <form action="/scan_result" name="agForm" id="agForm" method="post">
+    <form name="search_form" id="search_form" method="GET">
         <table>
             <tr>
                 <td><label for="sample_barcode">Barcode: </label></td>
                 <td><input type="text" name="sample_barcode" id="sample_barcode" {% if info %} value="{{info[0].barcode}}"{% endif %}></td>
+            </tr>
+            <tr>
+                <td></td>
                 <td><input type="submit" value="Find Sample"></td>
             </tr>
         </table>
-        {% if error %}
+        {% if search_error %}
             <p style="color:red">
-            {{error |e}}
+            {{search_error |e}}
             </p>
         {% endif %}
         <script>
@@ -20,8 +23,13 @@
         </script>
     </form>
 
+    <br>
+    <hr>
+    <br>
+
     {% if info %}
-        <form action="/scan_update" name="agForm" id="agForm" method="post">
+        <form action="/scan" name="update_form" id="update_form" method="post">
+        <input type="hidden" name="sample_barcode" value="{{info[0].barcode}}"/>
         <table>
             <tr>
                 <td>Barcode: </td>
@@ -33,33 +41,51 @@
             </tr>
             <tr>
                 <td>Sample Site: </td>
-                <select id="sample_site"
-                {% for site in ["Blood (skin prick)", "Ear wax", "Forehead",
-                    "Fur", "Hair", "Left hand", "Left leg", "Mouth", "Nares",
-                    "Nasal mucus", "Right hand", "Right leg", "Stool", "Tears",
-                    "Torso", "Vaginal mucus", null] %}
-
+                <td>{{info[0].site}}</td>
+            </tr>
+            <tr>
+                <td>Scan Date: </td>
+                <td>{{info[0].scan_date}}</td>
+            </tr>
+            <tr>
+                <td>Sample Status: </td>
+                <td>
+                <select id="sample_status" name="sample_status">
+                {% for status in ["not-received",
+                         "sample-is-valid",
+                         "no-associated-consent",
+                         "no-registered-account",
+                         "sample-has-inconsistencies"] %}
+                    <option value="{{status}}" {% if status == info[0].sample_status %} selected {% endif %}>{{status}}</option>
                 {% endfor %}
-
-
-
-                <td></td>
-
+                </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Technician Notes: </td>
+                <td>
+                    <textarea name="technician_notes" rows="10" cols="50">{{info[0].technician_notes}}</textarea>
+                </td>
+            </tr>
+            <tr>
+                <td/>
+                <td><input type="submit" value="Update"></td>
             </tr>
         </table>
-        {% if error %}
+        {% if update_error %}
             <p style="color:red">
-            {{error |e}}
+            {{update_error |e}}
             </p>
         {% endif %}
-        <script>
-           document.agForm.sample_barcode.focus()
-        </script>
     </form>
+    {% endif %}
 
+    <script>
+    {% if info %}
+       document.update_form.sample_status.focus()
+    {% else %}
+       document.search_form.sample_barcode.focus()
     {% endif %}
-    {% if extended_info %}
-    {{extended_info}}
-    {% endif %}
+    </script>
 </div>
 {% endblock %}
