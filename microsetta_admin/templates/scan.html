@@ -6,7 +6,7 @@
         <table>
             <tr>
                 <td><label for="sample_barcode">Barcode: </label></td>
-                <td><input type="text" name="sample_barcode" id="sample_barcode" {% if info %} value="{{info[0].barcode}}"{% endif %}></td>
+                <td><input type="text" name="sample_barcode" id="sample_barcode" {% if info %} value="{{info.barcode}}"{% endif %}></td>
             </tr>
             <tr>
                 <td></td>
@@ -29,23 +29,32 @@
 
     {% if info %}
         <form action="/scan" name="update_form" id="update_form" method="post">
-        <input type="hidden" name="sample_barcode" value="{{info[0].barcode}}"/>
+        <input type="hidden" name="sample_barcode" value="{{info.barcode}}"/>
         <table>
             <tr>
                 <td>Barcode: </td>
-                <td>{{info[0].barcode}}</td>
+                <td>{{info.barcode}}</td>
             </tr>
             <tr>
-                <td>Project: </td>
-                <td>{{info[0].project}}</td>
+                <td>Projects: </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>
+                    <ul>
+                    {% for proj_info in info.projects %}
+                        <li>{{proj_info.project}}</li>
+                    {% endfor %}
+                    </ul>
+                </td>
             </tr>
             <tr>
                 <td>Sample Site: </td>
-                <td>{{info[0].site}}</td>
+                <td>{{info.site}}</td>
             </tr>
             <tr>
                 <td>Scan Date: </td>
-                <td>{{info[0].scan_date}}</td>
+                <td>{{info.scan_date}}</td>
             </tr>
             <tr>
                 <td>Sample Status: </td>
@@ -56,7 +65,7 @@
                          "no-associated-consent",
                          "no-registered-account",
                          "sample-has-inconsistencies"] %}
-                    <option value="{{status}}" {% if status == info[0].sample_status %} selected {% endif %}>{{status}}</option>
+                    <option value="{{status}}" {% if status == info.sample_status %} selected {% endif %}>{{status}}</option>
                 {% endfor %}
                 </select>
                 </td>
@@ -64,7 +73,7 @@
             <tr>
                 <td>Technician Notes: </td>
                 <td>
-                    <textarea name="technician_notes" rows="10" cols="50">{{info[0].technician_notes}}</textarea>
+                    <textarea name="technician_notes" rows="10" cols="50">{{info.technician_notes}}</textarea>
                 </td>
             </tr>
             <tr>
