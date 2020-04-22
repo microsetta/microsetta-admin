@@ -65,37 +65,27 @@ def home():
     return render_template('sitebase.html', **build_login_variables())
 
 
-@app.route('/search')
-def search():
-    return render_template('search.html', **build_login_variables())
-
-
-@app.route('/search_result', methods=['POST'])
+@app.route('/search', methods=['GET', 'POST'])
 def search_result():
-    query = request.form['search_term']
+    if request.method == 'GET':
+        return render_template('search.html', **build_login_variables())
+    elif request.method == 'POST':
+        query = request.form['search_term']
 
-    barcode_result, barcode_status = APIRequest.get(
-            '/.../scan/%s' % query)
-    name_result, name_status = APIRequest.get('/.../name/%s' % query)
-    kitid_result, kitid_status = APIRequest.get('/.../kitid/%s' % query)
+        status, result = APIRequest.get(
+                '/api/admin/search/samples/%s' % query)
 
-    error = False
-    status = 200
-    if barcode_status == 200:
-        result = barcode_result
-    elif name_status == 200:
-        result = name_result
-    elif kitid_status == 200:
-        result = kitid_result
-    else:
-        error = True
-        status = 404
-        result = {'message': 'Nothing was found.'}
+        if result['kit'] is None:
+            # a sample has to be associated with a kit, so if there is no kit
+            # then the sample doesn't exist
+            result['error_message'] = '%s not found' % query
 
-    return render_template('search_result.html',
-                           **build_login_variables(),
-                           result=result,
-                           error=error), status
+        if status == 200:
+            return render_template('search_result.html',
+                                   **build_login_variables(),
+                                   result=result), 200
+        else:
+            return result
 
 
 @app.route('/create')
