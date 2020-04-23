@@ -93,9 +93,84 @@ def new_kits():
     return render_template('create.html', **build_login_variables())
 
 
-@app.route('/scan')
+def _check_sample_status(extended_barcode_info):
+    # TODO:  What are the error conditions we need to know about a barcode?
+    warnings = []
+    if extended_barcode_info['account'] is None:
+        warnings.append("No associated account")
+    if extended_barcode_info['source'] is None:
+        warnings.append("No associated source")
+    if extended_barcode_info['sample'] is None:
+        warnings.append("No associated sample")
+    elif extended_barcode_info['sample']['site'] is None:
+        warnings.append("Sample site not specified")
+
+    return warnings
+
+
+@app.route('/scan', methods=['GET', 'POST'])
 def scan():
-    return render_template('scan.html', **build_login_variables())
+    update_error = None
+    sample_barcode = None
+
+    # If its a get, grab the sample_barcode from the query string rather than
+    # form parameters
+    if request.method == 'GET':
+        sample_barcode = request.args.get('sample_barcode')
+        # If there is no sample_barcode in the GET
+        # they still need to enter one in the box, so show empty page
+        if sample_barcode is None:
+            return render_template('scan.html', **build_login_variables())
+
+    # If its a post, make the changes, then refresh the page
+    if request.method == 'POST':
+        sample_barcode = request.form['sample_barcode']
+        technician_notes = request.form['technician_notes']
+        sample_status = request.form['sample_status']
+
+        # Do the actual update
+        status, response = APIRequest.post(
+            '/api/admin/scan/%s' % sample_barcode,
+            json={
+                "sample_status": sample_status,
+                "technician_notes": technician_notes
+            }
+        )
+
+        # if the update failed, keep track of the error
+        if status != 201:
+            update_error = response
+
+    # Now, whether its a post or a get, gather up the model objects to show
+    # all the data to the user.
+
+    # Grab the sample information
+    status, result = APIRequest.get(
+        '/api/admin/search/samples/%s' % sample_barcode)
+
+    # If we successfully grab it, show the page to the user
+    if status == 200:
+        status_warnings = _check_sample_status(result)
+        return render_template(
+            'scan.html',
+            **build_login_variables(),
+            info=result['barcode_info'],
+            extended_info=result,
+            status_warnings=status_warnings,
+            update_error=update_error
+        )
+    elif status == 401:
+        # If we fail due to unauthorized, need the user to log in again
+        return redirect('/logout')
+    elif status == 404:
+        # If we fail due to not found, need to tell the user to pick a diff
+        # barcode
+        return render_template(
+            'scan.html',
+            **build_login_variables(),
+            search_error="Barcode %s Not Found" % sample_barcode,
+            update_error=update_error
+        )
 
 
 @app.route('/authrocket_callback')
