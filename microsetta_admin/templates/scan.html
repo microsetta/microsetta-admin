@@ -56,6 +56,24 @@
                 <td>Scan Date: </td>
                 <td>{{info.scan_date}}</td>
             </tr>
+            {% if status_warnings %}
+            <tr>
+                <td>Status Warnings: </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>
+                    <ul>
+                    {% for warning in status_warnings %}
+                        <li>{{warning}}</li>
+                    {% endfor %}
+                    </ul>
+                </td>
+            </tr>
+            {% endif %}
+            <tr>
+              <td colspan="100%"><hr></td>
+            </tr>
             <tr>
                 <td>Sample Status: </td>
                 <td>

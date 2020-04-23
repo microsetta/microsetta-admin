@@ -93,6 +93,21 @@ def new_kits():
     return render_template('create.html', **build_login_variables())
 
 
+def _check_sample_status(extended_barcode_info):
+    # TODO:  What are the error conditions we need to know about a barcode?
+    warnings = []
+    if extended_barcode_info['account'] is None:
+        warnings.append("No associated account")
+    if extended_barcode_info['source'] is None:
+        warnings.append("No associated source")
+    if extended_barcode_info['sample'] is None:
+        warnings.append("No associated sample")
+    elif extended_barcode_info['sample']['site'] is None:
+        warnings.append("Sample site not specified")
+
+    return warnings
+
+
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
     update_error = None
@@ -135,11 +150,13 @@ def scan():
 
     # If we successfully grab it, show the page to the user
     if status == 200:
+        status_warnings = _check_sample_status(result)
         return render_template(
             'scan.html',
             **build_login_variables(),
             info=result['barcode_info'],
             extended_info=result,
+            status_warnings=status_warnings,
             update_error=update_error
         )
     elif status == 401:
