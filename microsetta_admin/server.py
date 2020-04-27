@@ -93,6 +93,19 @@ def new_kits():
     return render_template('create.html', **build_login_variables())
 
 
+def _retrieve_sample_info(barcode, extended_barcode_info):
+    kit = extended_barcode_info['kit']
+    if not kit:
+        return None
+    samples = kit['samples']
+    if not samples:
+        return None
+    for s in samples:
+        if s['barcode'] == barcode:
+            return s
+    return None
+
+
 def _check_sample_status(extended_barcode_info):
     # TODO:  What are the error conditions we need to know about a barcode?
     warnings = []
@@ -150,11 +163,14 @@ def scan():
 
     # If we successfully grab it, show the page to the user
     if status == 200:
+        # Process result in python because its easier than jinja2.
         status_warnings = _check_sample_status(result)
+        sample_info = _retrieve_sample_info(sample_barcode, result)
         return render_template(
             'scan.html',
             **build_login_variables(),
             info=result['barcode_info'],
+            sample_info=sample_info,
             extended_info=result,
             status_warnings=status_warnings,
             update_error=update_error
