@@ -32,7 +32,7 @@ def build_login_variables():
             # again.
             token_info = parse_jwt(session[TOKEN_KEY_NAME])
         except jwt.exceptions.ExpiredSignatureError:
-            return redirect('/logout')
+            return redirect('/logout'), None
 
     vars = {
         'endpoint': SERVER_CONFIG["endpoint"],
@@ -40,7 +40,7 @@ def build_login_variables():
     }
     if token_info is not None:
         vars['email'] = token_info['email']
-    return vars
+    return None, vars
 
 
 def build_app():
@@ -62,13 +62,21 @@ app = build_app()
 
 @app.route('/')
 def home():
-    return render_template('sitebase.html', **build_login_variables())
+    resp, login_vars = build_login_variables()
+    if resp is None:
+        return render_template('sitebase.html', **login_vars)
+    else:
+        return resp
 
 
 @app.route('/search', methods=['GET', 'POST'])
 def search_result():
+    resp, login_vars = build_login_variables()
+    if resp is not None:
+        return resp
+
     if request.method == 'GET':
-        return render_template('search.html', **build_login_variables())
+        return render_template('search.html', **login_vars)
     elif request.method == 'POST':
         query = request.form['search_term']
 
@@ -82,7 +90,7 @@ def search_result():
 
         if status == 200:
             return render_template('search_result.html',
-                                   **build_login_variables(),
+                                   **login_vars,
                                    result=result), 200
         else:
             return result
@@ -90,7 +98,11 @@ def search_result():
 
 @app.route('/create')
 def new_kits():
-    return render_template('create.html', **build_login_variables())
+    resp, login_vars = build_login_variables()
+    if resp is not None:
+        return resp
+
+    return render_template('create.html', **login_vars)
 
 
 def _check_sample_status(extended_barcode_info):
@@ -110,6 +122,10 @@ def _check_sample_status(extended_barcode_info):
 
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
+    resp, login_vars = build_login_variables()
+    if resp is not None:
+        return resp
+
     update_error = None
     sample_barcode = None
 
@@ -120,7 +136,7 @@ def scan():
         # If there is no sample_barcode in the GET
         # they still need to enter one in the box, so show empty page
         if sample_barcode is None:
-            return render_template('scan.html', **build_login_variables())
+            return render_template('scan.html', **login_vars)
 
     # If its a post, make the changes, then refresh the page
     if request.method == 'POST':
@@ -153,7 +169,7 @@ def scan():
         status_warnings = _check_sample_status(result)
         return render_template(
             'scan.html',
-            **build_login_variables(),
+            **login_vars,
             info=result['barcode_info'],
             extended_info=result,
             status_warnings=status_warnings,
@@ -167,7 +183,7 @@ def scan():
         # barcode
         return render_template(
             'scan.html',
-            **build_login_variables(),
+            **login_vars,
             search_error="Barcode %s Not Found" % sample_barcode,
             update_error=update_error
         )
