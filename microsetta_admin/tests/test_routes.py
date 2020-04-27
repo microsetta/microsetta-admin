@@ -40,6 +40,10 @@ class RouteTests(TestBase):
         self.assertIn(b'<h3>Microsetta Scan</h3>', response.data)
 
     def test_create_kits_simple(self):
+        self.mock_get.return_value.status_code = 200
+        self.mock_get.return_value.text = '[{"project_name": "foo"}]'
+        self.mock_get.return_value.json = lambda: [{"project_name": "foo"}]
+
         response = self.app.get('/create_kits', follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'<h3>Microsetta Create Kits</h3>', response.data)
