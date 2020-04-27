@@ -2,6 +2,7 @@ import jwt
 from flask import render_template, Flask, request, session
 import secrets
 
+from jwt import PyJWTError
 from werkzeug.utils import redirect
 
 from microsetta_admin.config_manager import SERVER_CONFIG
@@ -16,7 +17,19 @@ PUB_KEY = pkg_resources.read_text(
     "authrocket.pubkey")
 
 
+def handle_pyjwt(pyjwt_error):
+    # PyJWTError (Aka, anything wrong with token) will force user to log out
+    # and log in again
+    return redirect('/logout')
+
+
 def parse_jwt(token):
+    """
+    Raises
+    ------
+        jwt.PyJWTError
+            If the token is invalid
+    """
     decoded = jwt.decode(token, PUB_KEY, algorithms=['RS256'], verify=True)
     return decoded
 
@@ -26,13 +39,10 @@ def build_login_variables():
     # jinja2
     token_info = None
     if TOKEN_KEY_NAME in session:
-        try:
-            # If user leaves the page open, the token can expire before the
-            # session, so if our token goes back we need to force them to login
-            # again.
-            token_info = parse_jwt(session[TOKEN_KEY_NAME])
-        except jwt.exceptions.ExpiredSignatureError:
-            return redirect('/logout')
+        # If user leaves the page open, the token can expire before the
+        # session, so if our token goes back we need to force them to login
+        # again.
+        token_info = parse_jwt(session[TOKEN_KEY_NAME])
 
     vars = {
         'endpoint': SERVER_CONFIG["endpoint"],
@@ -53,6 +63,9 @@ def build_app():
         flask_secret = secrets.token_urlsafe(16)
     app.secret_key = flask_secret
     app.config['SESSION_TYPE'] = 'memcached'
+
+    # Set mapping from exception type to response code
+    app.register_error_handler(PyJWTError, handle_pyjwt)
 
     return app
 
