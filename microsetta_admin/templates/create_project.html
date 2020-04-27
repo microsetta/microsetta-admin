@@ -1,0 +1,29 @@
+{% extends "sitebase.html" %}
+{% block content %}
+<h3>Microsetta Create Project</h3>
+<div>
+    {% if message %}
+        <p style="color:red">
+        {{message |e}}
+        </p>
+    {% endif %}
+        
+    <form name="project_form" id="project_form" method="POST">
+        <table>
+            <tr>
+                <td><label for="project_name">Project name: </label></td>
+                <td><input type="text" name="project_name" id="project_name" ></td>
+            </tr>
+            <tr>
+                <td><label for="num_samples">Microsetta project: </label></td>
+                <td><input type="checkbox" name="is_microsetta" id="is_microsetta" value='Yes'></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><input type="submit" value="Create project"></td>
+            </tr>
+        </table>
+    </form>
+</div>
+{% endblock %}
+
