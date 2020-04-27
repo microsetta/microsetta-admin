@@ -1,8 +1,11 @@
 import jwt
-from flask import render_template, Flask, request, session
+from flask import render_template, Flask, request, session, send_file
 import secrets
+from datetime import datetime
+import io
 
 from werkzeug.utils import redirect
+import pandas as pd
 
 from microsetta_admin.config_manager import SERVER_CONFIG
 from microsetta_admin._api import APIRequest
@@ -88,9 +91,88 @@ def search_result():
             return result
 
 
-@app.route('/create')
+@app.route('/create_project', methods=['GET', 'POST'])
+def new_project():
+    if request.method == 'GET':
+        return render_template('create_project.html',
+                               **build_login_variables())
+    elif request.method == 'POST':
+        project_name = request.form['project_name']
+        is_microsetta = request.form.get('is_microsetta', 'No') == 'Yes'
+
+        status, result = APIRequest.post('/api/admin/create/project',
+                                         json={'project_name': project_name,
+                                               'is_microsetta': is_microsetta})
+
+        if status == 201:
+            return render_template('create_project.html', message='Created!',
+                                   **build_login_variables())
+        else:
+            return render_template('create_project.html',
+                                   message='Unable to create',
+                                   **build_login_variables())
+
+
+@app.route('/create_kits', methods=['GET', 'POST'])
 def new_kits():
-    return render_template('create.html', **build_login_variables())
+    _, result = APIRequest.get('/api/admin/statistics/projects')
+    projects = sorted([stats['project_name'] for stats in result])
+
+    if request.method == 'GET':
+        return render_template('create_kits.html',
+                               projects=projects,
+                               **build_login_variables())
+
+    elif request.method == 'POST':
+        num_kits = int(request.form['num_kits'])
+        num_samples = int(request.form['num_samples'])
+        prefix = request.form['prefix']
+        selected_projects = request.form.getlist('projects')
+
+        if selected_projects is None:
+            return render_template('create_kits.html',
+                                   error='No project selected',
+                                   projects=projects,
+                                   **build_login_variables())
+
+        payload = {'number_of_kits': num_kits,
+                   'number_of_samples': num_samples,
+                   'projects': selected_projects}
+        if prefix:
+            payload['kit_id_prefix'] = prefix
+
+        status, result = APIRequest.post(
+                '/api/admin/create/kits',
+                json=payload)
+
+        if status != 201:
+            return render_template('create_kits.html',
+                                   error='Failed to create kits',
+                                   projects=projects,
+                                   **build_login_variables())
+
+        # StringIO/BytesIO based off https://stackoverflow.com/a/45111660
+        buf = io.StringIO()
+        payload = io.BytesIO()
+
+        # explicitly expand out the barcode detail
+        kits = pd.DataFrame(result['created'])
+        for i in range(num_samples):
+            kits['barcode_%d' % (i+1)] = [r['sample_barcodes'][i]
+                                          for _, r in kits.iterrows()]
+        kits.drop(columns='sample_barcodes', inplace=True)
+
+        kits.to_csv(buf, sep=',', index=False, header=True)
+        payload.write(buf.getvalue().encode('utf-8'))
+        payload.seek(0)
+        buf.close()
+
+        stamp = datetime.now().strftime('%d%b%Y-%H%M')
+        fname = f'kits-{stamp}.csv'
+
+        return send_file(payload, as_attachment=True,
+                         attachment_filename=fname,
+                         mimetype='text/csv')
 
 
 def _check_sample_status(extended_barcode_info):

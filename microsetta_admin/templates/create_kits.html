@@ -1,16 +1,28 @@
 {% extends "sitebase.html" %}
 {% block content %}
-<h3>Microsetta Scan</h3>
-<div>
-    <form name="kit_form" id="kit_form" method="GET">
+<h3>Microsetta Create Kits</h3>
+<style>
+    select {
+        width: 250px;
+        margin: 10px;
+    }
+</style>
+<div style="height: 400px;">
+    {% if error %}
+        <p style="color:red">
+        {{error |e}}
+        </p>
+    {% endif %}
+        
+    <form name="kit_form" id="kit_form" method="POST">
         <table>
             <tr>
                 <td><label for="num_kits">Number of kits: </label></td>
-                <td><input type="text" name="num_kits" id="num_kits" ></td>
+                <td><input type="number" name="num_kits" id="num_kits" min="1"></td>
             </tr>
             <tr>
                 <td><label for="num_samples">Samples per kit: </label></td>
-                <td><input type="text" name="num_samples" id="num_samples" ></td>
+                <td><input type="number" name="num_samples" id="num_samples" min="1"></td>
             </tr>
             <tr>
                 <td><label for="prefix">Kit name prefix (optional): </label></td>
@@ -18,7 +30,7 @@
             </tr>
             <tr>
                 <td><label for="project">Projects: </label></td>
-                <td><select id="create-select-project" name="projects" multiple class="chosen-select">
+                <td><select id="create-select-project" name="projects" multiple class="chosen-select" size=10>
                     {% for p in projects %}
                     <option value='{{p}}'>{{p}}</option>
                     {% endfor %}
@@ -39,4 +51,5 @@
         </script>
     </form>
 </div>
+{{blob}}
 {% endblock %}
