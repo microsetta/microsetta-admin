@@ -24,15 +24,15 @@ class RouteTests(TestBase):
 
     def test_search_missing_barcode(self):
         # server side issues a GET to the API
-        self.mock_get.return_value.status_code = 200
-        self.mock_get.return_value.text = '{"kit": None}'
-        self.mock_get.return_value.json = lambda: {"kit": None}  # noqa
+        self.mock_get.return_value.status_code = 404
+        self.mock_get.return_value.text = '{}'
+        self.mock_get.return_value.json = lambda: {}  # noqa
 
         response = self.app.post('/search',
                                  data={'search_term': 'missing'},
                                  follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'missing not found', response.data)
+        self.assertIn(b'Sample not found', response.data)
 
     def test_scan_simple(self):
         response = self.app.get('/scan', follow_redirects=True)
