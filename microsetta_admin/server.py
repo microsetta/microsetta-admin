@@ -243,6 +243,9 @@ def scan():
         if status != 201:
             update_error = response
 
+        return render_template('scan.html',
+                               update_error=update_error,
+                               **build_login_variables())
     # Now, whether its a post or a get, gather up the model objects to show
     # all the data to the user.
 

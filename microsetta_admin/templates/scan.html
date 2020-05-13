@@ -19,7 +19,7 @@
             </p>
         {% endif %}
         <script>
-           document.agForm.sample_barcode.focus()
+           document.search_form.sample_barcode.focus()
         </script>
     </form>
 
@@ -107,12 +107,13 @@
                 <td><input type="submit" value="Update"></td>
             </tr>
         </table>
-        {% if update_error %}
-            <p style="color:red">
-            {{update_error |e}}
-            </p>
-        {% endif %}
     </form>
+    {% endif %}
+    
+    {% if update_error %}
+        <p style="color:red">
+        {{update_error |e}}
+        </p>
     {% endif %}
 
     <script>
