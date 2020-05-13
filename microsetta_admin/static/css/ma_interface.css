@@ -58,3 +58,12 @@ ul.mainmenu li a:hover {
 	border-radius: 5px;
 	font: 15px normal Arial, Helvetica, sans-serif;
 }
+
+div.sample-status {
+	position: relative;
+	margin-left: 2em;
+	width: 400px;
+	border-radius: 10px;
+	text-align: center;
+	height: relative;
+}

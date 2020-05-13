@@ -191,16 +191,23 @@ def new_kits():
 def _check_sample_status(extended_barcode_info):
     # TODO:  What are the error conditions we need to know about a barcode?
     warnings = []
+    sample = extended_barcode_info['sample']
+
     if extended_barcode_info['account'] is None:
         warnings.append("No associated account")
     if extended_barcode_info['source'] is None:
         warnings.append("No associated source")
     if extended_barcode_info['sample'] is None:
         warnings.append("No associated sample")
-    elif extended_barcode_info['sample']['site'] is None:
+    elif 'site' not in sample or sample['site'] is None:
         warnings.append("Sample site not specified")
 
-    return warnings
+    if len(warnings) == 0:
+        color = 'inherit'
+    else:
+        color = 'orange'
+
+    return warnings, color
 
 
 @app.route('/scan', methods=['GET', 'POST'])
@@ -246,10 +253,12 @@ def scan():
     # If we successfully grab it, show the page to the user
     if status == 200:
         # Process result in python because its easier than jinja2.
-        status_warnings = _check_sample_status(result)
+        status_warnings, status_color = _check_sample_status(result)
+
         # sample_info may be None if barcode not in agp, then no sample_site
         # available
         sample_info = result['sample']
+
         return render_template(
             'scan.html',
             **build_login_variables(),
@@ -257,7 +266,8 @@ def scan():
             sample_info=sample_info,
             extended_info=result,
             status_warnings=status_warnings,
-            update_error=update_error
+            update_error=update_error,
+            status_color=status_color
         )
     elif status == 401:
         # If we fail due to unauthorized, need the user to log in again

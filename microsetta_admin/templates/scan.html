@@ -28,6 +28,25 @@
     <br>
 
     {% if info %}
+        <div id="sample-status" class="sample-status" style="background-color:{{ status_color }};">
+           <div>
+                {% if status_warnings %}
+                <tr>
+                    <td>Status Warnings: </td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td>
+                        <ul>
+                        {% for warning in status_warnings %}
+                            <li>{{warning}}</li>
+                        {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+                {% endif %}
+            </div>
+        </div>
         <form action="/scan" name="update_form" id="update_form" method="post">
         <input type="hidden" name="sample_barcode" value="{{info.barcode}}"/>
         <table>
@@ -53,24 +72,13 @@
                 <td>{{sample_info.site}}</td>
             </tr>
             <tr>
+                <td>Collection date: </td>
+                <td>{{sample_info.datetime_collected}}</td>
+            </tr>
+            <tr>
                 <td>Scan Date: </td>
                 <td>{{info.scan_date}}</td>
             </tr>
-            {% if status_warnings %}
-            <tr>
-                <td>Status Warnings: </td>
-            </tr>
-            <tr>
-                <td></td>
-                <td>
-                    <ul>
-                    {% for warning in status_warnings %}
-                        <li>{{warning}}</li>
-                    {% endfor %}
-                    </ul>
-                </td>
-            </tr>
-            {% endif %}
             <tr>
               <td colspan="100%"><hr></td>
             </tr>
