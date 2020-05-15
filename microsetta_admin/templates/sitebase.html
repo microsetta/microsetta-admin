@@ -18,8 +18,8 @@
             <li><a href="/create_project">Create Project</a></li>
             <li><a href="/create_kits">Create Kit</a></li>
             <li><a href="/scan">Scan Barcode</a></li>
+            <li><a href="/metadata_pulldown">Retrieve Metadata</a></li>
             <li><a href="{{authrocket_url}}/logout?redirect_uri={{endpoint}}/logout">Log Out <br> ({{email |e}})</a></li>
-
             {% else %}
             <li><a href="{{authrocket_url}}/login?redirect_uri={{endpoint}}/authrocket_callback">Log In</a></li>
             {% endif %}

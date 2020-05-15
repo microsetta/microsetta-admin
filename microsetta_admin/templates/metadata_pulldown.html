@@ -1,0 +1,31 @@
+{% extends "sitebase.html" %}
+{% block content %}
+<h3>Microsetta Metadata Pulldown</h3>
+<div>
+    <form name="search_form" id="search_form" method="GET">
+        <table>
+            <tr>
+                <td><label for="sample_barcode">Barcode: </label></td>
+                <td><input type="text" name="sample_barcode" id="sample_barcode" {% if info %} value="{{info.barcode}}"{% endif %}></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><input type="submit" value="Retrieve Sample Metadata"></td>
+            </tr>
+        </table>
+        {% if search_error %}
+            <p style="color:red">
+            {{search_error |e}}
+            </p>
+        {% endif %}
+        <script>
+           document.search_form.sample_barcode.focus()
+        </script>
+    </form>
+    Or upload a file and pull metadata for all barcodes listed in the column "sample_name"
+    <form name="upload_csv" id="search_csv" method="POST" enctype="multipart/form-data">
+      <input type=file name=file>
+      <input type=submit value=Upload>
+    </form>
+</div>
+{% endblock %}

@@ -1,3 +1,5 @@
+import json
+
 import jwt
 from flask import render_template, Flask, request, session, send_file
 import secrets
@@ -5,13 +7,14 @@ from datetime import datetime
 import io
 
 from jwt import PyJWTError
+from werkzeug.exceptions import BadRequest
 from werkzeug.utils import redirect
 import pandas as pd
 
+from microsetta_admin import metadata_util
 from microsetta_admin.config_manager import SERVER_CONFIG
 from microsetta_admin._api import APIRequest
 import importlib.resources as pkg_resources
-
 
 TOKEN_KEY_NAME = 'token'
 
@@ -284,6 +287,84 @@ def scan():
             search_error="Barcode %s Not Found" % sample_barcode,
             update_error=update_error
         )
+
+
+@app.route('/metadata_pulldown', methods=['GET', 'POST'])
+def metadata_pulldown():
+    if request.method == 'GET':
+        sample_barcode = request.args.get('sample_barcode')
+        # If there is no sample_barcode in the GET
+        # they still need to enter one in the box, so show empty page
+        if sample_barcode is None:
+            return render_template('metadata_pulldown.html',
+                                   **build_login_variables())
+        sample_barcodes = [sample_barcode]
+    elif request.method == 'POST':
+        if 'file' not in request.files or \
+                request.files['file'].filename == '':
+            return render_template('metadata_pulldown.html',
+                                   **build_login_variables(),
+                                   search_error="Must specify a valid file")
+        file = request.files['file']
+        try:
+            df = pd.read_csv(file, dtype=str)
+        except Exception as e:
+            return render_template('metadata_pulldown.html',
+                                   **build_login_variables(),
+                                   search_error=e)
+        sample_barcodes = df['sample_name'].tolist()
+    else:
+        raise BadRequest()
+
+    transformed_dict, errors = metadata_util.retrieve_metadata(sample_barcodes)
+
+    # Strangely, these api requests are returning an html error page rather
+    # than a machine parseable json error response object with message.
+    # This is almost certainly due to error handling for the cohosted minimal
+    # client.  In future, we should just pass down whatever the api says here.
+    if len(errors) == 0:
+        df = pd.DataFrame.from_dict(transformed_dict, orient="index")
+
+        ebi_remove = ['ABOUT_YOURSELF_TEXT', 'ANTIBIOTIC_CONDITION',
+                      'ANTIBIOTIC_MED',
+                      'BIRTH_MONTH', 'CAT_CONTACT', 'CAT_LOCATION',
+                      'CONDITIONS_MEDICATION', 'DIET_RESTRICTIONS_LIST',
+                      'DOG_CONTACT',
+                      'DOG_LOCATION', 'GENDER', 'MEDICATION_LIST',
+                      'OTHER_CONDITIONS_LIST', 'PREGNANT_DUE_DATE',
+                      'RACE_OTHER',
+                      'RELATIONSHIPS_WITH_OTHERS_IN_STUDY',
+                      'SPECIAL_RESTRICTIONS',
+                      'SUPPLEMENTS', 'TRAVEL_LOCATIONS_LIST', 'ZIP_CODE',
+                      'WILLING_TO_BE_CONTACTED', 'pets_other_freetext']
+
+        df = df.drop(ebi_remove, axis=1, errors="ignore")
+
+        # TODO:  Streaming direct from pandas is a pain.  Need to search for
+        #  better ways to iterate and chunk this file as we generate it
+        strstream = io.StringIO()
+        df.to_csv(strstream, sep='\t')
+
+        # TODO: utf-8 or utf-16 encoding??
+        bytestream = io.BytesIO()
+        bytestream.write(strstream.getvalue().encode('utf-8'))
+        bytestream.seek(0)
+
+        strstream.close()
+        return send_file(bytestream,
+                         mimetype="text/tab-separated-values",
+                         as_attachment=True,
+                         attachment_filename="metadata_pulldown.tsv",
+                         add_etags=False,
+                         cache_timeout=None,
+                         conditional=False,
+                         last_modified=None,
+                         )
+    else:
+        return render_template('metadata_pulldown.html',
+                               **build_login_variables(),
+                               info={'barcodes': sample_barcodes},
+                               search_error=json.dumps(errors, indent=2))
 
 
 @app.route('/authrocket_callback')
