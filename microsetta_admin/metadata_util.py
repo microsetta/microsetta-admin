@@ -1,5 +1,5 @@
 from microsetta_admin._api import APIRequest
-from collections import defaultdict, Counter
+from collections import Counter
 import re
 import pandas as pd
 
@@ -24,24 +24,47 @@ def retrieve_metadata(sample_barcodes, remove_columns_for_ebi):
     """
     error_report = []
 
-    dups = _find_duplicates(sample_barcodes)
-    if len(dups) > 0:
-        error_report.append({
-            "barcode": list(dups),
-            "error": "Duplicated barcodes in input"
-        })
+    dups, errors = _find_duplicates(sample_barcodes)
+    if errors is not None:
+        error_report.append(errors)
 
-    transformed = []
-    multiselects = set()
-    for sample_barcode in sample_barcodes:
+    fetched = []
+    for sample_barcode in set(sample_barcodes):
         barcode_metadata, errors = _fetch_barcode_metadata(sample_barcode)
 
         if errors is not None:
             error_report.append(errors)
             continue
 
-        as_series, observed_multiselect = _to_pandas_series(barcode_metadata)
+        fetched.append(barcode_metadata)
 
+    if len(fetched) == 0:
+        error_report.append({"error": "No metadata was obtained"})
+        df = pd.DataFrame()
+    else:
+        df = _to_pandas_dataframe(barcode_metadata)
+
+    return df, error_report
+
+
+def _to_pandas_dataframe(metadatas):
+    """Convert the raw barcode metadata into a DataFrame
+
+    Parameters
+    ----------
+    metadatas : list of dict
+        The raw metadata obtained from the private API
+
+    Returns
+    -------
+    pd.DataFrame
+        The fully constructed sample metadata
+    """
+    transformed = []
+    multiselects = set()
+
+    for metadata in metadatas:
+        as_series, observed_multiselect = _to_pandas_series(metadata)
         transformed.append(as_series)
         multiselects.update(observed_multiselect)
 
@@ -57,7 +80,7 @@ def retrieve_metadata(sample_barcodes, remove_columns_for_ebi):
     # as could happen if not all individuals took all surveys
     df.fillna('Missing: not provided', inplace=True)
 
-    return df, errors
+    return df
 
 
 def _to_pandas_series(metadata):
@@ -165,6 +188,17 @@ def _find_duplicates(barcodes):
     -------
     set
         Any barcode observed more than a single time
+    dict
+        Any error information or None
     """
+    error = None
     counts = Counter(barcodes)
-    return {barcode for barcode, count in counts.items() if count > 1}
+    dups = {barcode for barcode, count in counts.items() if count > 1}
+
+    if len(dups) > 0:
+        error = {
+            "barcode": list(dups),
+            "error": "Duplicated barcodes in input"
+        }
+
+    return dups, error

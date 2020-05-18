@@ -7,10 +7,55 @@ from microsetta_admin.metadata_util import (_build_col_name,
                                             _find_duplicates,
                                             _fetch_barcode_metadata,
                                             _to_pandas_series,
+                                            _to_pandas_dataframe,
                                             retrieve_metadata)
 
 
 class MetadataUtilTests(TestBase):
+    def setUp(self):
+        self.raw_sample_1 = {
+                'sample_barcode': '000004216',
+                'host_subject_id': 'foo',
+                'account': 'ignored',
+                'source': 'ignored',
+                'sample': 'ignored',
+                'survey_answers': [
+                    {'template': 1,
+                     'response': {'1': ['DIET_TYPE', 'Omnivore'],
+                                  '2': ['MULTIVITAMIN', 'No'],
+                                  '3': ['PROBIOTIC_FREQUENCY', 'Unspecified'],
+                                  '4': ['VITAMIN_B_SUPPLEMENT_FREQUENCY',
+                                        'Unspecified'],
+                                  '5': ['VITAMIN_D_SUPPLEMENT_FREQUENCY',
+                                        'Unspecified'],
+                                  '6': ['OTHER_SUPPLEMENT_FREQUENCY', 'No'],
+                                  '9': ['ALLERGIC_TO', ['blahblah',
+                                                        'stuff']]}},
+                    {'template': 'blah',
+                     'response': {'1': ['abc', 'okay'],
+                                  '2': ['def', 'No']}}]}
+
+        self.raw_sample_2 = {
+                'sample_barcode': 'XY0004216',
+                'host_subject_id': 'bar',
+                'account': 'ignored',
+                'source': 'ignored',
+                'sample': 'ignored',
+                'survey_answers': [
+                    {'template': 1,
+                     'response': {'1': ['DIET_TYPE', 'Vegan'],
+                                  '2': ['MULTIVITAMIN', 'Yes'],
+                                  '3': ['PROBIOTIC_FREQUENCY', 'Unspecified'],
+                                  '4': ['VITAMIN_B_SUPPLEMENT_FREQUENCY',
+                                        'Unspecified'],
+                                  '5': ['VITAMIN_D_SUPPLEMENT_FREQUENCY',
+                                        'Unspecified'],
+                                  '6': ['OTHER_SUPPLEMENT_FREQUENCY', 'No'],
+                                  '123': ['SAMPLE2SPECIFIC', 'foobar'],
+                                  '9': ['ALLERGIC_TO', ['baz',
+                                                        'stuff']]}}]}
+        super().setUp()
+
     def test_build_col_name(self):
         tests_and_expected = [('foo', 'bar', 'foo_bar'),
                               ('foo', 'bar baz', 'foo_bar_baz'),
@@ -21,12 +66,17 @@ class MetadataUtilTests(TestBase):
 
     def test_find_duplicates(self):
         exp = {'foo', 'bar'}
-        obs = _find_duplicates(['foo', 'bar', 'foo', 'bar', 'baz'])
+        exp_errors = {'barcode': ['foo', 'bar'],
+                      'error': "Duplicated barcodes in input"}
+        obs, errors = _find_duplicates(['foo', 'bar', 'foo', 'bar', 'baz'])
         self.assertEqual(obs, exp)
+        self.assertEqual(sorted(errors['barcode']),
+                         sorted(exp_errors['barcode']))
 
         exp = set()
-        obs = _find_duplicates(['foo', 'bar'])
+        obs, errors = _find_duplicates(['foo', 'bar'])
         self.assertEqual(obs, exp)
+        self.assertEqual(errors, None)
 
     def test_fetch_barcode_metadata(self):
         res = {'sample_barcode': '000004216'}
@@ -53,30 +103,32 @@ class MetadataUtilTests(TestBase):
         self.assertEqual(obs_errors, {'barcode': 'badbarcode',
                                       'error': "404 from api"})
 
-    def test_retrieve_metadata(self):
-        self.fail()
+    def test_to_pandas_dataframe(self):
+        data = [self.raw_sample_1, self.raw_sample_2]
+        exp = pd.DataFrame([['000004216', 'foo', 'Omnivore', 'No',
+                             'Unspecified', 'Unspecified', 'Unspecified', 'No',
+                             'true', 'true', 'false', 'Missing: not provided',
+                             'okay', 'No'],
+                            ['XY0004216', 'bar', 'Vegan', 'Yes', 'Unspecified',
+                             'Unspecified', 'Unspecified', 'No',
+                             'false', 'true', 'true', 'foobar',
+                             'Missing: not provided',
+                             'Missing: not provided']],
+                           columns=['sample_name', 'HOST_SUBJECT_ID',
+                                    'DIET_TYPE', 'MULTIVITAMIN',
+                                    'PROBIOTIC_FREQUENCY',
+                                    'VITAMIN_B_SUPPLEMENT_FREQUENCY',
+                                    'VITAMIN_D_SUPPLEMENT_FREQUENCY',
+                                    'OTHER_SUPPLEMENT_FREQUENCY',
+                                    'ALLERGIC_TO_blahblah',
+                                    'ALLERGIC_TO_stuff', 'ALLERGIC_TO_baz',
+                                    'SAMPLE2SPECIFIC', 'abc', 'def']
+                           ).set_index('sample_name')
+        obs = _to_pandas_dataframe(data)
+        pdt.assert_frame_equal(obs, exp, check_like=True)
 
     def test_to_pandas_series(self):
-        data = {'sample_barcode': '000004216',
-                'host_subject_id': 'foo',
-                'account': 'ignored',
-                'source': 'ignored',
-                'sample': 'ignored',
-                'survey_answers': [
-                    {'template': 1,
-                     'response': {'1': ['DIET_TYPE', 'Omnivore'],
-                                  '2': ['MULTIVITAMIN', 'No'],
-                                  '3': ['PROBIOTIC_FREQUENCY', 'Unspecified'],
-                                  '4': ['VITAMIN_B_SUPPLEMENT_FREQUENCY',
-                                        'Unspecified'],
-                                  '5': ['VITAMIN_D_SUPPLEMENT_FREQUENCY',
-                                        'Unspecified'],
-                                  '6': ['OTHER_SUPPLEMENT_FREQUENCY', 'No'],
-                                  '9': ['ALLERGIC_TO', ['blahblah',
-                                                        'stuff']]}},
-                    {'template': 'blah',
-                     'response': {'1': ['abc', 'okay'],
-                                  '2': ['def', 'No']}}]}
+        data = self.raw_sample_1
 
         exp = pd.Series(['foo', 'Omnivore', 'No', 'Unspecified', 'Unspecified',
                          'Unspecified', 'No', 'true', 'true', 'okay', 'No'],
