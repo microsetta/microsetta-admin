@@ -3,12 +3,13 @@ import json
 import pandas as pd
 import pandas.testing as pdt
 from microsetta_admin.tests.base import TestBase
+from microsetta_admin.metadata_constants import HUMAN_SITE_INVARIANTS
 from microsetta_admin.metadata_util import (_build_col_name,
                                             _find_duplicates,
                                             _fetch_barcode_metadata,
                                             _to_pandas_series,
                                             _to_pandas_dataframe,
-                                            retrieve_metadata)
+                                            drop_private_columns)
 
 
 class MetadataUtilTests(TestBase):
@@ -16,9 +17,12 @@ class MetadataUtilTests(TestBase):
         self.raw_sample_1 = {
                 'sample_barcode': '000004216',
                 'host_subject_id': 'foo',
-                'account': 'ignored',
-                'source': 'ignored',
-                'sample': 'ignored',
+                'source_type': 'human',
+                "sample": {
+                    "sample_projects": ["American Gut Project"],
+                    "datetime_collected": "2013-10-15T09:30:00",
+                    "site": "Stool"
+                },
                 'survey_answers': [
                     {'template': 1,
                      'response': {'1': ['DIET_TYPE', 'Omnivore'],
@@ -38,9 +42,12 @@ class MetadataUtilTests(TestBase):
         self.raw_sample_2 = {
                 'sample_barcode': 'XY0004216',
                 'host_subject_id': 'bar',
-                'account': 'ignored',
-                'source': 'ignored',
-                'sample': 'ignored',
+                'source_type': 'human',
+                "sample": {
+                    "sample_projects": ["American Gut Project"],
+                    "datetime_collected": "2013-10-15T09:30:00",
+                    "site": "Stool"
+                },
                 'survey_answers': [
                     {'template': 1,
                      'response': {'1': ['DIET_TYPE', 'Vegan'],
@@ -55,6 +62,13 @@ class MetadataUtilTests(TestBase):
                                   '9': ['ALLERGIC_TO', ['baz',
                                                         'stuff']]}}]}
         super().setUp()
+
+    def test_drop_private_columns(self):
+        df = pd.DataFrame([[1, 2, 3], [4, 5, 6]],
+                          columns=['pM_foo', 'okay', 'ABOUT_yourSELF_TEXT'])
+        exp = pd.DataFrame([[2, ], [5, ]], columns=['okay'])
+        obs = drop_private_columns(df)
+        pdt.assert_frame_equal(obs, exp)
 
     def test_build_col_name(self):
         tests_and_expected = [('foo', 'bar', 'foo_bar'),
@@ -108,12 +122,13 @@ class MetadataUtilTests(TestBase):
         exp = pd.DataFrame([['000004216', 'foo', 'Omnivore', 'No',
                              'Unspecified', 'Unspecified', 'Unspecified', 'No',
                              'true', 'true', 'false', 'Missing: not provided',
-                             'okay', 'No'],
+                             'okay', 'No', "2013-10-15T09:30:00"],
                             ['XY0004216', 'bar', 'Vegan', 'Yes', 'Unspecified',
                              'Unspecified', 'Unspecified', 'No',
                              'false', 'true', 'true', 'foobar',
                              'Missing: not provided',
-                             'Missing: not provided']],
+                             'Missing: not provided',
+                             "2013-10-15T09:30:00"]],
                            columns=['sample_name', 'HOST_SUBJECT_ID',
                                     'DIET_TYPE', 'MULTIVITAMIN',
                                     'PROBIOTIC_FREQUENCY',
@@ -122,27 +137,37 @@ class MetadataUtilTests(TestBase):
                                     'OTHER_SUPPLEMENT_FREQUENCY',
                                     'ALLERGIC_TO_blahblah',
                                     'ALLERGIC_TO_stuff', 'ALLERGIC_TO_baz',
-                                    'SAMPLE2SPECIFIC', 'abc', 'def']
+                                    'SAMPLE2SPECIFIC', 'abc', 'def',
+                                    'COLLECTION_TIMESTAMP']
                            ).set_index('sample_name')
+
+        for k, v in HUMAN_SITE_INVARIANTS['Stool'].items():
+            exp[k] = v
+
         obs = _to_pandas_dataframe(data)
         pdt.assert_frame_equal(obs, exp, check_like=True)
 
     def test_to_pandas_series(self):
         data = self.raw_sample_1
 
-        exp = pd.Series(['foo', 'Omnivore', 'No', 'Unspecified', 'Unspecified',
-                         'Unspecified', 'No', 'true', 'true', 'okay', 'No'],
-                        index=['HOST_SUBJECT_ID', 'DIET_TYPE', 'MULTIVITAMIN',
-                               'PROBIOTIC_FREQUENCY',
-                               'VITAMIN_B_SUPPLEMENT_FREQUENCY',
-                               'VITAMIN_D_SUPPLEMENT_FREQUENCY',
-                               'OTHER_SUPPLEMENT_FREQUENCY',
-                               'ALLERGIC_TO_blahblah',
-                               'ALLERGIC_TO_stuff', 'abc', 'def'],
-                        name='000004216')
+        values = ['foo', 'Omnivore', 'No', 'Unspecified', 'Unspecified',
+                  'Unspecified', 'No', 'true', 'true', 'okay', 'No',
+                  "2013-10-15T09:30:00"]
+        index = ['HOST_SUBJECT_ID', 'DIET_TYPE', 'MULTIVITAMIN',
+                 'PROBIOTIC_FREQUENCY', 'VITAMIN_B_SUPPLEMENT_FREQUENCY',
+                 'VITAMIN_D_SUPPLEMENT_FREQUENCY',
+                 'OTHER_SUPPLEMENT_FREQUENCY',
+                 'ALLERGIC_TO_blahblah', 'ALLERGIC_TO_stuff', 'abc', 'def',
+                 'COLLECTION_TIMESTAMP']
+
+        for k, v in HUMAN_SITE_INVARIANTS['Stool'].items():
+            values.append(v)
+            index.append(k)
+
+        exp = pd.Series(values, index=index, name='000004216')
         exp_multi = set(['ALLERGIC_TO_blahblah', 'ALLERGIC_TO_stuff'])
         obs, obs_multi = _to_pandas_series(data)
-        pdt.assert_series_equal(obs, exp)
+        pdt.assert_series_equal(obs, exp.loc[obs.index])
         self.assertEqual(obs_multi, exp_multi)
 
 

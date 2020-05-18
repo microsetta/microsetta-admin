@@ -1,18 +1,54 @@
 from microsetta_admin._api import APIRequest
+from microsetta_admin.metadata_constants import HUMAN_SITE_INVARIANTS
 from collections import Counter
 import re
 import pandas as pd
 
 
-def retrieve_metadata(sample_barcodes, remove_columns_for_ebi):
+EBI_REMOVE = ['ABOUT_YOURSELF_TEXT', 'ANTIBIOTIC_CONDITION',
+              'ANTIBIOTIC_MED',
+              'BIRTH_MONTH', 'CAT_CONTACT', 'CAT_LOCATION',
+              'CONDITIONS_MEDICATION', 'DIET_RESTRICTIONS_LIST',
+              'DOG_CONTACT',
+              'DOG_LOCATION', 'GENDER', 'MEDICATION_LIST',
+              'OTHER_CONDITIONS_LIST', 'PREGNANT_DUE_DATE',
+              'RACE_OTHER',
+              'RELATIONSHIPS_WITH_OTHERS_IN_STUDY',
+              'SPECIAL_RESTRICTIONS',
+              'SUPPLEMENTS', 'TRAVEL_LOCATIONS_LIST', 'ZIP_CODE',
+              'WILLING_TO_BE_CONTACTED', 'pets_other_freetext']
+
+
+def drop_private_columns(df):
+    """Remove columns that should not be shared publicly
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The dataframe to operate on
+
+    Returns
+    -------
+    pd.DataFrame
+        The filtered dataframe
+    """
+    # The personal microbiome survey contains additional fields that are
+    # sensitive in nature
+    pm_remove = {c.lower() for c in df.columns if c.lower().startswith('pm_')}
+
+    remove = pm_remove | {c.lower() for c in EBI_REMOVE}
+    to_drop = [c for c in df.columns if c.lower() in remove]
+
+    return df.drop(columns=to_drop, inplace=False)
+
+
+def retrieve_metadata(sample_barcodes):
     """Retrieve all sample metadata for the provided barcodes
 
     Parameters
     ----------
     sample_barcodes : Iterable
         The barcodes to request
-    remove_columns_for_ebi : boolean
-        If True, remove columns of data that cannot be submitted to EBI.
 
     Returns
     -------
@@ -31,7 +67,8 @@ def retrieve_metadata(sample_barcodes, remove_columns_for_ebi):
     fetched = []
     for sample_barcode in set(sample_barcodes):
         barcode_metadata, errors = _fetch_barcode_metadata(sample_barcode)
-
+        import json
+        print(json.dumps(barcode_metadata, indent=2))
         if errors is not None:
             error_report.append(errors)
             continue
@@ -42,7 +79,7 @@ def retrieve_metadata(sample_barcodes, remove_columns_for_ebi):
         error_report.append({"error": "No metadata was obtained"})
         df = pd.DataFrame()
     else:
-        df = _to_pandas_dataframe(barcode_metadata)
+        df = _to_pandas_dataframe(fetched)
 
     return df, error_report
 
@@ -101,10 +138,25 @@ def _to_pandas_series(metadata):
     """
     name = metadata['sample_barcode']
     hsi = metadata['host_subject_id']
+    source_type = metadata["source_type"]
 
-    values = [hsi]
-    index = ['HOST_SUBJECT_ID']
+    sample_detail = metadata['sample']
+    collection_timestamp = sample_detail['datetime_collected']
 
+    if source_type == 'human':
+        sample_type = sample_detail['site']
+        sample_invariants = HUMAN_SITE_INVARIANTS[sample_type]
+    elif source_type == 'animal':
+        sample_type = sample_detail['site']
+        sample_invariants = {}
+    else:
+        sample_type = sample_detail['source']['description']
+        sample_invariants = {}
+
+    values = [hsi, collection_timestamp]
+    index = ['HOST_SUBJECT_ID', 'COLLECTION_TIMESTAMP']
+
+    # TODO: denote sample projects
     observed_multiselect = set()
     for survey in metadata['survey_answers']:
         for shortname, answer in survey['response'].values():
@@ -117,6 +169,10 @@ def _to_pandas_series(metadata):
             else:
                 values.append(answer)
                 index.append(shortname)
+
+    for variable, value in sample_invariants.items():
+        index.append(variable)
+        values.append(value)
 
     return pd.Series(values, index=index, name=name), observed_multiselect
 

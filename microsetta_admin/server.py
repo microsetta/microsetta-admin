@@ -306,44 +306,30 @@ def metadata_pulldown():
                                    **build_login_variables(),
                                    search_error="Must specify a valid file")
         file = request.files['file']
+        print(file)
         try:
-            df = pd.read_csv(file, dtype=str)
+            barcodes_df = pd.read_csv(file, dtype=str)
         except Exception as e:
             return render_template('metadata_pulldown.html',
                                    **build_login_variables(),
                                    search_error=e)
-        sample_barcodes = df['sample_name'].tolist()
+        sample_barcodes = barcodes_df['sample_name'].tolist()
     else:
         raise BadRequest()
 
-    transformed_dict, errors = metadata_util.retrieve_metadata(sample_barcodes)
+    df, errors = metadata_util.retrieve_metadata(sample_barcodes)
 
     # Strangely, these api requests are returning an html error page rather
     # than a machine parseable json error response object with message.
     # This is almost certainly due to error handling for the cohosted minimal
     # client.  In future, we should just pass down whatever the api says here.
     if len(errors) == 0:
-        df = pd.DataFrame.from_dict(transformed_dict, orient="index")
-
-        ebi_remove = ['ABOUT_YOURSELF_TEXT', 'ANTIBIOTIC_CONDITION',
-                      'ANTIBIOTIC_MED',
-                      'BIRTH_MONTH', 'CAT_CONTACT', 'CAT_LOCATION',
-                      'CONDITIONS_MEDICATION', 'DIET_RESTRICTIONS_LIST',
-                      'DOG_CONTACT',
-                      'DOG_LOCATION', 'GENDER', 'MEDICATION_LIST',
-                      'OTHER_CONDITIONS_LIST', 'PREGNANT_DUE_DATE',
-                      'RACE_OTHER',
-                      'RELATIONSHIPS_WITH_OTHERS_IN_STUDY',
-                      'SPECIAL_RESTRICTIONS',
-                      'SUPPLEMENTS', 'TRAVEL_LOCATIONS_LIST', 'ZIP_CODE',
-                      'WILLING_TO_BE_CONTACTED', 'pets_other_freetext']
-
-        df = df.drop(ebi_remove, axis=1, errors="ignore")
+        df = metadata_util.drop_private_columns(df)
 
         # TODO:  Streaming direct from pandas is a pain.  Need to search for
         #  better ways to iterate and chunk this file as we generate it
         strstream = io.StringIO()
-        df.to_csv(strstream, sep='\t')
+        df.to_csv(strstream, sep='\t', index=True, header=True)
 
         # TODO: utf-8 or utf-16 encoding??
         bytestream = io.BytesIO()
