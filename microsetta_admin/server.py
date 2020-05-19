@@ -306,7 +306,6 @@ def metadata_pulldown():
                                    **build_login_variables(),
                                    search_error="Must specify a valid file")
         file = request.files['file']
-        print(file)
         try:
             barcodes_df = pd.read_csv(file, dtype=str)
         except Exception as e:

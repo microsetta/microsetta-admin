@@ -67,8 +67,6 @@ def retrieve_metadata(sample_barcodes):
     fetched = []
     for sample_barcode in set(sample_barcodes):
         barcode_metadata, errors = _fetch_barcode_metadata(sample_barcode)
-        import json
-        print(json.dumps(barcode_metadata, indent=2))
         if errors is not None:
             error_report.append(errors)
             continue
