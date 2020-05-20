@@ -307,4 +307,3 @@ for site in HUMAN_SITE_INVARIANTS.values():
         'PHYSICAL_SPECIMEN_REMAINING': 'Yes',
         'PHYSICAL_SPECIMEN_LOCATION': 'UCSDMI',
         'HOST_COMMON_NAME': 'human'})
-

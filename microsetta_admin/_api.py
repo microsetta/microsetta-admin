@@ -2,8 +2,8 @@
 
 import requests
 from microsetta_admin.config_manager import SERVER_CONFIG
-from flask import redirect, render_template, session
-from urllib.parse import quote, urljoin
+from flask import redirect, session
+from urllib.parse import urljoin
 
 
 TOKEN_KEY_NAME = 'token'
