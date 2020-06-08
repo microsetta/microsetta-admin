@@ -1,5 +1,3 @@
-import json
-
 import jwt
 from flask import render_template, Flask, request, session, send_file
 import secrets
