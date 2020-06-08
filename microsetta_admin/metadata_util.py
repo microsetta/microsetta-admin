@@ -19,6 +19,86 @@ EBI_REMOVE = ['ABOUT_YOURSELF_TEXT', 'ANTIBIOTIC_CONDITION',
               'WILLING_TO_BE_CONTACTED', 'pets_other_freetext']
 
 
+#def _add_age_years(df):
+#    """Add AGE_YEARS inplace to the dataframe"""
+#    fields = {'BIRTH_YEAR': pd.to_numeric,
+#              'BIRTH_MONTH': pd.to_numeric,
+#              'HOST_COMMON_NAME': lambda x, errors: str(x),
+#              'COLLECTION_TIMESTAMP': pd.to_datetime}
+#
+#    if set(fields).issubset(df.columns):
+#        filtered = df[list(fields)].copy()
+#        for c in filtered.columns:
+#            filtered[c] = fields[c](df[col], errors='coerce')
+#
+#        births = []
+#        for idx, row in filtered.iterrows():
+#            dt = None
+#            year = row['BIRTH_YEAR']
+#            month = row['BIRTH_MONTH']
+#            if not pd.isnull(year) \
+#                    and not pd.isnull(month):
+#                dt = datetime(year, month)
+#
+#        filtered['birth'] = [datetime(
+#        birth_year = cast['BIRTH_YEAR']
+#        birth_month = cast['BIRTH_MONTH']
+#        hcn = cast['HOST_COMMON_NAME']
+#        timestamp = cast['COLLECITON_TIMESTAMP']
+#
+#        birth_year_not_nulls = ~(birth_year.isnull())
+#        birth_month_not_nulls = ~(birth_month.isnull())
+#        hcn = hcn == 'human'
+#        timestamp_not_nulls = ~(timestamp.isnull())
+#
+#        valid = np.logical_and.reduce([birth_year_not_nulls,
+#                                       birth_month_not_nulls,
+#                                       hcn, timestamp_not_nulls])
+#
+#        births = pd.Series(
+#    else:
+#        age_years = [None] * len(df)
+#
+#    df['AGE_YEARS'] = age_years
+
+
+def add_bmi(df):
+    foo = """
+                  # convert numeric fields
+                for field in ('HEIGHT_CM', 'WEIGHT_KG'):
+                    md[1][barcode][field] = sub('[^0-9.]',
+                                                '', md[1][barcode][field])
+                    try:
+                        md[1][barcode][field] = float(md[1][barcode][field])
+                    except ValueError:
+                        md[1][barcode][field] = 'Unspecified'
+
+                # Correct height units
+                if responses['HEIGHT_UNITS'] == 'inches' and \
+                        isinstance(md[1][barcode]['HEIGHT_CM'], float):
+                    md[1][barcode]['HEIGHT_CM'] = \
+                        2.54 * md[1][barcode]['HEIGHT_CM']
+                md[1][barcode]['HEIGHT_UNITS'] = 'centimeters'
+
+                # Correct weight units
+                if responses['WEIGHT_UNITS'] == 'pounds' and \
+                        isinstance(md[1][barcode]['WEIGHT_KG'], float):
+                    md[1][barcode]['WEIGHT_KG'] = \
+                        md[1][barcode]['WEIGHT_KG'] / 2.20462
+                md[1][barcode]['WEIGHT_UNITS'] = 'kilograms'
+
+                if all([isinstance(md[1][barcode]['WEIGHT_KG'], float),
+                        md[1][barcode]['WEIGHT_KG'] != 0.0,
+                        isinstance(md[1][barcode]['HEIGHT_CM'], float),
+                        md[1][barcode]['HEIGHT_CM'] != 0.0]):
+                    md[1][barcode]['BMI'] = md[1][barcode]['WEIGHT_KG'] / \
+                        (md[1][barcode]['HEIGHT_CM'] / 100)**2
+                else:
+                    md[1][barcode]['BMI'] = 'Unspecified'
+    """
+
+
+
 def drop_private_columns(df):
     """Remove columns that should not be shared publicly
 
@@ -66,29 +146,112 @@ def retrieve_metadata(sample_barcodes):
 
     fetched = []
     for sample_barcode in set(sample_barcodes):
-        barcode_metadata, errors = _fetch_barcode_metadata(sample_barcode)
+        bc_md, errors = _fetch_barcode_metadata(sample_barcode)
         if errors is not None:
             error_report.append(errors)
             continue
 
-        fetched.append(barcode_metadata)
+        fetched.append(bc_md)
 
+    df = pd.DataFrame()
     if len(fetched) == 0:
         error_report.append({"error": "No metadata was obtained"})
-        df = pd.DataFrame()
     else:
-        df = _to_pandas_dataframe(fetched)
+        survey_templates, st_errors = _fetch_observed_survey_templates(fetched)
+        if st_errors is not None:
+            error_report.append(st_errors)
+        else:
+            df = _to_pandas_dataframe(fetched, survey_templates)
 
     return df, error_report
 
 
-def _to_pandas_dataframe(metadatas):
+def _fetch_observed_survey_templates(sample_metadata):
+    """Determine which templates to obtain and then fetch
+
+    Parameters
+    ----------
+    sample_metadata : list of dict
+        Each element corresponds to the structure obtained from
+        _fetch_barcode_metadata
+
+    Returns
+    -------
+    dict
+        The survey template IDs as keys, and the Vue form representation of
+        each survey
+    dict or None
+        Any error information associated with the retreival. If an error is
+        observed, the survey responses should not be considered valid.
+    """
+    errors = {}
+
+    templates = {}
+    for bc_md in sample_metadata:
+        account_id = bc_md['account']['id']
+        source_id = bc_md['source']['id']
+        observed_templates = {s['template'] for s in bc_md['survey_answers']}
+
+        # it doesn't matter which set of IDs we use but they need to be valid
+        # for the particular survey template
+        for template_id in observed_templates:
+            if template_id not in templates:
+                templates[template_id] = {'account_id': account_id,
+                                          'source_id': source_id}
+
+    surveys = {}
+    for template_id, ids in templates.items():
+        survey, error = _fetch_survey_template(template_id, ids)
+        if error:
+            errors[template_id] = error
+        else:
+            surveys[template_id] = survey
+
+    return surveys, errors if errors else None
+
+
+def _fetch_survey_template(template_id, ids):
+    """Fetch the survey structure to get full multi-choice detail
+
+    Parameters
+    ----------
+    template_id : int
+        The survey template ID to fetch
+    ids : dict
+        An account and source ID to use
+
+    Returns
+    -------
+    dict
+        The survey structure as returned from the private API
+    dict or None
+        Any error information associated with the retreival. If an error is
+        observed, the survey responses should not be considered valid.
+    """
+    errors = None
+
+    ids['template_id'] = template_id
+    url = ("/api/accounts/%(account_id)s/sources/%(source_id)s/"
+           "survey_templates/%(template_id)d?language_tag=en-US")
+
+    status, response = APIRequest.get(url % ids)
+    if status != 200:
+        errors = {"ids": ids,
+                  "error": str(status) + " from api"}
+
+    return response, errors
+
+
+def _to_pandas_dataframe(metadatas, survey_templates):
     """Convert the raw barcode metadata into a DataFrame
 
     Parameters
     ----------
     metadatas : list of dict
         The raw metadata obtained from the private API
+    survey_templates : dict
+        Raw survey template data for the surveys represented by
+        the metadatas
 
     Returns
     -------
@@ -96,20 +259,14 @@ def _to_pandas_dataframe(metadatas):
         The fully constructed sample metadata
     """
     transformed = []
-    multiselects = set()
 
+    multiselect_map = _construct_multiselect_map(survey_templates)
     for metadata in metadatas:
-        as_series, observed_multiselect = _to_pandas_series(metadata)
+        as_series = _to_pandas_series(metadata, multiselect_map)
         transformed.append(as_series)
-        multiselects.update(observed_multiselect)
 
     df = pd.DataFrame(transformed)
     df.index.name = 'sample_name'
-
-    # update reponse where someone did not check a multi-select box
-    for multiselect in multiselects:
-        nulls = df[multiselect].isnull()
-        df.loc[nulls, multiselect] = 'false'
 
     # fill in any other nulls that may be present in the frame
     # as could happen if not all individuals took all surveys
@@ -221,12 +378,22 @@ def _build_col_name(col_name, multiselect_answer):
         and wine. The basename would be "alcohol", one multiselect_answer
         would be "beer", and the formatted column name would be
         "alcohol_beer".
+
+    Raises
+    ------
+    ValueError
+        If there are removed characters as it may create an unsafe column name.
+        For example, "A+" and "A-" for blood types would both map to "A".
     """
     # replace spaces with _
     multiselect_answer = multiselect_answer.replace(' ', '_')
 
     # remove any non-alphanumeric character (except for _)
-    multiselect_answer = re.sub('[^0-9a-zA-Z_]+', '', multiselect_answer)
+    reduced = re.sub('[^0-9a-zA-Z_]+', '', multiselect_answer)
+    if multiselect_answer != reduced:
+        raise ValueError("An unsafe column name was build: "
+                         "%s -> %s" % (multiselect_answer, reduced))
+
     return f"{col_name}_{multiselect_answer}"
 
 

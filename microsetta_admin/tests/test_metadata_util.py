@@ -9,6 +9,9 @@ from microsetta_admin.metadata_util import (_build_col_name,
                                             _fetch_barcode_metadata,
                                             _to_pandas_series,
                                             _to_pandas_dataframe,
+                                            _fetch_survey_template,
+                                            _fetch_observed_survey_templates,
+                                            #_add_age_years,
                                             drop_private_columns)
 
 
@@ -18,6 +21,8 @@ class MetadataUtilTests(TestBase):
                 'sample_barcode': '000004216',
                 'host_subject_id': 'foo',
                 'source_type': 'human',
+                'account': {'id': 'foo'},
+                'source': {'id': 'bar'},
                 "sample": {
                     "sample_projects": ["American Gut Project"],
                     "datetime_collected": "2013-10-15T09:30:00",
@@ -35,7 +40,7 @@ class MetadataUtilTests(TestBase):
                                   '6': ['OTHER_SUPPLEMENT_FREQUENCY', 'No'],
                                   '9': ['ALLERGIC_TO', ['blahblah',
                                                         'stuff']]}},
-                    {'template': 'blah',
+                    {'template': 10,
                      'response': {'1': ['abc', 'okay'],
                                   '2': ['def', 'No']}}]}
 
@@ -43,6 +48,8 @@ class MetadataUtilTests(TestBase):
                 'sample_barcode': 'XY0004216',
                 'host_subject_id': 'bar',
                 'source_type': 'human',
+                'account': {'id': 'baz'},
+                'source': {'id': 'bonkers'},
                 "sample": {
                     "sample_projects": ["American Gut Project"],
                     "datetime_collected": "2013-10-15T09:30:00",
@@ -63,6 +70,34 @@ class MetadataUtilTests(TestBase):
                                                         'stuff']]}}]}
         super().setUp()
 
+    def test_fetch_observed_survey_templates(self):
+        res = {'a': 'dict', 'of': 'stuff'}
+        self.mock_get.return_value.status_code = 200
+        self.mock_get.return_value.json = lambda: res
+        self.mock_get.return_value.text = json.dumps(res)
+
+        exp = {1: res, 10: res}
+        obs, errors = _fetch_observed_survey_templates([self.raw_sample_1,
+                                                        self.raw_sample_2])
+
+        self.assertEqual(obs, exp)
+        self.assertEqual(errors, None)
+
+    def test_fetch_survey_template(self):
+        res = {'a': 'dict', 'of': 'stuff'}
+        self.mock_get.return_value.status_code = 200
+        self.mock_get.return_value.json = lambda: res
+        self.mock_get.return_value.text = json.dumps(res)
+
+        survey, errors = _fetch_survey_template(1, {'account_id': 'foo',
+                                                    'source_id': 'bar'})
+
+        # verify we obtained data. it is not the responsibility of this
+        # test to assert the structure of the metadata as that is the scope of
+        # the admin interfaces on the private API
+        self.assertEqual(survey, res)
+        self.assertEqual(errors, None)
+
     def test_drop_private_columns(self):
         df = pd.DataFrame([[1, 2, 3], [4, 5, 6]],
                           columns=['pM_foo', 'okay', 'ABOUT_yourSELF_TEXT'])
@@ -72,11 +107,15 @@ class MetadataUtilTests(TestBase):
 
     def test_build_col_name(self):
         tests_and_expected = [('foo', 'bar', 'foo_bar'),
-                              ('foo', 'bar baz', 'foo_bar_baz'),
-                              ('foo', "bar'/%baz", 'foo_barbaz')]
+                              ('foo', 'bar baz', 'foo_bar_baz')]
         for col_name, value, exp in tests_and_expected:
             obs = _build_col_name(col_name, value)
             self.assertEqual(obs, exp)
+
+        tests = [('foo', 'bar+'), ('foo', 'bar-')]
+        for col_name, value in tests:
+            with self.assertRaisesRegex(ValueError, "unsafe column name"):
+                _build_col_name(col_name, value)
 
     def test_find_duplicates(self):
         exp = {'foo', 'bar'}
@@ -169,6 +208,39 @@ class MetadataUtilTests(TestBase):
         obs, obs_multi = _to_pandas_series(data)
         pdt.assert_series_equal(obs, exp.loc[obs.index])
         self.assertEqual(obs_multi, exp_multi)
+
+    def test_age_years(self):
+        df = pd.DataFrame([['1970', '10', 'human', "2013-10-15T09:30:00"],
+                           ['1980', '11', 'animal',"2013-11-15T09:30:00"],
+                           [None, '4', 'animal',"2013-11-15T09:30:00"],
+                           # toss in some nonsense...
+                           ['1990', '4', 'environmental',
+                            "2013-11-15T09:30:00"]],
+                          columns=['BIRTH_YEAR', 'BIRTH_MONTH', 'HOST_COMMON_NAME',
+                              'COLLECTION_TIMESTAMP'])
+        exp = df.copy()
+        exp['AGE_YEARS'] = ['43.0', '33.0', None, None]
+        _add_age_years(df)
+        pdt.assert_frame_equal(df, exp)
+
+    def test_bmi(self):
+        pass
+
+        # TODO: normalize height and weight before BMI calc
+        #df = pd.DataFrame([['75', '170', 'human', 'kilograms', 'centimeters'],
+        #                   ['150', '65', 'animal', 'pounds', 'inches'],
+        #                   ['150', '65', 'human', 'pounds', 'inches'],
+        #                   ['150', '65', 'human', None, 'inches'],
+        #                   ['150', '65', 'human', 'pounds', None],
+        #                   ['150', '170', 'human', 'pounds', 'centimeters'],
+        #                   ['75', '65', 'human', 'kilograms', 'inches'],
+        #                   [None, '4', 'human', 'pounds', 'inches'],
+        #                   ['1990', '4', 'environmental']],
+        #                  columns=['WEIGHT_KG', 'HEIGHT_CM',
+        #                           'HOST_COMMON_NAME', 'WEIGHT_UNITS',
+        #                           'HEIGHT_UNITS'])
+        #exp = df.copy()
+        #pdt.assert_frame_equal(df, exp)
 
 
 if __name__ == '__main__':
