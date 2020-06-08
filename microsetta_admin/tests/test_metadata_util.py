@@ -11,6 +11,7 @@ from microsetta_admin.metadata_util import (_build_col_name,
                                             _to_pandas_dataframe,
                                             _fetch_survey_template,
                                             _fetch_observed_survey_templates,
+                                            _construct_multiselect_map,
                                             #_add_age_years,
                                             drop_private_columns)
 
@@ -68,7 +69,30 @@ class MetadataUtilTests(TestBase):
                                   '123': ['SAMPLE2SPECIFIC', 'foobar'],
                                   '9': ['ALLERGIC_TO', ['baz',
                                                         'stuff']]}}]}
+
+        self.fake_survey_template = {
+            'survey_template_text': {
+                'groups': [
+                    {'fields': [
+                        {'id': "5",
+                         'shortname': 'foo',
+                         'multi': False,
+                         'values': ['a', 'b', 'c']},
+                        {'id': "7",
+                         'shortname': 'bar',
+                         'multi': True,
+                         'values': ['e', 'f', 'g  h']}
+                        ]}]}}
+
         super().setUp()
+
+    def test_construct_multiselect_map(self):
+        templates = {1: self.fake_survey_template}
+        exp = {(1, '7'): {'e': 'bar_e',
+                          'f': 'bar_f',
+                          'g  h': 'bar_g__h'}}
+        obs = _construct_multiselect_map(templates)
+        self.assertEqual(obs, exp)
 
     def test_fetch_observed_survey_templates(self):
         res = {'a': 'dict', 'of': 'stuff'}

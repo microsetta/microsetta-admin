@@ -275,6 +275,43 @@ def _to_pandas_dataframe(metadatas, survey_templates):
     return df
 
 
+def _construct_multiselect_map(survey_templates):
+    """Identify multi-select questions, and construct stable names
+
+    Parameters
+    ----------
+    survey_templates : dict
+        Raw survey template data for the surveys represented by
+        the metadatas
+
+    Returns
+    -------
+    dict
+        A dict keyed by (template_id, question_id) and valued by
+    """
+    result = {}
+    for template_id, template in survey_templates.items():
+        template_text = template['survey_template_text']
+
+        for group in template_text['groups']:
+            for field in group['fields']:
+                if not field['multi']:
+                    continue
+
+                base = field['shortname']
+                choices = field['values']
+                qid = field['id']
+
+                multi_values = {}
+                for choice in choices:
+                    new_shortname = _build_col_name(base, choice)
+                    multi_values[choice] = new_shortname
+
+                result[(template_id, qid)] = multi_values
+
+    return result
+
+
 def _to_pandas_series(metadata):
     """Convert the sample metadata object from the private API to a pd.Series
 
@@ -387,6 +424,7 @@ def _build_col_name(col_name, multiselect_answer):
     """
     # replace spaces with _
     multiselect_answer = multiselect_answer.replace(' ', '_')
+    multiselect_answer = multiselect_answer.replace(',', '')
 
     # remove any non-alphanumeric character (except for _)
     reduced = re.sub('[^0-9a-zA-Z_]+', '', multiselect_answer)
