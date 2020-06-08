@@ -12,7 +12,6 @@ from microsetta_admin.metadata_util import (_build_col_name,
                                             _fetch_survey_template,
                                             _fetch_observed_survey_templates,
                                             _construct_multiselect_map,
-                                            #_add_age_years,
                                             drop_private_columns)
 
 
@@ -21,9 +20,9 @@ class MetadataUtilTests(TestBase):
         self.raw_sample_1 = {
                 'sample_barcode': '000004216',
                 'host_subject_id': 'foo',
-                'source_type': 'human',
                 'account': {'id': 'foo'},
-                'source': {'id': 'bar'},
+                'source': {'id': 'bar',
+                           'source_type': 'human'},
                 "sample": {
                     "sample_projects": ["American Gut Project"],
                     "datetime_collected": "2013-10-15T09:30:00",
@@ -48,9 +47,9 @@ class MetadataUtilTests(TestBase):
         self.raw_sample_2 = {
                 'sample_barcode': 'XY0004216',
                 'host_subject_id': 'bar',
-                'source_type': 'human',
                 'account': {'id': 'baz'},
-                'source': {'id': 'bonkers'},
+                'source': {'id': 'bonkers',
+                           'source_type': 'human'},
                 "sample": {
                     "sample_projects": ["American Gut Project"],
                     "datetime_collected": "2013-10-15T09:30:00",
@@ -155,11 +154,6 @@ class MetadataUtilTests(TestBase):
             obs = _build_col_name(col_name, value)
             self.assertEqual(obs, exp)
 
-        tests = [('foo', 'bar+'), ('foo', 'bar-')]
-        for col_name, value in tests:
-            with self.assertRaisesRegex(ValueError, "unsafe column name"):
-                _build_col_name(col_name, value)
-
     def test_find_duplicates(self):
         exp = {'foo', 'bar'}
         exp_errors = {'barcode': ['foo', 'bar'],
@@ -256,41 +250,7 @@ class MetadataUtilTests(TestBase):
         ms_map = _construct_multiselect_map(templates)
         exp = pd.Series(values, index=index, name='000004216')
         obs = _to_pandas_series(data, ms_map)
-        print(obs)
         pdt.assert_series_equal(obs, exp.loc[obs.index])
-
-    def test_age_years(self):
-        df = pd.DataFrame([['1970', '10', 'human', "2013-10-15T09:30:00"],
-                           ['1980', '11', 'animal',"2013-11-15T09:30:00"],
-                           [None, '4', 'animal',"2013-11-15T09:30:00"],
-                           # toss in some nonsense...
-                           ['1990', '4', 'environmental',
-                            "2013-11-15T09:30:00"]],
-                          columns=['BIRTH_YEAR', 'BIRTH_MONTH', 'HOST_COMMON_NAME',
-                              'COLLECTION_TIMESTAMP'])
-        exp = df.copy()
-        exp['AGE_YEARS'] = ['43.0', '33.0', None, None]
-        _add_age_years(df)
-        pdt.assert_frame_equal(df, exp)
-
-    def test_bmi(self):
-        pass
-
-        # TODO: normalize height and weight before BMI calc
-        #df = pd.DataFrame([['75', '170', 'human', 'kilograms', 'centimeters'],
-        #                   ['150', '65', 'animal', 'pounds', 'inches'],
-        #                   ['150', '65', 'human', 'pounds', 'inches'],
-        #                   ['150', '65', 'human', None, 'inches'],
-        #                   ['150', '65', 'human', 'pounds', None],
-        #                   ['150', '170', 'human', 'pounds', 'centimeters'],
-        #                   ['75', '65', 'human', 'kilograms', 'inches'],
-        #                   [None, '4', 'human', 'pounds', 'inches'],
-        #                   ['1990', '4', 'environmental']],
-        #                  columns=['WEIGHT_KG', 'HEIGHT_CM',
-        #                           'HOST_COMMON_NAME', 'WEIGHT_UNITS',
-        #                           'HEIGHT_UNITS'])
-        #exp = df.copy()
-        #pdt.assert_frame_equal(df, exp)
 
 
 if __name__ == '__main__':

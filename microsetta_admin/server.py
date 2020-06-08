@@ -300,19 +300,23 @@ def metadata_pulldown():
                                    **build_login_variables())
         sample_barcodes = [sample_barcode]
     elif request.method == 'POST':
+        allow_missing = request.form.get('allow_missing_samples', False)
+
         if 'file' not in request.files or \
                 request.files['file'].filename == '':
+            search_error = [{'error': 'Must specify a valid file'}]
             return render_template('metadata_pulldown.html',
                                    **build_login_variables(),
-                                   search_error="Must specify a valid file")
+                                   search_error=search_error)
         file = request.files['file']
         try:
             barcodes_df = pd.read_csv(file, dtype=str)
-        except Exception as e:
+            sample_barcodes = barcodes_df['sample_name'].tolist()
+        except Exception as e:  # noqa
+            search_error = [{'error': 'Could not parse barcodes file'}]
             return render_template('metadata_pulldown.html',
                                    **build_login_variables(),
-                                   search_error=e)
-        sample_barcodes = barcodes_df['sample_name'].tolist()
+                                   search_error=search_error)
     else:
         raise BadRequest()
 
@@ -322,7 +326,7 @@ def metadata_pulldown():
     # than a machine parseable json error response object with message.
     # This is almost certainly due to error handling for the cohosted minimal
     # client.  In future, we should just pass down whatever the api says here.
-    if len(errors) == 0:
+    if len(errors) == 0 or allow_missing:
         df = metadata_util.drop_private_columns(df)
 
         # TODO:  Streaming direct from pandas is a pain.  Need to search for
@@ -346,10 +350,11 @@ def metadata_pulldown():
                          last_modified=None,
                          )
     else:
+
         return render_template('metadata_pulldown.html',
                                **build_login_variables(),
                                info={'barcodes': sample_barcodes},
-                               search_error=json.dumps(errors, indent=2))
+                               search_error=errors)
 
 
 @app.route('/authrocket_callback')

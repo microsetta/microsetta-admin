@@ -19,86 +19,6 @@ EBI_REMOVE = ['ABOUT_YOURSELF_TEXT', 'ANTIBIOTIC_CONDITION',
               'WILLING_TO_BE_CONTACTED', 'pets_other_freetext']
 
 
-#def _add_age_years(df):
-#    """Add AGE_YEARS inplace to the dataframe"""
-#    fields = {'BIRTH_YEAR': pd.to_numeric,
-#              'BIRTH_MONTH': pd.to_numeric,
-#              'HOST_COMMON_NAME': lambda x, errors: str(x),
-#              'COLLECTION_TIMESTAMP': pd.to_datetime}
-#
-#    if set(fields).issubset(df.columns):
-#        filtered = df[list(fields)].copy()
-#        for c in filtered.columns:
-#            filtered[c] = fields[c](df[col], errors='coerce')
-#
-#        births = []
-#        for idx, row in filtered.iterrows():
-#            dt = None
-#            year = row['BIRTH_YEAR']
-#            month = row['BIRTH_MONTH']
-#            if not pd.isnull(year) \
-#                    and not pd.isnull(month):
-#                dt = datetime(year, month)
-#
-#        filtered['birth'] = [datetime(
-#        birth_year = cast['BIRTH_YEAR']
-#        birth_month = cast['BIRTH_MONTH']
-#        hcn = cast['HOST_COMMON_NAME']
-#        timestamp = cast['COLLECITON_TIMESTAMP']
-#
-#        birth_year_not_nulls = ~(birth_year.isnull())
-#        birth_month_not_nulls = ~(birth_month.isnull())
-#        hcn = hcn == 'human'
-#        timestamp_not_nulls = ~(timestamp.isnull())
-#
-#        valid = np.logical_and.reduce([birth_year_not_nulls,
-#                                       birth_month_not_nulls,
-#                                       hcn, timestamp_not_nulls])
-#
-#        births = pd.Series(
-#    else:
-#        age_years = [None] * len(df)
-#
-#    df['AGE_YEARS'] = age_years
-
-
-def add_bmi(df):
-    foo = """
-                  # convert numeric fields
-                for field in ('HEIGHT_CM', 'WEIGHT_KG'):
-                    md[1][barcode][field] = sub('[^0-9.]',
-                                                '', md[1][barcode][field])
-                    try:
-                        md[1][barcode][field] = float(md[1][barcode][field])
-                    except ValueError:
-                        md[1][barcode][field] = 'Unspecified'
-
-                # Correct height units
-                if responses['HEIGHT_UNITS'] == 'inches' and \
-                        isinstance(md[1][barcode]['HEIGHT_CM'], float):
-                    md[1][barcode]['HEIGHT_CM'] = \
-                        2.54 * md[1][barcode]['HEIGHT_CM']
-                md[1][barcode]['HEIGHT_UNITS'] = 'centimeters'
-
-                # Correct weight units
-                if responses['WEIGHT_UNITS'] == 'pounds' and \
-                        isinstance(md[1][barcode]['WEIGHT_KG'], float):
-                    md[1][barcode]['WEIGHT_KG'] = \
-                        md[1][barcode]['WEIGHT_KG'] / 2.20462
-                md[1][barcode]['WEIGHT_UNITS'] = 'kilograms'
-
-                if all([isinstance(md[1][barcode]['WEIGHT_KG'], float),
-                        md[1][barcode]['WEIGHT_KG'] != 0.0,
-                        isinstance(md[1][barcode]['HEIGHT_CM'], float),
-                        md[1][barcode]['HEIGHT_CM'] != 0.0]):
-                    md[1][barcode]['BMI'] = md[1][barcode]['WEIGHT_KG'] / \
-                        (md[1][barcode]['HEIGHT_CM'] / 100)**2
-                else:
-                    md[1][barcode]['BMI'] = 'Unspecified'
-    """
-
-
-
 def drop_private_columns(df):
     """Remove columns that should not be shared publicly
 
@@ -347,7 +267,7 @@ def _to_pandas_series(metadata, multiselect_map):
     """
     name = metadata['sample_barcode']
     hsi = metadata['host_subject_id']
-    source_type = metadata["source_type"]
+    source_type = metadata['source']["source_type"]
 
     sample_detail = metadata['sample']
     collection_timestamp = sample_detail['datetime_collected']
@@ -446,17 +366,12 @@ def _build_col_name(col_name, multiselect_answer):
         If there are removed characters as it may create an unsafe column name.
         For example, "A+" and "A-" for blood types would both map to "A".
     """
-    # replace spaces with _
+    # replace some characters with _
     multiselect_answer = multiselect_answer.replace(' ', '_')
-    multiselect_answer = multiselect_answer.replace(',', '')
+    multiselect_answer = multiselect_answer.replace('-', '_')
 
-    # remove any non-alphanumeric character (except for _)
     reduced = re.sub('[^0-9a-zA-Z_]+', '', multiselect_answer)
-    if multiselect_answer != reduced:
-        raise ValueError("An unsafe column name was build: "
-                         "%s -> %s" % (multiselect_answer, reduced))
-
-    return f"{col_name}_{multiselect_answer}"
+    return f"{col_name}_{reduced}"
 
 
 def _find_duplicates(barcodes):
