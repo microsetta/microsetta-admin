@@ -70,7 +70,7 @@ class MetadataUtilTests(TestBase):
                                   '9': ['ALLERGIC_TO', ['baz',
                                                         'stuff']]}}]}
 
-        self.fake_survey_template = {
+        self.fake_survey_template1 = {
             'survey_template_text': {
                 'groups': [
                     {'fields': [
@@ -84,13 +84,32 @@ class MetadataUtilTests(TestBase):
                          'values': ['e', 'f', 'g  h']}
                         ]}]}}
 
+        self.fake_survey_template2 = {
+            'survey_template_text': {
+                'groups': [
+                    {'fields': [
+                        {'id': "8",
+                         'shortname': 'foo',
+                         'multi': False,
+                         'values': ['a', 'b', 'c']},
+                        {'id': "9",
+                         'shortname': 'ALLERGIC_TO',
+                         'multi': True,
+                         'values': ['x', 'baz', 'stuff', 'blahblah']}
+                        ]}]}}
+
         super().setUp()
 
     def test_construct_multiselect_map(self):
-        templates = {1: self.fake_survey_template}
+        templates = {1: self.fake_survey_template1,
+                     2: self.fake_survey_template2}
         exp = {(1, '7'): {'e': 'bar_e',
                           'f': 'bar_f',
-                          'g  h': 'bar_g__h'}}
+                          'g  h': 'bar_g__h'},
+               (2, '9'): {'x': 'ALLERGIC_TO_x',
+                          'baz': 'ALLERGIC_TO_baz',
+                          'stuff': 'ALLERGIC_TO_stuff',
+                          'blahblah': 'ALLERGIC_TO_blahblah'}}
         obs = _construct_multiselect_map(templates)
         self.assertEqual(obs, exp)
 
@@ -182,13 +201,16 @@ class MetadataUtilTests(TestBase):
 
     def test_to_pandas_dataframe(self):
         data = [self.raw_sample_1, self.raw_sample_2]
+        templates = {1: self.fake_survey_template2}
+
         exp = pd.DataFrame([['000004216', 'foo', 'Omnivore', 'No',
                              'Unspecified', 'Unspecified', 'Unspecified', 'No',
-                             'true', 'true', 'false', 'Missing: not provided',
+                             'true', 'true', 'false', 'false',
+                             'Missing: not provided',
                              'okay', 'No', "2013-10-15T09:30:00"],
                             ['XY0004216', 'bar', 'Vegan', 'Yes', 'Unspecified',
                              'Unspecified', 'Unspecified', 'No',
-                             'false', 'true', 'true', 'foobar',
+                             'false', 'true', 'true', 'false', 'foobar',
                              'Missing: not provided',
                              'Missing: not provided',
                              "2013-10-15T09:30:00"]],
@@ -200,6 +222,7 @@ class MetadataUtilTests(TestBase):
                                     'OTHER_SUPPLEMENT_FREQUENCY',
                                     'ALLERGIC_TO_blahblah',
                                     'ALLERGIC_TO_stuff', 'ALLERGIC_TO_baz',
+                                    'ALLERGIC_TO_x',
                                     'SAMPLE2SPECIFIC', 'abc', 'def',
                                     'COLLECTION_TIMESTAMP']
                            ).set_index('sample_name')
@@ -207,7 +230,7 @@ class MetadataUtilTests(TestBase):
         for k, v in HUMAN_SITE_INVARIANTS['Stool'].items():
             exp[k] = v
 
-        obs = _to_pandas_dataframe(data)
+        obs = _to_pandas_dataframe(data, templates)
         pdt.assert_frame_equal(obs, exp, check_like=True)
 
     def test_to_pandas_series(self):
@@ -227,11 +250,14 @@ class MetadataUtilTests(TestBase):
             values.append(v)
             index.append(k)
 
+        templates = {10: self.fake_survey_template1,
+                     1: self.fake_survey_template2}
+
+        ms_map = _construct_multiselect_map(templates)
         exp = pd.Series(values, index=index, name='000004216')
-        exp_multi = set(['ALLERGIC_TO_blahblah', 'ALLERGIC_TO_stuff'])
-        obs, obs_multi = _to_pandas_series(data)
+        obs = _to_pandas_series(data, ms_map)
+        print(obs)
         pdt.assert_series_equal(obs, exp.loc[obs.index])
-        self.assertEqual(obs_multi, exp_multi)
 
     def test_age_years(self):
         df = pd.DataFrame([['1970', '10', 'human', "2013-10-15T09:30:00"],

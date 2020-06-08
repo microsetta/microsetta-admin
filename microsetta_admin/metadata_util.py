@@ -267,6 +267,19 @@ def _to_pandas_dataframe(metadatas, survey_templates):
 
     df = pd.DataFrame(transformed)
     df.index.name = 'sample_name'
+    included_columns = set(df.columns)
+
+    all_multiselect_columns = {v for ms in multiselect_map.values()
+                               for v in ms.values()}
+
+    # for all reported multiselect columns, remap "null" values to
+    # false
+    for column in all_multiselect_columns & included_columns:
+        df.loc[df[column].isnull(), column] = 'false'
+
+    # add an entry for all multiselect columns which were not reported
+    for column in all_multiselect_columns - set(df.columns):
+        df[column] = 'false'
 
     # fill in any other nulls that may be present in the frame
     # as could happen if not all individuals took all surveys
@@ -312,7 +325,7 @@ def _construct_multiselect_map(survey_templates):
     return result
 
 
-def _to_pandas_series(metadata):
+def _to_pandas_series(metadata, multiselect_map):
     """Convert the sample metadata object from the private API to a pd.Series
 
     Parameters
@@ -320,6 +333,10 @@ def _to_pandas_series(metadata):
     metadata : dict
         The response object from a query to fetch all sample metadata for a
         barcode.
+    multiselect_map : dict
+        A dict keyed by (template_id, question_id) and valued by
+        {"response": "column_name"}. This is used to remap multiselect values
+        to stable fields.
 
     Returns
     -------
@@ -349,15 +366,22 @@ def _to_pandas_series(metadata):
     index = ['HOST_SUBJECT_ID', 'COLLECTION_TIMESTAMP']
 
     # TODO: denote sample projects
-    observed_multiselect = set()
     for survey in metadata['survey_answers']:
-        for shortname, answer in survey['response'].values():
-            if isinstance(answer, list):
+        template = survey['template']
+
+        for qid, (shortname, answer) in survey['response'].items():
+            if (template, qid) in multiselect_map:
+                # if we have a question that is a multiselect
+                assert isinstance(answer, list)
+
+                # pull out the previously computed column names
+                specific_shortnames = multiselect_map[(template, qid)]
                 for selection in answer:
-                    specific_shortname = _build_col_name(shortname, selection)
+                    # determine the column name
+                    specific_shortname = specific_shortnames[selection]
+
                     values.append('true')
                     index.append(specific_shortname)
-                    observed_multiselect.add(specific_shortname)
             else:
                 values.append(answer)
                 index.append(shortname)
@@ -366,7 +390,7 @@ def _to_pandas_series(metadata):
         index.append(variable)
         values.append(value)
 
-    return pd.Series(values, index=index, name=name), observed_multiselect
+    return pd.Series(values, index=index, name=name)
 
 
 def _fetch_barcode_metadata(sample_barcode):
