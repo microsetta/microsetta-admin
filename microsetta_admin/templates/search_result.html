@@ -68,7 +68,7 @@
 
             {% if resource == 'kit' %}
             <div>
-                <br/><p>The following accounts were created using {{ result['supplied_kit_id'] }}</p>
+                <br/><p>The following accounts were created using kit: {{ result['supplied_kit_id'] }}</p>
                 <table id="search_results_created_with_kit" class="display" style="width:100%">
                     <thead>
                         <tr>
@@ -104,6 +104,7 @@
 
             {% if resource == 'samples' %}
             <div>
+                <br/><p>The following samples are associated with kit: {{ result['barcode_info']['kit_id'] }}</p>
                 <table id="search_results_samples" class="display" style="width:100%">
                     <thead>
                         <tr>
