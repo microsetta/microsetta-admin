@@ -18,11 +18,11 @@ class RouteTests(TestBase):
         # server side issues a GET to the API
         self.mock_get.return_value.status_code = 200
 
-        response = self.app.post('/search',
-                                 data={'search_term': '000004216'},
+        response = self.app.post('/search/sample',
+                                 data={'search_samples': '000004216'},
                                  follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'<h3>Microsetta Search Result</h3>', response.data)
+        self.assertIn(b'<h3>Microsetta Search</h3>', response.data)
 
     def test_search_missing_barcode(self):
         # server side issues a GET to the API
@@ -30,11 +30,11 @@ class RouteTests(TestBase):
         self.mock_get.return_value.text = '{}'
         self.mock_get.return_value.json = lambda: {}  # noqa
 
-        response = self.app.post('/search',
-                                 data={'search_term': 'missing'},
+        response = self.app.post('/search/sample',
+                                 data={'search_samples': 'missing'},
                                  follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Sample not found', response.data)
+        self.assertIn(b'Query not found', response.data)
 
     def test_scan_simple(self):
         response = self.app.get('/scan', follow_redirects=True)
