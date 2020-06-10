@@ -1,13 +1,35 @@
 <div>
-    <form action="/search" name="agForm" id="agForm" method="post">
+    <form action="/search/sample" name="form_search_sample" id="form_search_sample" method="post">
         <table>
             <tr>
-                <td><input type="text" name="search_term" id="search_term"></td>
-                <td><input type="submit" value="Go" style="width:50px;">
+                <td><input type="text" name="search_samples" id="search_samples"></td>
+                <td><input type="submit" value="Search sample">
             </tr>
         </table>
         <script>
-           document.agForm.search_term.focus()
+           document.form_search_sample.search_samples.focus()
+        </script>
+    </form>
+    <form action="/search/email" name="form_search_email" id="form_search_email" method="post">
+        <table>
+            <tr>
+                <td><input type="text" name="search_account" id="search_account"></td>
+                <td><input type="submit" value="Search email">
+            </tr>
+        </table>
+        <script>
+           document.form_search_email.search_account.focus()
+        </script>
+    </form>
+    <form action="/search/kit" name="form_search_kit" id="form_search_kit" method="post">
+        <table>
+            <tr>
+                <td><input type="text" name="search_kit" id="search_kit"></td>
+                <td><input type="submit" value="Search kit ID">
+            </tr>
+        </table>
+        <script>
+           document.form_search_kit.search_kit.focus()
         </script>
     </form>
 </div>

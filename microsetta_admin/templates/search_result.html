@@ -1,30 +1,137 @@
 {% extends "sitebase.html" %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+<script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" class="init">
+    $(document).ready(function() {
+        {% if resource == 'samples' or resource == 'kit' %}
+        $('#search_results_samples').DataTable();
+        {% endif %}
+
+        {% if resource == 'account' %}
+        $('#search_results_account').DataTable();
+        {% endif %}
+
+        {% if resource == 'kit' %}
+        $('#search_results_created_with_kit').DataTable();
+        {% endif %}
+    } );
+</script>
+{% endblock %}
+
 {% block content %}
-<h3>Microsetta Search Result</h3>
+<h3>Microsetta Search</h3>
 {% include "search_form.html" %}
 {% if 'error_message' in result %}
     <p>{{ result['error_message'] }}</p>
 {% else %}
     <div>
         <div class="result_container">
-            <table class="widetable">
-                <th>Barcode</th>
-                <th>Sample Site</th>
-                <th>Collected Datetime</th>
-                <th>Scan Date</th>
-                <th>Notes</th>
-                <th>Projects</th>
-                {% for sample in result['kit']['samples'] %}
-                    <tr class="gridrow">
-                        <td>{{ sample['barcode'] }}</td>
-                        <td>{{ sample['site'] }}</td>
-                        <td>{{ sample['datetime_collected'] }}</td>
-                        <td>{{ sample['_scan_date'] }}</td>
-                        <td>{{ sample['notes'] }}</td>
-                        <td>{{ ', '.join(sample['sample_projects']) }}</td>
-                    </tr>
-                {% endfor %}
-            </table>
+            {% if resource == 'account' %}
+            <div>
+                <table id="search_results_account" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>First name</th>
+                            <th>Last name</th>
+                            <th>Email</th>
+                            <th>Account_type</th>
+                            <th>Street</th>
+                            <th>City</th>
+                            <th>State</th>
+                            <th>Country</th>
+                            <th>Postcode</th>
+                            <th>Kit registered with</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for account in result['accounts'] %}
+                        <tr>
+                            <td>{{ account['first_name'] }}</td>
+                            <td>{{ account['last_name'] }}</td>
+                            <td>{{ account['email'] }}</td>
+                            <td>{{ account['account_type'] }}</td>
+                            <td>{{ account['address']['street'] }}</td>
+                            <td>{{ account['address']['city'] }}</td>
+                            <td>{{ account['address']['state'] }}</td>
+                            <td>{{ account['address']['country_code'] }}</td>
+                            <td>{{ account['address']['post_code'] }}</td>
+                            <td>{{ account['created_with_kit_id'] }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            {% if resource == 'kit' %}
+            <div>
+                <br/><p>The following accounts were created using kit: {{ result['supplied_kit_id'] }}</p>
+                <table id="search_results_created_with_kit" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>First name</th>
+                            <th>Last name</th>
+                            <th>Email</th>
+                            <th>Account type</th>
+                            <th>Street</th>
+                            <th>City</th>
+                            <th>State</th>
+                            <th>Country</th>
+                            <th>Postcode</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for account in result['accounts_created'] %}
+                        <tr>
+                            <td>{{ account['first_name'] }}</td>
+                            <td>{{ account['last_name'] }}</td>
+                            <td>{{ account['email'] }}</td>
+                            <td>{{ account['account_type'] }}</td>
+                            <td>{{ account['address']['street'] }}</td>
+                            <td>{{ account['address']['city'] }}</td>
+                            <td>{{ account['address']['state'] }}</td>
+                            <td>{{ account['address']['country_code'] }}</td>
+                            <td>{{ account['address']['post_code'] }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            {% if resource == 'samples' %}
+            <div>
+                <br/><p>The following samples are associated with kit: {{ result['barcode_info']['kit_id'] }}</p>
+                <table id="search_results_samples" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Barcode</th>
+                            <th>Sample Site</th>
+                            <th>Collected Datetime</th>
+                            <th>Scan Date</th>
+                            <th>Notes</th>
+                            <th>Projects</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for sample in result['kit']['samples'] %}
+                        <tr>
+                            <td>{{ sample['barcode'] }}</td>
+                            <td>{{ sample['site'] }}</td>
+                            <td>{{ sample['datetime_collected'] }}</td>
+                            <td>{{ sample['_scan_date'] }}</td>
+                            <td>{{ sample['notes'] }}</td>
+                            <td>{{ ', '.join(sample['sample_projects']) }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
         </div>
     </div>
 {% endif %}

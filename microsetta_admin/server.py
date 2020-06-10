@@ -81,24 +81,45 @@ def home():
     return render_template('sitebase.html', **build_login_variables())
 
 
-@app.route('/search', methods=['GET', 'POST'])
-def search_result():
+@app.route('/search', methods=['GET'])
+def search():
+    return _search()
+
+
+@app.route('/search/sample', methods=['GET', 'POST'])
+def search_sample():
+    return _search('samples')
+
+
+@app.route('/search/kit', methods=['GET', 'POST'])
+def search_kit():
+    return _search('kit')
+
+
+@app.route('/search/email', methods=['GET', 'POST'])
+def search_email():
+    return _search('account')
+
+
+def _search(resource=None):
     if request.method == 'GET':
         return render_template('search.html', **build_login_variables())
     elif request.method == 'POST':
-        query = request.form['search_term']
+        query = request.form['search_%s' % resource]
 
+        print('/api/admin/search/%s/%s' % (resource, query))
         status, result = APIRequest.get(
-                '/api/admin/search/samples/%s' % query)
+                '/api/admin/search/%s/%s' % (resource, query))
 
         if status == 404:
-            result = {'error_message': "Sample not found"}
+            result = {'error_message': "Query not found"}
             return render_template('search_result.html',
                                    **build_login_variables(),
                                    result=result), 200
         elif status == 200:
             return render_template('search_result.html',
                                    **build_login_variables(),
+                                   resource=resource,
                                    result=result), 200
         else:
             return result
