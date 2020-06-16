@@ -1,5 +1,3 @@
-import json
-
 import jwt
 from flask import render_template, Flask, request, session, send_file
 import secrets
@@ -300,50 +298,39 @@ def metadata_pulldown():
                                    **build_login_variables())
         sample_barcodes = [sample_barcode]
     elif request.method == 'POST':
+        allow_missing = request.form.get('allow_missing_samples', False)
+
         if 'file' not in request.files or \
                 request.files['file'].filename == '':
+            search_error = [{'error': 'Must specify a valid file'}]
             return render_template('metadata_pulldown.html',
                                    **build_login_variables(),
-                                   search_error="Must specify a valid file")
+                                   search_error=search_error)
         file = request.files['file']
         try:
-            df = pd.read_csv(file, dtype=str)
-        except Exception as e:
+            barcodes_df = pd.read_csv(file, dtype=str)
+            sample_barcodes = barcodes_df['sample_name'].tolist()
+        except Exception as e:  # noqa
+            search_error = [{'error': 'Could not parse barcodes file'}]
             return render_template('metadata_pulldown.html',
                                    **build_login_variables(),
-                                   search_error=e)
-        sample_barcodes = df['sample_name'].tolist()
+                                   search_error=search_error)
     else:
         raise BadRequest()
 
-    transformed_dict, errors = metadata_util.retrieve_metadata(sample_barcodes)
+    df, errors = metadata_util.retrieve_metadata(sample_barcodes)
 
     # Strangely, these api requests are returning an html error page rather
     # than a machine parseable json error response object with message.
     # This is almost certainly due to error handling for the cohosted minimal
     # client.  In future, we should just pass down whatever the api says here.
-    if len(errors) == 0:
-        df = pd.DataFrame.from_dict(transformed_dict, orient="index")
-
-        ebi_remove = ['ABOUT_YOURSELF_TEXT', 'ANTIBIOTIC_CONDITION',
-                      'ANTIBIOTIC_MED',
-                      'BIRTH_MONTH', 'CAT_CONTACT', 'CAT_LOCATION',
-                      'CONDITIONS_MEDICATION', 'DIET_RESTRICTIONS_LIST',
-                      'DOG_CONTACT',
-                      'DOG_LOCATION', 'GENDER', 'MEDICATION_LIST',
-                      'OTHER_CONDITIONS_LIST', 'PREGNANT_DUE_DATE',
-                      'RACE_OTHER',
-                      'RELATIONSHIPS_WITH_OTHERS_IN_STUDY',
-                      'SPECIAL_RESTRICTIONS',
-                      'SUPPLEMENTS', 'TRAVEL_LOCATIONS_LIST', 'ZIP_CODE',
-                      'WILLING_TO_BE_CONTACTED', 'pets_other_freetext']
-
-        df = df.drop(ebi_remove, axis=1, errors="ignore")
+    if len(errors) == 0 or allow_missing:
+        df = metadata_util.drop_private_columns(df)
 
         # TODO:  Streaming direct from pandas is a pain.  Need to search for
         #  better ways to iterate and chunk this file as we generate it
         strstream = io.StringIO()
-        df.to_csv(strstream, sep='\t')
+        df.to_csv(strstream, sep='\t', index=True, header=True)
 
         # TODO: utf-8 or utf-16 encoding??
         bytestream = io.BytesIO()
@@ -361,10 +348,11 @@ def metadata_pulldown():
                          last_modified=None,
                          )
     else:
+
         return render_template('metadata_pulldown.html',
                                **build_login_variables(),
                                info={'barcodes': sample_barcodes},
-                               search_error=json.dumps(errors, indent=2))
+                               search_error=errors)
 
 
 @app.route('/authrocket_callback')

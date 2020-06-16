@@ -2,4 +2,4 @@ pyjwt[crypto]
 pytest < 5.3.4
 pytest-cov
 coveralls
-https://github.com/biocore/microsetta-private-api/zipball/minimalInterface
+https://github.com/biocore/microsetta-private-api/zipball/master
