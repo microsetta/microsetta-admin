@@ -69,7 +69,7 @@
 
             {% if resource == 'kit' %}
             <div>
-                <br/><p>The following accounts were created using kit: {{ result['supplied_kit_id'] }}</p>
+                <br/>
                 <table id="search_results_created_with_kit" class="display" style="width:100%">
                     <thead>
                         <tr>
@@ -84,21 +84,26 @@
                             <th>Postcode</th>
                         </tr>
                     </thead>
+                    {% if result['accounts_created'] is not none %}
+                    <p>The following accounts were created using kit: {{ result['supplied_kit_id'] }}</p>
                     <tbody>
-                    {% for account in result['accounts_created'] %}
-                        <tr>
-                            <td>{{ account['first_name'] }}</td>
-                            <td>{{ account['last_name'] }}</td>
-                            <td>{{ account['email'] }}</td>
-                            <td>{{ account['account_type'] }}</td>
-                            <td>{{ account['address']['street'] }}</td>
-                            <td>{{ account['address']['city'] }}</td>
-                            <td>{{ account['address']['state'] }}</td>
-                            <td>{{ account['address']['country_code'] }}</td>
-                            <td>{{ account['address']['post_code'] }}</td>
-                        </tr>
-                    {% endfor %}
+                        {% for account in result['accounts_created'] %}
+                            <tr>
+                                <td>{{ account['first_name'] }}</td>
+                                <td>{{ account['last_name'] }}</td>
+                                <td>{{ account['email'] }}</td>
+                                <td>{{ account['account_type'] }}</td>
+                                <td>{{ account['address']['street'] }}</td>
+                                <td>{{ account['address']['city'] }}</td>
+                                <td>{{ account['address']['state'] }}</td>
+                                <td>{{ account['address']['country_code'] }}</td>
+                                <td>{{ account['address']['post_code'] }}</td>
+                            </tr>
+                        {% endfor %}
                     </tbody>
+                    {% else %}
+                    <p>No accounts appear to have been created with that kit ID</p>
+                    {% endif %}
                 </table>
             </div>
             {% endif %}
