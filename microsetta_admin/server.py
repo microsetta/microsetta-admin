@@ -5,13 +5,14 @@ from datetime import datetime
 import io
 
 from jwt import PyJWTError
+from werkzeug.exceptions import BadRequest
 from werkzeug.utils import redirect
 import pandas as pd
 
+from microsetta_admin import metadata_util
 from microsetta_admin.config_manager import SERVER_CONFIG
 from microsetta_admin._api import APIRequest
 import importlib.resources as pkg_resources
-
 
 TOKEN_KEY_NAME = 'token'
 
@@ -305,6 +306,74 @@ def scan():
             search_error="Barcode %s Not Found" % sample_barcode,
             update_error=update_error
         )
+
+
+@app.route('/metadata_pulldown', methods=['GET', 'POST'])
+def metadata_pulldown():
+    if request.method == 'GET':
+        sample_barcode = request.args.get('sample_barcode')
+        # If there is no sample_barcode in the GET
+        # they still need to enter one in the box, so show empty page
+        if sample_barcode is None:
+            return render_template('metadata_pulldown.html',
+                                   **build_login_variables())
+        sample_barcodes = [sample_barcode]
+    elif request.method == 'POST':
+        allow_missing = request.form.get('allow_missing_samples', False)
+
+        if 'file' not in request.files or \
+                request.files['file'].filename == '':
+            search_error = [{'error': 'Must specify a valid file'}]
+            return render_template('metadata_pulldown.html',
+                                   **build_login_variables(),
+                                   search_error=search_error)
+        file = request.files['file']
+        try:
+            barcodes_df = pd.read_csv(file, dtype=str)
+            sample_barcodes = barcodes_df['sample_name'].tolist()
+        except Exception as e:  # noqa
+            search_error = [{'error': 'Could not parse barcodes file'}]
+            return render_template('metadata_pulldown.html',
+                                   **build_login_variables(),
+                                   search_error=search_error)
+    else:
+        raise BadRequest()
+
+    df, errors = metadata_util.retrieve_metadata(sample_barcodes)
+
+    # Strangely, these api requests are returning an html error page rather
+    # than a machine parseable json error response object with message.
+    # This is almost certainly due to error handling for the cohosted minimal
+    # client.  In future, we should just pass down whatever the api says here.
+    if len(errors) == 0 or allow_missing:
+        df = metadata_util.drop_private_columns(df)
+
+        # TODO:  Streaming direct from pandas is a pain.  Need to search for
+        #  better ways to iterate and chunk this file as we generate it
+        strstream = io.StringIO()
+        df.to_csv(strstream, sep='\t', index=True, header=True)
+
+        # TODO: utf-8 or utf-16 encoding??
+        bytestream = io.BytesIO()
+        bytestream.write(strstream.getvalue().encode('utf-8'))
+        bytestream.seek(0)
+
+        strstream.close()
+        return send_file(bytestream,
+                         mimetype="text/tab-separated-values",
+                         as_attachment=True,
+                         attachment_filename="metadata_pulldown.tsv",
+                         add_etags=False,
+                         cache_timeout=None,
+                         conditional=False,
+                         last_modified=None,
+                         )
+    else:
+
+        return render_template('metadata_pulldown.html',
+                               **build_login_variables(),
+                               info={'barcodes': sample_barcodes},
+                               search_error=errors)
 
 
 @app.route('/authrocket_callback')

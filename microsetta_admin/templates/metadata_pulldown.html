@@ -1,0 +1,46 @@
+{% extends "sitebase.html" %}
+{% block head %}
+<script>
+    function remove_error_messages () {
+        block = document.getElementById("search_errors");
+        if (block !== null) {
+            block.innerHTML = "";
+        }
+    };
+</script>
+{% endblock %}
+{% block content %}
+<h3>Microsetta Metadata Pulldown</h3>
+<div>
+    <form name="search_form" id="search_form" method="GET">
+        <table>
+            <tr>
+                <td><label for="sample_barcode">Barcode: </label></td>
+                <td><input type="text" name="sample_barcode" id="sample_barcode" {% if info %} value="{{info.barcode}}"{% endif %}></td>
+                <td></td>
+                <td><input type="submit" value="Retrieve Sample Metadata"></td>
+            </tr>
+        </table>
+        {% if search_error %}
+            <p style="color:red" id=search_errors>
+            {% for error in search_error %}
+                {{error |e}}<br/>
+            {% endfor %}
+            </p>
+        {% endif %}
+        <script>
+           document.search_form.sample_barcode.focus()
+        </script>
+    </form>
+    <br/>
+    Or upload a file and pull metadata for all barcodes listed in the column "sample_name"
+    <br/>
+    <form name="upload_csv" id="search_csv" method="POST" enctype="multipart/form-data" onsubmit="return remove_error_messages()">
+      <br/>
+      <input type="checkbox" name="allow_missing_samples">
+      <label for="allow_missing_samples"> Allow download with missing samples</label><br/>
+      <input type=file name=file><br/>
+      <input type=submit value=Upload>
+    </form>
+</div>
+{% endblock %}

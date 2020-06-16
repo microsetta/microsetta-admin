@@ -2,8 +2,8 @@
 
 import requests
 from microsetta_admin.config_manager import SERVER_CONFIG
-from flask import redirect, render_template, session
-from urllib.parse import quote, urljoin
+from flask import redirect, session
+from urllib.parse import urljoin
 
 
 TOKEN_KEY_NAME = 'token'
@@ -39,16 +39,6 @@ class APIRequest:
         if response.status_code == 401:
             # redirect to home page for login
             output = redirect("/")
-        elif response.status_code >= 400:
-            # redirect to general error page
-            error_txt = quote(response.text)
-            mailto_url = "mailto:{0}?subject={1}&body={2}".format(
-                "microsetta@ucsd.edu", quote("admin interface error"),
-                error_txt)
-
-            output = render_template('error.html',
-                                     mailto_url=mailto_url,
-                                     error_msg=response.text)
         else:
             if response.text:
                 output = response.json()
