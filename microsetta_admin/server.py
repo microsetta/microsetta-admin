@@ -50,6 +50,7 @@ def build_login_variables():
 
     vars = {
         'endpoint': SERVER_CONFIG["endpoint"],
+        'ui_endpoint': SERVER_CONFIG["ui_endpoint"],
         'authrocket_url': SERVER_CONFIG["authrocket_url"]
     }
     if token_info is not None:
@@ -67,6 +68,7 @@ def build_app():
         flask_secret = secrets.token_urlsafe(16)
     app.secret_key = flask_secret
     app.config['SESSION_TYPE'] = 'memcached'
+    app.config['SESSION_COOKIE_NAME'] = 'session-microsetta-admin'
 
     # Set mapping from exception type to response code
     app.register_error_handler(PyJWTError, handle_pyjwt)
@@ -108,7 +110,6 @@ def _search(resource=None):
     elif request.method == 'POST':
         query = request.form['search_%s' % resource]
 
-        print('/api/admin/search/%s/%s' % (resource, query))
         status, result = APIRequest.get(
                 '/api/admin/search/%s/%s' % (resource, query))
 

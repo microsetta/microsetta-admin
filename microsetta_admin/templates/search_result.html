@@ -35,6 +35,7 @@
                 <table id="search_results_account" class="display" style="width:100%">
                     <thead>
                         <tr>
+                            <th>Edit</th>
                             <th>First name</th>
                             <th>Last name</th>
                             <th>Email</th>
@@ -50,6 +51,7 @@
                     <tbody>
                     {% for account in result['accounts'] %}
                         <tr>
+                            <td><a href="{{ ui_endpoint }}/accounts/{{ account['id'] }}/details" target="_blank">Edit account</a></td>
                             <td>{{ account['first_name'] }}</td>
                             <td>{{ account['last_name'] }}</td>
                             <td>{{ account['email'] }}</td>
@@ -73,6 +75,8 @@
                 <table id="search_results_created_with_kit" class="display" style="width:100%">
                     <thead>
                         <tr>
+                            <th>Edit</th>
+                            <th>Sources</th>
                             <th>First name</th>
                             <th>Last name</th>
                             <th>Email</th>
@@ -89,6 +93,8 @@
                     <tbody>
                         {% for account in result['accounts_created'] %}
                             <tr>
+                                <td><a href="{{ ui_endpoint }}/accounts/{{ account['id'] }}/details" target="_blank">Edit account</a></td>
+                                <td><a href="{{ ui_endpoint }}/accounts/{{ account['id'] }}" target="_blank">View Sources</a></td>
                                 <td>{{ account['first_name'] }}</td>
                                 <td>{{ account['last_name'] }}</td>
                                 <td>{{ account['email'] }}</td>
@@ -114,6 +120,7 @@
                 <table id="search_results_samples" class="display" style="width:100%">
                     <thead>
                         <tr>
+                            <th>Edit</th>
                             <th>Barcode</th>
                             <th>Sample Site</th>
                             <th>Collected Datetime</th>
@@ -125,6 +132,7 @@
                     <tbody>
                     {% for sample in result['kit']['samples'] %}
                         <tr>
+                            <td><a href="{{ ui_endpoint }}/accounts/{{ result['account']['id'] }}/sources/{{ result['source']['id'] }}/samples/{{ sample['id'] }}" target="_blank">Edit sample</a></td>
                             <td>{{ sample['barcode'] }}</td>
                             <td>{{ sample['site'] }}</td>
                             <td>{{ sample['datetime_collected'] }}</td>
@@ -140,5 +148,6 @@
 
         </div>
     </div>
+    <button type="submit" onClick="window.location.reload();">Refresh Results</button>
 {% endif %}
 {% endblock %}
