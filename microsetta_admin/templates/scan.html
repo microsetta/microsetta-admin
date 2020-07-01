@@ -62,7 +62,12 @@
                 <td>
                     <ul>
                     {% for proj_info in info.projects %}
-                        <li>{{proj_info.project}}</li>
+                        <li>
+                            {{proj_info.project}}
+                            {%  if proj_info.bank_samples %}
+                                (banked{%  if proj_info.plating_start_date %} until {{ proj_info.plating_start_date }}{% endif %})
+                            {%  endif %}
+                        </li>
                     {% endfor %}
                     </ul>
                 </td>
