@@ -311,6 +311,8 @@ def scan():
 
 @app.route('/metadata_pulldown', methods=['GET', 'POST'])
 def metadata_pulldown():
+    allow_missing = request.form.get('allow_missing_samples', False)
+
     if request.method == 'GET':
         sample_barcode = request.args.get('sample_barcode')
         # If there is no sample_barcode in the GET
@@ -320,8 +322,6 @@ def metadata_pulldown():
                                    **build_login_variables())
         sample_barcodes = [sample_barcode]
     elif request.method == 'POST':
-        allow_missing = request.form.get('allow_missing_samples', False)
-
         if 'file' not in request.files or \
                 request.files['file'].filename == '':
             search_error = [{'error': 'Must specify a valid file'}]
