@@ -7,6 +7,8 @@ import pandas as pd
 # the vioscreen survey currently cannot be fetched from the database
 TEMPLATES_TO_IGNORE = {10001, }
 
+MISSING_VALUE = 'Missing: not provided'
+
 EBI_REMOVE = ['ABOUT_YOURSELF_TEXT', 'ANTIBIOTIC_CONDITION',
               'ANTIBIOTIC_MED',
               'BIRTH_MONTH', 'CAT_CONTACT', 'CAT_LOCATION',
@@ -206,11 +208,11 @@ def _to_pandas_dataframe(metadatas, survey_templates):
 
     # fill in any other nulls that may be present in the frame
     # as could happen if not all individuals took all surveys
-    df.fillna('Missing: not provided', inplace=True)
+    df.fillna(MISSING_VALUE, inplace=True)
 
     # The empty string can arise from free text entries that
     # come from the private API as [""]
-    df.replace("", 'Missing: not provided', inplace=True)
+    df.replace("", MISSING_VALUE, inplace=True)
 
     return df
 
