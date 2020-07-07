@@ -30,7 +30,7 @@ class MetadataUtilTests(TestBase):
                 },
                 'survey_answers': [
                     {'template': 1,
-                     'response': {'1': ['DIET_TYPE', 'Omnivore'],
+                     'response': {'1': ['DIET_TYPE', '[""]'],
                                   '2': ['MULTIVITAMIN', 'No'],
                                   '3': ['PROBIOTIC_FREQUENCY', 'Unspecified'],
                                   '4': ['VITAMIN_B_SUPPLEMENT_FREQUENCY',
@@ -57,7 +57,7 @@ class MetadataUtilTests(TestBase):
                 },
                 'survey_answers': [
                     {'template': 1,
-                     'response': {'1': ['DIET_TYPE', 'Vegan'],
+                     'response': {'1': ['DIET_TYPE', '["Vegan"]'],
                                   '2': ['MULTIVITAMIN', 'Yes'],
                                   '3': ['PROBIOTIC_FREQUENCY', 'Unspecified'],
                                   '4': ['VITAMIN_B_SUPPLEMENT_FREQUENCY',
@@ -197,7 +197,7 @@ class MetadataUtilTests(TestBase):
         data = [self.raw_sample_1, self.raw_sample_2]
         templates = {1: self.fake_survey_template2}
 
-        exp = pd.DataFrame([['000004216', 'foo', 'Omnivore', 'No',
+        exp = pd.DataFrame([['000004216', 'foo', 'Missing: not provided', 'No',
                              'Unspecified', 'Unspecified', 'Unspecified', 'No',
                              'true', 'true', 'false', 'false',
                              'Missing: not provided',
@@ -230,7 +230,7 @@ class MetadataUtilTests(TestBase):
     def test_to_pandas_series(self):
         data = self.raw_sample_1
 
-        values = ['foo', 'Omnivore', 'No', 'Unspecified', 'Unspecified',
+        values = ['foo', '', 'No', 'Unspecified', 'Unspecified',
                   'Unspecified', 'No', 'true', 'true', 'okay', 'No',
                   "2013-10-15T09:30:00"]
         index = ['HOST_SUBJECT_ID', 'DIET_TYPE', 'MULTIVITAMIN',
