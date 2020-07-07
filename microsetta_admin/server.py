@@ -135,10 +135,18 @@ def new_project():
     elif request.method == 'POST':
         project_name = request.form['project_name']
         is_microsetta = request.form.get('is_microsetta', 'No') == 'Yes'
+        bank_samples = request.form.get('bank_samples', 'No') == 'Yes'
+        plating_start_date = request.form.get('plating_start_date')
+        if plating_start_date == '':
+            plating_start_date = None
 
         status, result = APIRequest.post('/api/admin/create/project',
                                          json={'project_name': project_name,
-                                               'is_microsetta': is_microsetta})
+                                               'is_microsetta': is_microsetta,
+                                               'bank_samples': bank_samples,
+                                               'plating_start_date':
+                                                   plating_start_date
+                                               })
 
         if status == 201:
             return render_template('create_project.html', message='Created!',
@@ -247,6 +255,44 @@ def scan():
         if sample_barcode is None:
             return render_template('scan.html', **build_login_variables())
 
+        # Assuming there is a sample barcode, grab that sample's information
+        status, result = APIRequest.get(
+            '/api/admin/search/samples/%s' % sample_barcode)
+
+        # If we successfully grab it, show the page to the user
+        if status == 200:
+            # Process result in python because its easier than jinja2.
+            status_warnings, status_color = _check_sample_status(result)
+
+            # sample_info may be None if barcode not in agp,
+            # then no sample_site available
+            sample_info = result['sample']
+
+            return render_template(
+                'scan.html',
+                **build_login_variables(),
+                info=result['barcode_info'],
+                sample_info=sample_info,
+                extended_info=result,
+                status_warnings=status_warnings,
+                update_error=update_error,
+                status_color=status_color
+            )
+        elif status == 401:
+            # If we fail due to unauthorized, need the user to log in again
+            return redirect('/logout')
+        elif status == 404:
+            # If we fail due to not found, need to tell the user to pick a diff
+            # barcode
+            return render_template(
+                'scan.html',
+                **build_login_variables(),
+                search_error="Barcode %s Not Found" % sample_barcode,
+                update_error=update_error
+            )
+        else:
+            raise BadRequest()
+
     # If its a post, make the changes, then refresh the page
     if request.method == 'POST':
         sample_barcode = request.form['sample_barcode']
@@ -254,7 +300,7 @@ def scan():
         sample_status = request.form['sample_status']
 
         # Do the actual update
-        status, response = APIRequest.post(
+        status, response = APIRequest.put(
             '/api/admin/scan/%s' % sample_barcode,
             json={
                 "sample_status": sample_status,
@@ -263,50 +309,13 @@ def scan():
         )
 
         # if the update failed, keep track of the error
-        if status != 201:
+        if status != 200:
             update_error = response
 
+        # exit and show update results
         return render_template('scan.html',
                                update_error=update_error,
                                **build_login_variables())
-    # Now, whether its a post or a get, gather up the model objects to show
-    # all the data to the user.
-
-    # Grab the sample information
-    status, result = APIRequest.get(
-        '/api/admin/search/samples/%s' % sample_barcode)
-
-    # If we successfully grab it, show the page to the user
-    if status == 200:
-        # Process result in python because its easier than jinja2.
-        status_warnings, status_color = _check_sample_status(result)
-
-        # sample_info may be None if barcode not in agp, then no sample_site
-        # available
-        sample_info = result['sample']
-
-        return render_template(
-            'scan.html',
-            **build_login_variables(),
-            info=result['barcode_info'],
-            sample_info=sample_info,
-            extended_info=result,
-            status_warnings=status_warnings,
-            update_error=update_error,
-            status_color=status_color
-        )
-    elif status == 401:
-        # If we fail due to unauthorized, need the user to log in again
-        return redirect('/logout')
-    elif status == 404:
-        # If we fail due to not found, need to tell the user to pick a diff
-        # barcode
-        return render_template(
-            'scan.html',
-            **build_login_variables(),
-            search_error="Barcode %s Not Found" % sample_barcode,
-            update_error=update_error
-        )
 
 
 @app.route('/metadata_pulldown', methods=['GET', 'POST'])
