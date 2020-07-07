@@ -135,7 +135,7 @@ def new_project():
     elif request.method == 'POST':
         project_name = request.form['project_name']
         is_microsetta = request.form.get('is_microsetta', 'No') == 'Yes'
-        bank_samples = request.form.get('bank_samples') == 'on'
+        bank_samples = request.form.get('bank_samples', 'No') == 'Yes'
         plating_start_date = request.form.get('plating_start_date')
         if plating_start_date == '':
             plating_start_date = None
