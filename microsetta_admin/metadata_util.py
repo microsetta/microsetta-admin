@@ -288,6 +288,11 @@ def _to_pandas_series(metadata, multiselect_map):
         sample_type = sample_detail['site']
         sample_invariants = {}
     else:
+        if 'source' not in sample_detail:
+            # HACK: this can occur if a source does not have collection
+            # information?
+            return pd.Series([], index=[], name=name)
+
         sample_type = sample_detail['source']['description']
         sample_invariants = {}
 
