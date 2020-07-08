@@ -4,7 +4,7 @@ from microsetta_admin.metadata_constants import (
     MISSING_VALUE)
 from microsetta_admin.metadata_transforms import (
     HUMAN_TRANSFORMS,
-    apply_category_specific_transforms)
+    apply_transforms)
 from collections import Counter
 import re
 import pandas as pd
@@ -221,7 +221,7 @@ def _to_pandas_dataframe(metadatas, survey_templates):
     df.rename(columns={c: c.lower() for c in df.columns},
               inplace=True)
 
-    return apply_category_specific_transforms(df, HUMAN_TRANSFORMS)
+    return apply_transforms(df, HUMAN_TRANSFORMS)
 
 
 def _construct_multiselect_map(survey_templates):
@@ -306,7 +306,7 @@ def _to_pandas_series(metadata, multiselect_map):
     values = [hsi, collection_timestamp]
     index = ['HOST_SUBJECT_ID', 'COLLECTION_TIMESTAMP']
 
-    # HACK: there exists some samples that have duplicate surveys. This is
+    # HACK: there exist some samples that have duplicate surveys. This is
     # unusual and unexpected state in the database, and has so far only been
     # observed only with the surfers survey. The hacky solution is to only
     # gather the results once

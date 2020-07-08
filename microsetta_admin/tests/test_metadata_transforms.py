@@ -2,14 +2,14 @@ import unittest
 import pandas as pd
 import pandas.testing as pdt
 from microsetta_admin.metadata_transforms import (
-    apply_category_specific_transforms,
+    apply_transforms,
     AgeYears, AgeCat, BMI, BMICat, AlcoholConsumption,
     NormalizeHeight, NormalizeWeight)
 from microsetta_admin.metadata_constants import MISSING_VALUE
 
 
 class TransformTests(unittest.TestCase):
-    def test_apply_category_specific_transforms(self):
+    def _apply_transforms_helper(self, transforms):
         df = pd.DataFrame([['1990', 'July', '2020-01-01T12:00:00'],
                            ['1995', MISSING_VALUE, '2019-01-23T12:00:00'],
                            [MISSING_VALUE, 'May', '2018-01-23T12:00:00'],
@@ -18,7 +18,6 @@ class TransformTests(unittest.TestCase):
                           index=list('abcd'),
                           columns=['birth_year', 'birth_month',
                                    'collection_timestamp'])
-        transforms = (AgeYears, AgeCat)
 
         exp = pd.DataFrame([['1990', 'July', '2020-01-01T12:00:00',
                              '29.5', '20s'],
@@ -33,8 +32,16 @@ class TransformTests(unittest.TestCase):
                            columns=['birth_year', 'birth_month',
                                     'collection_timestamp', 'age_years',
                                     'age_cat'])
-        obs = apply_category_specific_transforms(df, transforms)
+        obs = apply_transforms(df, transforms)
         pdt.assert_frame_equal(obs, exp, check_less_precise=True)
+
+    def test_apply_transforms_missing_column(self):
+        # in this case, the dataframe that will be operated on does
+        # not have the required columns for BMI
+        self._apply_transforms_helper((AgeYears, AgeCat, BMI))
+
+    def test_apply_transforms(self):
+        self._apply_transforms_helper((AgeYears, AgeCat))
 
     def _test_transformer(self, transformer, df, exp):
         obs = transformer.apply(df)
@@ -115,9 +122,10 @@ class TransformTests(unittest.TestCase):
                            [MISSING_VALUE]],
                           index=list('abcdefghijklm'),
                           columns=['bmi'])
-        exp = pd.Series([None, None, 'Underweight', 'Underweight', 'Normal',
+        exp = pd.Series([MISSING_VALUE, MISSING_VALUE, 'Underweight',
+                         'Underweight', 'Normal',
                          'Normal', 'Overweight', 'Overweight', 'Obese',
-                         'Obese', None, None, None],
+                         'Obese', MISSING_VALUE, MISSING_VALUE, MISSING_VALUE],
                         index=list('abcdefghijklm'), name='bmi_cat')
         self._test_transformer(BMICat, df, exp)
 
@@ -158,6 +166,18 @@ class TransformTests(unittest.TestCase):
                         index=list('abcdef'),
                         name='alcohol_consumption')
         self._test_transformer(AlcoholConsumption, df, exp)
+
+    def test_AlcoholConsumption_raises(self):
+        df = pd.DataFrame([['Rarely (a few times/month)'],
+                           ['Occasionally (1-2 times/week)'],
+                           ['Regularly (3-5 times/week)'],
+                           ['Dailybadbadbad'],
+                           ['Never'],
+                           [MISSING_VALUE]],
+                          index=list('abcdef'),
+                          columns=['alcohol_frequency'])
+        with self.assertRaisesRegex(KeyError, "Unexpected"):
+            AlcoholConsumption.apply(df)
 
 
 if __name__ == '__main__':
