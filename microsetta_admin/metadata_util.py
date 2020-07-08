@@ -1,13 +1,16 @@
 from microsetta_admin._api import APIRequest
-from microsetta_admin.metadata_constants import HUMAN_SITE_INVARIANTS
+from microsetta_admin.metadata_constants import (
+    HUMAN_SITE_INVARIANTS,
+    MISSING_VALUE)
+from microsetta_admin.metadata_transforms import (
+    HUMAN_TRANSFORMS,
+    apply_category_specific_transforms)
 from collections import Counter
 import re
 import pandas as pd
 
 # the vioscreen survey currently cannot be fetched from the database
 TEMPLATES_TO_IGNORE = {10001, }
-
-MISSING_VALUE = 'Missing: not provided'
 
 EBI_REMOVE = ['ABOUT_YOURSELF_TEXT', 'ANTIBIOTIC_CONDITION',
               'ANTIBIOTIC_MED',
@@ -214,7 +217,11 @@ def _to_pandas_dataframe(metadatas, survey_templates):
     # come from the private API as [""]
     df.replace("", MISSING_VALUE, inplace=True)
 
-    return df
+    # force a consistent case
+    df.rename(columns={c: c.lower() for c in df.columns},
+              inplace=True)
+
+    return apply_category_specific_transforms(df, HUMAN_TRANSFORMS)
 
 
 def _construct_multiselect_map(survey_templates):
