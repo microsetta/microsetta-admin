@@ -27,6 +27,12 @@
     <hr>
     <br>
 
+    {% if update_error %}
+        <p style="color:red">
+        {{update_error |e}}
+        </p>
+    {% endif %}
+
     {% if info %}
         <div id="sample-status" class="sample-status" style="background-color:{{ status_color }};">
            <div>
@@ -48,6 +54,7 @@
             </div>
         </div>
         <form action="/scan" name="update_form" id="update_form" method="post">
+        <input type="hidden" name="action" value="update_status"/>
         <input type="hidden" name="sample_barcode" value="{{info.barcode}}"/>
         <table>
             <tr>
@@ -112,13 +119,65 @@
                 <td><input type="submit" value="Update"></td>
             </tr>
         </table>
-    </form>
-    {% endif %}
-    
-    {% if update_error %}
-        <p style="color:red">
-        {{update_error |e}}
-        </p>
+        </form>
+
+        <table>
+            <tr>
+                <td><b>Event Log:</b> (Most Recent At Top)</td>
+            </tr>
+            {% for event in events %}
+            <tr>
+                <td>Time:</td>
+                <td><b>{{event["event_time"] |e}}</b></td>
+                <td colspan="2"><small><i>{{event["event_id"] |e}}</i></small></td>
+            </tr>
+            <tr>
+                <td>Event Type:</td>
+                <td><b>{{event["event_type"] |e}} / {{event["event_subtype"] |e}}</b></td>
+            </tr>
+            <tr>
+                <td>State:</td>
+                <td><pre>{{event["event_state"] |tojson_pretty|safe}}</pre></td>
+            </tr>
+            <hr>
+            {% endfor %}
+        </table>
+        <form method="post">
+        <input type="hidden" name="action" value="send_email"/>
+        <input type="hidden" id="issue_type" name="issue_type" value="sample"/>
+        <input type="hidden" name="sample_barcode" value="{{info.barcode}}"/>
+        <input type="hidden" name="recorded_type" value="{{sample_info.site}}"/>
+        <hr>
+        <table>
+            <tr>
+                <td><b>Issue Resolution</b></td>
+            <tr>
+                <td>Issue Type:</td>
+                <td>
+                    <select id="template" name="template">
+                        <option value="incorrect_sample_type">Incorrect Sample Site</option>
+                        <option value="missing_sample_info">Missing Sample Info</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Apparent Sample Site:</td>
+                <td>
+                    <select id="received_type" name="received_type">
+                        {% for received_type in ["Blood (skin prick)", "Saliva", "Ear wax", "Forehead", "Fur", "Hair", "Left hand", "Left leg", "Mouth", "Nares", "Nasal mucus",
+                         "Right hand", "Right leg", "Stool", "Tears", "Torso", "Vaginal mucus"] %}
+                        <option value="{{received_type |e}}">{{received_type |e}}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td><input type="submit" value="Email End User"></td>
+            </tr>
+        </table>
+        </form>
     {% endif %}
 
     <script>

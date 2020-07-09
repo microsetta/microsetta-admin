@@ -13,6 +13,7 @@ from microsetta_admin import metadata_util
 from microsetta_admin.config_manager import SERVER_CONFIG
 from microsetta_admin._api import APIRequest
 import importlib.resources as pkg_resources
+import json
 
 TOKEN_KEY_NAME = 'token'
 
@@ -72,6 +73,15 @@ def build_app():
 
     # Set mapping from exception type to response code
     app.register_error_handler(PyJWTError, handle_pyjwt)
+
+    # Tell jinja2 how to show pretty json
+    # See https://stackoverflow.com/questions/34646055/encoding-json-inside-flask-template  # noqa
+    def to_pretty_json(value):
+        print("HELLO JSON")
+        return json.dumps(value, sort_keys=True,
+                          indent=4, separators=(',', ': '))
+
+    app.jinja_env.filters['tojson_pretty'] = to_pretty_json
 
     return app
 
@@ -243,13 +253,12 @@ def _check_sample_status(extended_barcode_info):
 
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
-    update_error = None
-    sample_barcode = None
 
-    # If its a get, grab the sample_barcode from the query string rather than
-    # form parameters
-    if request.method == 'GET':
-        sample_barcode = request.args.get('sample_barcode')
+    # Set up handlers for the three cases,
+    #   GET to view the page,
+    #   POST to update info for a barcode -OR-
+    #   POST to email end user about sample status,
+    def _scan_get(sample_barcode, update_error):
         # If there is no sample_barcode in the GET
         # they still need to enter one in the box, so show empty page
         if sample_barcode is None:
@@ -268,6 +277,16 @@ def scan():
             # then no sample_site available
             sample_info = result['sample']
 
+            account = result.get('account')
+            if account:
+                event_status, event_result = APIRequest.get(
+                    '/api/admin/events/accounts/%s' % account['id']
+                )
+                if event_status != 200:
+                    raise Exception("Couldn't pull event history")
+
+                events = event_result
+
             return render_template(
                 'scan.html',
                 **build_login_variables(),
@@ -276,7 +295,8 @@ def scan():
                 extended_info=result,
                 status_warnings=status_warnings,
                 update_error=update_error,
-                status_color=status_color
+                status_color=status_color,
+                events=events
             )
         elif status == 401:
             # If we fail due to unauthorized, need the user to log in again
@@ -293,14 +313,11 @@ def scan():
         else:
             raise BadRequest()
 
-    # If its a post, make the changes, then refresh the page
-    if request.method == 'POST':
-        sample_barcode = request.form['sample_barcode']
-        technician_notes = request.form['technician_notes']
-        sample_status = request.form['sample_status']
-
+    def _scan_post_update_info(sample_barcode,
+                               technician_notes,
+                               sample_status):
         # Do the actual update
-        status, response = APIRequest.put(
+        status, response = APIRequest.post(
             '/api/admin/scan/%s' % sample_barcode,
             json={
                 "sample_status": sample_status,
@@ -308,14 +325,70 @@ def scan():
             }
         )
 
-        # if the update failed, keep track of the error
+        # if the update failed, keep track of the error so it can be displayed
         if status != 200:
             update_error = response
+        else:
+            update_error = None
 
-        # exit and show update results
-        return render_template('scan.html',
-                               update_error=update_error,
-                               **build_login_variables())
+        return _scan_get(sample_barcode, update_error)
+
+    def _scan_post_send_email(sample_barcode,
+                              issue_type,
+                              template,
+                              received_type,
+                              recorded_type):
+        status, response = APIRequest.post(
+            '/api/admin/email',
+            json={
+                "issue_type": issue_type,
+                "template": template,
+                "template_args": {
+                    "sample_barcode": sample_barcode,
+                    "recorded_type": recorded_type,
+                    "received_type": received_type
+                }
+            }
+        )
+
+        # if the update failed, keep track of the error so it can be displayed
+        if status != 200:
+            update_error = response
+        else:
+            update_error = None
+
+        return _scan_get(sample_barcode, update_error)
+
+    # Now that the handlers are set up, parse the request to determine what
+    # to do.
+
+    # If its a get, grab the sample_barcode from the query string rather than
+    # form parameters
+    if request.method == 'GET':
+        sample_barcode = request.args.get('sample_barcode')
+        return _scan_get(sample_barcode, None)
+
+    # If its a post, make the changes, then refresh the page
+    if request.method == 'POST':
+        action = request.form['action']
+        if action == 'update_status':
+            sample_barcode = request.form['sample_barcode']
+            technician_notes = request.form['technician_notes']
+            sample_status = request.form['sample_status']
+            return _scan_post_update_info(sample_barcode,
+                                          technician_notes,
+                                          sample_status)
+        elif action == 'send_email':
+            sample_barcode = request.form['sample_barcode']
+            issue_type = request.form['issue_type']
+            template = request.form['template']
+            received_type = request.form['received_type']
+            recorded_type = request.form['recorded_type']
+            return _scan_post_send_email(sample_barcode,
+                                         issue_type,
+                                         template,
+                                         received_type,
+                                         recorded_type)
 
 
 @app.route('/metadata_pulldown', methods=['GET', 'POST'])
@@ -384,6 +457,7 @@ def metadata_pulldown():
                                **build_login_variables(),
                                info={'barcodes': sample_barcodes},
                                search_error=errors)
+
 
 
 @app.route('/authrocket_callback')
