@@ -459,7 +459,6 @@ def metadata_pulldown():
                                search_error=errors)
 
 
-
 @app.route('/authrocket_callback')
 def authrocket_callback():
     token = request.args.get('token')
