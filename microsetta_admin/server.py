@@ -278,6 +278,7 @@ def scan():
             sample_info = result['sample']
 
             account = result.get('account')
+            events = []
             if account:
                 event_status, event_result = APIRequest.get(
                     '/api/admin/events/accounts/%s' % account['id']
