@@ -317,7 +317,7 @@ def scan():
                                technician_notes,
                                sample_status):
         # Do the actual update
-        status, response = APIRequest.post(
+        status, response = APIRequest.put(
             '/api/admin/scan/%s' % sample_barcode,
             json={
                 "sample_status": sample_status,
