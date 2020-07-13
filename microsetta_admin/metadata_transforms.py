@@ -189,8 +189,8 @@ class AlcoholConsumption(Transformer):
         # unique() retains NA values.
         observed_values = set(df[ALCOHOL_FREQUENCY].value_counts().index)
         if not observed_values.issubset(mapping):
-            raise KeyError("Unexpected values present in column "
-                           + ALCOHOL_FREQUENCY)
+            raise KeyError("Unexpected values present in column %s: %s" %
+                           (ALCOHOL_FREQUENCY, observed_values - set(mapping)))
 
         series = df[ALCOHOL_FREQUENCY].replace(mapping, inplace=False)
         series.name = cls.COLUMN_NAME
