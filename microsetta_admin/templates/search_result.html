@@ -124,7 +124,7 @@
                             <th>Barcode</th>
                             <th>Sample Site</th>
                             <th>Collected Datetime</th>
-                            <th>Scan Date</th>
+                            <th>Latest Scan Date</th>
                             <th>Notes</th>
                             <th>Projects</th>
                         </tr>
@@ -136,7 +136,7 @@
                             <td>{{ sample['barcode'] }}</td>
                             <td>{{ sample['site'] }}</td>
                             <td>{{ sample['datetime_collected'] }}</td>
-                            <td>{{ sample['_scan_date'] }}</td>
+                            <td>{{ format_timestamp(sample['_latest_scan_timestamp']) }}</td>
                             <td>{{ sample['notes'] }}</td>
                             <td>{{ ', '.join(sample['sample_projects']) }}</td>
                         </tr>

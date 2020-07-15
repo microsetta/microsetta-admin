@@ -79,6 +79,17 @@ def build_app():
 app = build_app()
 
 
+@app.context_processor
+def utility_processor():
+    def format_timestamp(timestamp_str):
+        if not timestamp_str:
+            return ""
+        datetime_obj = datetime.fromisoformat(timestamp_str)
+        return datetime_obj.strftime("%Y %B %d  %H:%M:%S")
+    return dict(format_timestamp=format_timestamp)
+
+
+
 @app.route('/')
 def home():
     return render_template('sitebase.html', **build_login_variables())
@@ -244,7 +255,6 @@ def _check_sample_status(extended_barcode_info):
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
     update_error = None
-    sample_barcode = None
 
     # If its a get, grab the sample_barcode from the query string rather than
     # form parameters
@@ -266,13 +276,13 @@ def scan():
 
             # sample_info may be None if barcode not in agp,
             # then no sample_site available
-            sample_info = result['sample']
-
             return render_template(
                 'scan.html',
                 **build_login_variables(),
-                info=result['barcode_info'],
-                sample_info=sample_info,
+                barcode_info=result["barcode_info"],
+                projects_info=result['projects_info'],
+                scans_info=result['scans_info'],
+                sample_info=result['sample'],
                 extended_info=result,
                 status_warnings=status_warnings,
                 update_error=update_error,
@@ -300,7 +310,7 @@ def scan():
         sample_status = request.form['sample_status']
 
         # Do the actual update
-        status, response = APIRequest.put(
+        status, response = APIRequest.post(
             '/api/admin/scan/%s' % sample_barcode,
             json={
                 "sample_status": sample_status,
