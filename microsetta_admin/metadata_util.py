@@ -1,9 +1,16 @@
 from microsetta_admin._api import APIRequest
-from microsetta_admin.metadata_constants import HUMAN_SITE_INVARIANTS
+from microsetta_admin.metadata_constants import (
+    HUMAN_SITE_INVARIANTS,
+    MISSING_VALUE)
+from microsetta_admin.metadata_transforms import (
+    HUMAN_TRANSFORMS,
+    apply_transforms)
 from collections import Counter
 import re
 import pandas as pd
 
+# the vioscreen survey currently cannot be fetched from the database
+TEMPLATES_TO_IGNORE = {10001, }
 
 EBI_REMOVE = ['ABOUT_YOURSELF_TEXT', 'ANTIBIOTIC_CONDITION',
               'ANTIBIOTIC_MED',
@@ -110,7 +117,8 @@ def _fetch_observed_survey_templates(sample_metadata):
     for bc_md in sample_metadata:
         account_id = bc_md['account']['id']
         source_id = bc_md['source']['id']
-        observed_templates = {s['template'] for s in bc_md['survey_answers']}
+        observed_templates = {s['template'] for s in bc_md['survey_answers']
+                              if s['template'] not in TEMPLATES_TO_IGNORE}
 
         # it doesn't matter which set of IDs we use but they need to be valid
         # for the particular survey template
@@ -203,9 +211,17 @@ def _to_pandas_dataframe(metadatas, survey_templates):
 
     # fill in any other nulls that may be present in the frame
     # as could happen if not all individuals took all surveys
-    df.fillna('Missing: not provided', inplace=True)
+    df.fillna(MISSING_VALUE, inplace=True)
 
-    return df
+    # The empty string can arise from free text entries that
+    # come from the private API as [""]
+    df.replace("", MISSING_VALUE, inplace=True)
+
+    # force a consistent case
+    df.rename(columns={c: c.lower() for c in df.columns},
+              inplace=True)
+
+    return apply_transforms(df, HUMAN_TRANSFORMS)
 
 
 def _construct_multiselect_map(survey_templates):
@@ -279,15 +295,31 @@ def _to_pandas_series(metadata, multiselect_map):
         sample_type = sample_detail['site']
         sample_invariants = {}
     else:
+        if 'source' not in sample_detail:
+            # HACK: this can occur if a source does not have collection
+            # information?
+            return pd.Series([], index=[], name=name)
+
         sample_type = sample_detail['source']['description']
         sample_invariants = {}
 
     values = [hsi, collection_timestamp]
     index = ['HOST_SUBJECT_ID', 'COLLECTION_TIMESTAMP']
 
+    # HACK: there exist some samples that have duplicate surveys. This is
+    # unusual and unexpected state in the database, and has so far only been
+    # observed only with the surfers survey. The hacky solution is to only
+    # gather the results once
+    collected = set()
+
     # TODO: denote sample projects
     for survey in metadata['survey_answers']:
         template = survey['template']
+
+        if template in collected:
+            continue
+        else:
+            collected.add(template)
 
         for qid, (shortname, answer) in survey['response'].items():
             if (template, qid) in multiselect_map:
@@ -303,7 +335,8 @@ def _to_pandas_series(metadata, multiselect_map):
                     values.append('true')
                     index.append(specific_shortname)
             else:
-                values.append(answer)
+                # free text fields from the API come down as ["foo"]
+                values.append(answer.strip('[]"'))
                 index.append(shortname)
 
     for variable, value in sample_invariants.items():
