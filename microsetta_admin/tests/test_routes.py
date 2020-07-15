@@ -43,6 +43,8 @@ class RouteTests(TestBase):
 
     def test_scan_specific_okay(self):
         resp = {"barcode_info": {"barcode": "000004216"},
+                "projects_info": [],
+                "scans_info": [],
                 "sample": {'site': 'baz'},
                 "account": 'foo',
                 "source": 'bar'}
@@ -60,6 +62,8 @@ class RouteTests(TestBase):
 
     def test_scan_specific_uncollected(self):
         resp = {"barcode_info": {"barcode": "000004216"},
+                "projects_info": [],
+                "scans_info": [],
                 "sample": {'site': None},
                 "account": 'foo',
                 "source": 'bar'}
@@ -77,6 +81,8 @@ class RouteTests(TestBase):
 
     def test_scan_specific_no_account(self):
         resp = {"barcode_info": {"barcode": "000004216"},
+                "projects_info": [],
+                "scans_info": [],
                 "sample": None,
                 "account": None,
                 "source": 'bar'}
@@ -94,6 +100,8 @@ class RouteTests(TestBase):
 
     def test_scan_specific_no_source(self):
         resp = {"barcode_info": {"barcode": "000004216"},
+                "projects_info": [],
+                "scans_info": [],
                 "sample": None,
                 "account": None,
                 "source": None}
