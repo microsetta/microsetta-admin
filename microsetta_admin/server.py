@@ -89,7 +89,6 @@ def utility_processor():
     return dict(format_timestamp=format_timestamp)
 
 
-
 @app.route('/')
 def home():
     return render_template('sitebase.html', **build_login_variables())
