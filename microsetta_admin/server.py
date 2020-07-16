@@ -83,7 +83,7 @@ app = build_app()
 def utility_processor():
     def format_timestamp(timestamp_str):
         if not timestamp_str:
-            return ""
+            return "None"
         datetime_obj = datetime.fromisoformat(timestamp_str)
         return datetime_obj.strftime("%Y %B %d  %H:%M:%S")
     return dict(format_timestamp=format_timestamp)
@@ -319,7 +319,7 @@ def scan():
         )
 
         # if the update failed, keep track of the error
-        if status != 200:
+        if status != 201:
             update_error = response
 
         # exit and show update results
