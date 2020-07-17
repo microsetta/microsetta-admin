@@ -77,7 +77,6 @@ def build_app():
     # Tell jinja2 how to show pretty json
     # See https://stackoverflow.com/questions/34646055/encoding-json-inside-flask-template  # noqa
     def to_pretty_json(value):
-        print("HELLO JSON")
         return json.dumps(value, sort_keys=True,
                           indent=4, separators=(',', ': '))
 
