@@ -113,11 +113,11 @@
                 <td>Sample Status: </td>
                 <td>
                 <select id="sample_status" name="sample_status">
-                {% for status in ["valid",
-                         "invalid-no-source",
-                         "invalid-no-account",
-                         "invalid-no-collection-info",
-                         "invalid-inconsistencies",
+                {% for status in ["sample-is-valid",
+                         "no-associated-source",
+                         "no-registered-account",
+                         "no-collection-info",
+                         "sample-has-inconsistencies",
                          "received-unknown-validity"] %}
                     <option value="{{status}}">{{status}}</option>
                 {% endfor %}
