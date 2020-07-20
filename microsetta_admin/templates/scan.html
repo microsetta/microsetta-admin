@@ -6,7 +6,7 @@
         <table>
             <tr>
                 <td><label for="sample_barcode">Barcode: </label></td>
-                <td><input type="text" name="sample_barcode" id="sample_barcode" {% if info %} value="{{info.barcode}}"{% endif %}></td>
+                <td><input type="text" name="sample_barcode" id="sample_barcode" {% if barcode_info %} value="{{barcode_info.barcode}}"{% endif %}></td>
             </tr>
             <tr>
                 <td></td>
@@ -27,7 +27,7 @@
     <hr>
     <br>
 
-    {% if info %}
+    {% if barcode_info %}
         <div id="sample-status" class="sample-status" style="background-color:{{ status_color }};">
            <div>
                 {% if status_warnings %}
@@ -48,11 +48,11 @@
             </div>
         </div>
         <form action="/scan" name="update_form" id="update_form" method="post">
-        <input type="hidden" name="sample_barcode" value="{{info.barcode}}"/>
+        <input type="hidden" name="sample_barcode" value="{{barcode_info.barcode}}"/>
         <table>
             <tr>
                 <td>Barcode: </td>
-                <td>{{info.barcode}}</td>
+                <td>{{barcode_info.barcode}}</td>
             </tr>
             <tr>
                 <td>Projects: </td>
@@ -61,7 +61,7 @@
                 <td></td>
                 <td>
                     <ul>
-                    {% for proj_info in info.projects %}
+                    {% for proj_info in projects_info %}
                         <li>
                             {{proj_info.project}}
                             {%  if proj_info.bank_samples %}
@@ -78,11 +78,33 @@
             </tr>
             <tr>
                 <td>Collection date: </td>
-                <td>{{sample_info.datetime_collected}}</td>
+                <td>{{ format_timestamp(sample_info.datetime_collected) }}</td>
             </tr>
             <tr>
-                <td>Scan Date: </td>
-                <td>{{info.scan_date}}</td>
+                <td colspan="100%">
+                    {% if scans_info|length > 0 %}
+                    <table id="barcode_scans" class="display" style="width:100%;margin: 12px">
+                        <thead>
+                            <tr>
+                                <th>Scan Timestamp</th>
+                                <th>Sample Status</th>
+                                <th>Technician Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for scan in scans_info %}
+                            <tr>
+                                <td>{{ format_timestamp(scan['scan_timestamp']) }}</td>
+                                <td>{{ scan['sample_status'] }}</td>
+                                <td>{{ scan['technician_notes'] }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                        No previous scans
+                    {% endif %}
+                </td>
             </tr>
             <tr>
               <td colspan="100%"><hr></td>
@@ -91,12 +113,13 @@
                 <td>Sample Status: </td>
                 <td>
                 <select id="sample_status" name="sample_status">
-                {% for status in ["not-received",
-                         "sample-is-valid",
-                         "no-associated-consent",
+                {% for status in ["sample-is-valid",
+                         "no-associated-source",
                          "no-registered-account",
-                         "sample-has-inconsistencies"] %}
-                    <option value="{{status}}" {% if status == info.sample_status %} selected {% endif %}>{{status}}</option>
+                         "no-collection-info",
+                         "sample-has-inconsistencies",
+                         "received-unknown-validity"] %}
+                    <option value="{{status}}">{{status}}</option>
                 {% endfor %}
                 </select>
                 </td>
@@ -104,12 +127,12 @@
             <tr>
                 <td>Technician Notes: </td>
                 <td>
-                    <textarea name="technician_notes" rows="10" cols="50">{{info.technician_notes}}</textarea>
+                    <textarea name="technician_notes" rows="10" cols="50"></textarea>
                 </td>
             </tr>
             <tr>
                 <td/>
-                <td><input type="submit" value="Update"></td>
+                <td><input type="submit" value="Add Scan"></td>
             </tr>
         </table>
     </form>
@@ -122,10 +145,10 @@
     {% endif %}
 
     <script>
-    {% if info %}
-       document.update_form.sample_status.focus()
+    {% if barcode_info %}
+       document.update_form.sample_status.focus();
     {% else %}
-       document.search_form.sample_barcode.focus()
+       document.search_form.sample_barcode.focus();
     {% endif %}
     </script>
 </div>
