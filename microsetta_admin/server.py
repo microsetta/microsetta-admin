@@ -275,14 +275,10 @@ def scan():
             # Process result in python because its easier than jinja2.
             status_warnings, status_color = _check_sample_status(result)
 
-            # check the latest scan to find the default sample_status
-            # for form
+            # check the latest scan to find the default sample_status for form
             latest_status = DUMMY_SELECT_TEXT
-            scans = result['scans_info']
-            if len(scans) > 0:
-                # get the latest scan--they are in ascending order by date
-                latest_scan = scans[len(scans)-1]
-                latest_status = latest_scan['sample_status']
+            if result['latest_scan']:
+                latest_status = result['latest_scan']['sample_status']
 
             # sample_info may be None if barcode not in agp,
             # then no sample_site available
