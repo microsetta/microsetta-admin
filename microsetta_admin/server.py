@@ -20,6 +20,8 @@ PUB_KEY = pkg_resources.read_text(
     'microsetta_admin',
     "authrocket.pubkey")
 
+DUMMY_SELECT_TEXT = '-------'
+
 
 def handle_pyjwt(pyjwt_error):
     # PyJWTError (Aka, anything wrong with token) will force user to log out
@@ -273,6 +275,11 @@ def scan():
             # Process result in python because its easier than jinja2.
             status_warnings, status_color = _check_sample_status(result)
 
+            # check the latest scan to find the default sample_status for form
+            latest_status = DUMMY_SELECT_TEXT
+            if result['latest_scan']:
+                latest_status = result['latest_scan']['sample_status']
+
             # sample_info may be None if barcode not in agp,
             # then no sample_site available
             return render_template(
@@ -281,6 +288,8 @@ def scan():
                 barcode_info=result["barcode_info"],
                 projects_info=result['projects_info'],
                 scans_info=result['scans_info'],
+                latest_status=latest_status,
+                dummy_status=DUMMY_SELECT_TEXT,
                 sample_info=result['sample'],
                 extended_info=result,
                 status_warnings=status_warnings,

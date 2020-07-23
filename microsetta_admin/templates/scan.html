@@ -6,7 +6,7 @@
         <table>
             <tr>
                 <td><label for="sample_barcode">Barcode: </label></td>
-                <td><input type="text" name="sample_barcode" id="sample_barcode" {% if barcode_info %} value="{{barcode_info.barcode}}"{% endif %}></td>
+                <td><input type="text" name="sample_barcode" id="sample_barcode"></td>
             </tr>
             <tr>
                 <td></td>
@@ -18,9 +18,6 @@
             {{search_error |e}}
             </p>
         {% endif %}
-        <script>
-           document.search_form.sample_barcode.focus()
-        </script>
     </form>
 
     <br>
@@ -47,7 +44,7 @@
                 {% endif %}
             </div>
         </div>
-        <form action="/scan" name="update_form" id="update_form" method="post">
+        <form action="/scan" name="update_form" id="update_form" onsubmit="return verify_status();"   method="post">
         <input type="hidden" name="sample_barcode" value="{{barcode_info.barcode}}"/>
         <table>
             <tr>
@@ -113,13 +110,14 @@
                 <td>Sample Status: </td>
                 <td>
                 <select id="sample_status" name="sample_status">
-                {% for status in ["sample-is-valid",
+                {% for status in [dummy_status,
+                        "sample-is-valid",
                          "no-associated-source",
                          "no-registered-account",
                          "no-collection-info",
                          "sample-has-inconsistencies",
                          "received-unknown-validity"] %}
-                    <option value="{{status}}">{{status}}</option>
+                    <option value="{{status}}" {% if latest_status == status %}selected{% endif %} %}>{{status}}</option>
                 {% endfor %}
                 </select>
                 </td>
@@ -145,11 +143,20 @@
     {% endif %}
 
     <script>
-    {% if barcode_info %}
-       document.update_form.sample_status.focus();
-    {% else %}
-       document.search_form.sample_barcode.focus();
-    {% endif %}
+        // prevent submit with dummy status
+        function verify_status() {
+            let result = true;
+            let select_element = document.getElementById("sample_status");
+            let selected_status = select_element.options[select_element.selectedIndex].text;
+            if (selected_status === '{{ dummy_status }}'){
+                result = false;
+                alert("A scan cannot be saved without selecting a sample_status.");
+            }
+
+            return result;
+        }
+
+        document.search_form.sample_barcode.focus();
     </script>
 </div>
 {% endblock %}
