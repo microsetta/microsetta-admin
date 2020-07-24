@@ -3,6 +3,10 @@ import json
 from microsetta_admin.tests.base import TestBase
 
 
+class DynamicObj(object):
+    pass
+
+
 class RouteTests(TestBase):
     def test_home_simple(self):
         response = self.app.get('/', follow_redirects=True)
@@ -42,37 +46,59 @@ class RouteTests(TestBase):
         self.assertIn(b'<h3>Microsetta Scan</h3>', response.data)
 
     def test_scan_specific_okay(self):
-        resp = {"barcode_info": {"barcode": "000004216"},
+        resp1 = {"barcode_info": {"barcode": "000004216"},
                 "projects_info": [],
                 "scans_info": [],
                 "latest_scan": None,
                 "sample": {'site': 'baz'},
-                "account": 'foo',
+                "account": {'id': 'd8592c74-9694-2135-e040-8a80115d6401'},
                 "source": 'bar'}
 
-        self.mock_get.return_value.status_code = 200
-        self.mock_get.return_value.text = json.dumps(resp)
-        self.mock_get.return_value.json = lambda: resp  # noqa
+        resp2 = []
+
+        dynObj = DynamicObj()
+        dynObj.status_code = 200
+        dynObj.text = json.dumps(resp1)
+        dynObj.json = lambda: resp1
+
+        dynObj2 = DynamicObj()
+        dynObj2.status_code = 200
+        dynObj2.text = json.dumps(resp2)
+        dynObj2.json = lambda: resp2
+
+        self.mock_get.side_effect = [dynObj, dynObj2]
 
         response = self.app.get('/scan?sample_barcode=000004216',
                                 follow_redirects=True)
 
         self.assertEqual(response.status_code, 200)
+        print(response.status_code)
+        print(response.data)
         self.assertIn(b'<td>000004216</td>', response.data)
         self.assertNotIn(b'Status Warnings:', response.data)
 
     def test_scan_specific_uncollected(self):
-        resp = {"barcode_info": {"barcode": "000004216"},
+        resp1 = {"barcode_info": {"barcode": "000004216"},
                 "projects_info": [],
                 "scans_info": [],
                 "latest_scan": None,
                 "sample": {'site': None},
-                "account": 'foo',
+                "account": {'id': "ThizIzNotReal"},
                 "source": 'bar'}
 
-        self.mock_get.return_value.status_code = 200
-        self.mock_get.return_value.text = json.dumps(resp)
-        self.mock_get.return_value.json = lambda: resp  # noqa
+        resp2 = []
+
+        dynObj = DynamicObj()
+        dynObj.status_code = 200
+        dynObj.text = json.dumps(resp1)
+        dynObj.json = lambda: resp1
+
+        dynObj2 = DynamicObj()
+        dynObj2.status_code = 200
+        dynObj2.text = json.dumps(resp2)
+        dynObj2.json = lambda: resp2
+
+        self.mock_get.side_effect = [dynObj, dynObj2]
 
         response = self.app.get('/scan?sample_barcode=000004216',
                                 follow_redirects=True)
