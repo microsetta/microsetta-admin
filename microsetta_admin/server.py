@@ -289,10 +289,6 @@ def scan():
             if result['latest_scan']:
                 latest_status = result['latest_scan']['sample_status']
 
-            # sample_info may be None if barcode not in agp,
-            # then no sample_site available
-            sample_info = result['sample']
-
             account = result.get('account')
             events = []
             if account:
