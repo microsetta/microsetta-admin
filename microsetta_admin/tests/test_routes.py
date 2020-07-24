@@ -46,13 +46,15 @@ class RouteTests(TestBase):
         self.assertIn(b'<h3>Microsetta Scan</h3>', response.data)
 
     def test_scan_specific_okay(self):
-        resp1 = {"barcode_info": {"barcode": "000004216"},
-                "projects_info": [],
-                "scans_info": [],
-                "latest_scan": None,
-                "sample": {'site': 'baz'},
-                "account": {'id': 'd8592c74-9694-2135-e040-8a80115d6401'},
-                "source": 'bar'}
+        resp1 = {
+            "barcode_info": {"barcode": "000004216"},
+            "projects_info": [],
+            "scans_info": [],
+            "latest_scan": None,
+            "sample": {'site': 'baz'},
+            "account": {'id': 'd8592c74-9694-2135-e040-8a80115d6401'},
+            "source": 'bar'
+        }
 
         resp2 = []
 
@@ -78,13 +80,15 @@ class RouteTests(TestBase):
         self.assertNotIn(b'Status Warnings:', response.data)
 
     def test_scan_specific_uncollected(self):
-        resp1 = {"barcode_info": {"barcode": "000004216"},
-                "projects_info": [],
-                "scans_info": [],
-                "latest_scan": None,
-                "sample": {'site': None},
-                "account": {'id': "ThizIzNotReal"},
-                "source": 'bar'}
+        resp1 = {
+            "barcode_info": {"barcode": "000004216"},
+            "projects_info": [],
+            "scans_info": [],
+            "latest_scan": None,
+            "sample": {'site': None},
+            "account": {'id': "ThizIzNotReal"},
+            "source": 'bar'
+        }
 
         resp2 = []
 
