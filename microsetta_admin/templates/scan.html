@@ -50,7 +50,7 @@
                 {% endif %}
             </div>
         </div>
-        <form action="/scan" name="update_form" id="update_form" onsubmit="return verify_status();"   method="post">
+        <form action="/scan" name="update_form" id="update_form" onsubmit="return verify_status();" method="post">
         <input type="hidden" name="action" value="update_status"/>
         <input type="hidden" name="sample_barcode" value="{{barcode_info.barcode}}"/>
         <table>
@@ -118,7 +118,7 @@
                 <td>
                 <select id="sample_status" name="sample_status">
                 {% for status in [dummy_status,
-                        "sample-is-valid",
+                         "sample-is-valid",
                          "no-associated-source",
                          "no-registered-account",
                          "no-collection-info",
@@ -163,7 +163,8 @@
             <hr>
             {% endfor %}
         </table>
-        <form method="post">
+
+        <form action="/scan" name="send_email_form" id="send_email_form" onsubmit="return verify_send_email();" method="post">
         <input type="hidden" name="action" value="send_email"/>
         <input type="hidden" id="issue_type" name="issue_type" value="sample"/>
         <input type="hidden" name="sample_barcode" value="{{barcode_info.barcode}}"/>
@@ -176,6 +177,7 @@
                 <td>Issue Type:</td>
                 <td>
                     <select id="template" name="template">
+                        <option value="{{dummy_status}}">{{dummy_status}}</option>
                         <option value="incorrect_sample_type">Incorrect Sample Site</option>
                         <option value="missing_sample_info">Missing Sample Info</option>
                     </select>
@@ -185,7 +187,7 @@
                 <td>Apparent Sample Site:</td>
                 <td>
                     <select id="received_type" name="received_type">
-                        {% for received_type in ["Blood (skin prick)", "Saliva", "Ear wax", "Forehead", "Fur", "Hair", "Left hand", "Left leg", "Mouth", "Nares", "Nasal mucus",
+                        {% for received_type in [dummy_status, "Blood (skin prick)", "Saliva", "Ear wax", "Forehead", "Fur", "Hair", "Left hand", "Left leg", "Mouth", "Nares", "Nasal mucus",
                          "Right hand", "Right leg", "Stool", "Tears", "Torso", "Vaginal mucus"] %}
                         <option value="{{received_type |e}}">{{received_type |e}}</option>
                         {% endfor %}
@@ -210,6 +212,23 @@
             if (selected_status === '{{ dummy_status }}'){
                 result = false;
                 alert("A scan cannot be saved without selecting a sample_status.");
+            }
+
+            return result;
+        }
+
+        function verify_send_email() {
+            let result = true;
+            let template = document.getElementById("template");
+            let received_type = document.getElementById("received_type");
+
+            let template_text = template.options[template.selectedIndex].text;
+            let received_type_text = received_type.options[received_type.selectedIndex].text;
+
+            if (template_text === '{{ dummy_status }}' ||
+                received_type_text === '{{ dummy_status }}'){
+                result = false;
+                alert("Technician must select email issue type and specify received sample type before templated email can be sent to user");
             }
 
             return result;
