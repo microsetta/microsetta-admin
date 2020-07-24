@@ -21,6 +21,8 @@ PUB_KEY = pkg_resources.read_text(
     'microsetta_admin',
     "authrocket.pubkey")
 
+DUMMY_SELECT_TEXT = '-------'
+
 
 def handle_pyjwt(pyjwt_error):
     # PyJWTError (Aka, anything wrong with token) will force user to log out
@@ -86,6 +88,16 @@ def build_app():
 
 
 app = build_app()
+
+
+@app.context_processor
+def utility_processor():
+    def format_timestamp(timestamp_str):
+        if not timestamp_str:
+            return "None"
+        datetime_obj = datetime.fromisoformat(timestamp_str)
+        return datetime_obj.strftime("%Y %B %d  %H:%M:%S")
+    return dict(format_timestamp=format_timestamp)
 
 
 @app.route('/')
@@ -272,6 +284,11 @@ def scan():
             # Process result in python because its easier than jinja2.
             status_warnings, status_color = _check_sample_status(result)
 
+            # check the latest scan to find the default sample_status for form
+            latest_status = DUMMY_SELECT_TEXT
+            if result['latest_scan']:
+                latest_status = result['latest_scan']['sample_status']
+
             # sample_info may be None if barcode not in agp,
             # then no sample_site available
             sample_info = result['sample']
@@ -290,8 +307,12 @@ def scan():
             return render_template(
                 'scan.html',
                 **build_login_variables(),
-                info=result['barcode_info'],
-                sample_info=sample_info,
+                barcode_info=result["barcode_info"],
+                projects_info=result['projects_info'],
+                scans_info=result['scans_info'],
+                latest_status=latest_status,
+                dummy_status=DUMMY_SELECT_TEXT,
+                sample_info=result['sample'],
                 extended_info=result,
                 status_warnings=status_warnings,
                 update_error=update_error,
@@ -317,7 +338,7 @@ def scan():
                                technician_notes,
                                sample_status):
         # Do the actual update
-        status, response = APIRequest.put(
+        status, response = APIRequest.post(
             '/api/admin/scan/%s' % sample_barcode,
             json={
                 "sample_status": sample_status,
@@ -326,7 +347,7 @@ def scan():
         )
 
         # if the update failed, keep track of the error so it can be displayed
-        if status != 200:
+        if status != 201:
             update_error = response
         else:
             update_error = None
@@ -393,6 +414,8 @@ def scan():
 
 @app.route('/metadata_pulldown', methods=['GET', 'POST'])
 def metadata_pulldown():
+    allow_missing = request.form.get('allow_missing_samples', False)
+
     if request.method == 'GET':
         sample_barcode = request.args.get('sample_barcode')
         # If there is no sample_barcode in the GET
@@ -402,8 +425,6 @@ def metadata_pulldown():
                                    **build_login_variables())
         sample_barcodes = [sample_barcode]
     elif request.method == 'POST':
-        allow_missing = request.form.get('allow_missing_samples', False)
-
         if 'file' not in request.files or \
                 request.files['file'].filename == '':
             search_error = [{'error': 'Must specify a valid file'}]

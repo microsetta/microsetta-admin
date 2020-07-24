@@ -3,7 +3,8 @@ import json
 import pandas as pd
 import pandas.testing as pdt
 from microsetta_admin.tests.base import TestBase
-from microsetta_admin.metadata_constants import HUMAN_SITE_INVARIANTS
+from microsetta_admin.metadata_constants import (HUMAN_SITE_INVARIANTS,
+                                                 MISSING_VALUE)
 from microsetta_admin.metadata_util import (_build_col_name,
                                             _find_duplicates,
                                             _fetch_barcode_metadata,
@@ -30,7 +31,7 @@ class MetadataUtilTests(TestBase):
                 },
                 'survey_answers': [
                     {'template': 1,
-                     'response': {'1': ['DIET_TYPE', 'Omnivore'],
+                     'response': {'1': ['DIET_TYPE', '[""]'],
                                   '2': ['MULTIVITAMIN', 'No'],
                                   '3': ['PROBIOTIC_FREQUENCY', 'Unspecified'],
                                   '4': ['VITAMIN_B_SUPPLEMENT_FREQUENCY',
@@ -57,7 +58,7 @@ class MetadataUtilTests(TestBase):
                 },
                 'survey_answers': [
                     {'template': 1,
-                     'response': {'1': ['DIET_TYPE', 'Vegan'],
+                     'response': {'1': ['DIET_TYPE', '["Vegan"]'],
                                   '2': ['MULTIVITAMIN', 'Yes'],
                                   '3': ['PROBIOTIC_FREQUENCY', 'Unspecified'],
                                   '4': ['VITAMIN_B_SUPPLEMENT_FREQUENCY',
@@ -197,28 +198,28 @@ class MetadataUtilTests(TestBase):
         data = [self.raw_sample_1, self.raw_sample_2]
         templates = {1: self.fake_survey_template2}
 
-        exp = pd.DataFrame([['000004216', 'foo', 'Omnivore', 'No',
+        exp = pd.DataFrame([['000004216', 'foo', MISSING_VALUE, 'No',
                              'Unspecified', 'Unspecified', 'Unspecified', 'No',
                              'true', 'true', 'false', 'false',
-                             'Missing: not provided',
+                             MISSING_VALUE,
                              'okay', 'No', "2013-10-15T09:30:00"],
                             ['XY0004216', 'bar', 'Vegan', 'Yes', 'Unspecified',
                              'Unspecified', 'Unspecified', 'No',
                              'false', 'true', 'true', 'false', 'foobar',
-                             'Missing: not provided',
-                             'Missing: not provided',
+                             MISSING_VALUE,
+                             MISSING_VALUE,
                              "2013-10-15T09:30:00"]],
-                           columns=['sample_name', 'HOST_SUBJECT_ID',
-                                    'DIET_TYPE', 'MULTIVITAMIN',
-                                    'PROBIOTIC_FREQUENCY',
-                                    'VITAMIN_B_SUPPLEMENT_FREQUENCY',
-                                    'VITAMIN_D_SUPPLEMENT_FREQUENCY',
-                                    'OTHER_SUPPLEMENT_FREQUENCY',
-                                    'ALLERGIC_TO_blahblah',
-                                    'ALLERGIC_TO_stuff', 'ALLERGIC_TO_baz',
-                                    'ALLERGIC_TO_x',
-                                    'SAMPLE2SPECIFIC', 'abc', 'def',
-                                    'COLLECTION_TIMESTAMP']
+                           columns=['sample_name', 'host_subject_id',
+                                    'diet_type', 'multivitamin',
+                                    'probiotic_frequency',
+                                    'vitamin_b_supplement_frequency',
+                                    'vitamin_d_supplement_frequency',
+                                    'other_supplement_frequency',
+                                    'allergic_to_blahblah',
+                                    'allergic_to_stuff', 'allergic_to_baz',
+                                    'allergic_to_x',
+                                    'sample2specific', 'abc', 'def',
+                                    'collection_timestamp']
                            ).set_index('sample_name')
 
         for k, v in HUMAN_SITE_INVARIANTS['Stool'].items():
@@ -230,7 +231,7 @@ class MetadataUtilTests(TestBase):
     def test_to_pandas_series(self):
         data = self.raw_sample_1
 
-        values = ['foo', 'Omnivore', 'No', 'Unspecified', 'Unspecified',
+        values = ['foo', '', 'No', 'Unspecified', 'Unspecified',
                   'Unspecified', 'No', 'true', 'true', 'okay', 'No',
                   "2013-10-15T09:30:00"]
         index = ['HOST_SUBJECT_ID', 'DIET_TYPE', 'MULTIVITAMIN',
