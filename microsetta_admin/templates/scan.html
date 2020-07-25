@@ -1,4 +1,7 @@
 {% extends "sitebase.html" %}
+{% block head %}
+<link rel="stylesheet" type="text/css" href="/static/css/table_style.css">
+{% endblock %}
 {% block content %}
 <h3>Microsetta Scan</h3>
 <div>
@@ -22,8 +25,7 @@
 
     <br>
     <hr>
-    <br>
-
+    <h4>Barcode Info</h4>
     {% if update_error %}
         <p style="color:red">
         {{update_error |e}}
@@ -87,20 +89,22 @@
             <tr>
                 <td colspan="100%">
                     {% if scans_info|length > 0 %}
-                    <table id="barcode_scans" class="display" style="width:100%;margin: 12px">
+                    <hr>
+                    <h4>Scan History</h4>
+                    <table class="bordered" id="barcode_scans" class="display" style="width:100%;margin: 12px">
                         <thead>
                             <tr>
-                                <th>Scan Timestamp</th>
-                                <th>Sample Status</th>
-                                <th>Technician Notes</th>
+                                <th class="bordered">Scan Timestamp</th>
+                                <th class="bordered">Sample Status</th>
+                                <th class="bordered">Technician Notes</th>
                             </tr>
                         </thead>
                         <tbody>
                         {% for scan in scans_info %}
                             <tr>
-                                <td>{{ format_timestamp(scan['scan_timestamp']) }}</td>
-                                <td>{{ scan['sample_status'] }}</td>
-                                <td>{{ scan['technician_notes'] }}</td>
+                                <td class="bordered">{{ format_timestamp(scan['scan_timestamp']) }}</td>
+                                <td class="bordered">{{ scan['sample_status'] }}</td>
+                                <td class="bordered">{{ scan['technician_notes'] }}</td>
                             </tr>
                         {% endfor %}
                         </tbody>
@@ -112,6 +116,9 @@
             </tr>
             <tr>
               <td colspan="100%"><hr></td>
+            </tr>
+            <tr>
+              <td colspan="100%"><h4>Edit Sample/Add Notes</h4></td>
             </tr>
             <tr>
                 <td>Sample Status: </td>
@@ -142,25 +149,23 @@
         </table>
         </form>
 
-        <table>
-            <tr>
-                <td><b>Event Log:</b> (Most Recent At Top)</td>
-            </tr>
+        <br>
+        <hr>
+        <h4>Event Log</h4>
+        <table class="bordered">
+            <thead>
+                <tr>
+                    <th class="bordered">Event Timestamp</th>
+                    <th class="bordered">Email Address</th>
+                    <th class="bordered">Email Template</th>
+                </tr>
+            </thead>
             {% for event in events %}
             <tr>
-                <td>Time:</td>
-                <td><b>{{event["event_time"] |e}}</b></td>
-                <td colspan="2"><small><i>{{event["event_id"] |e}}</i></small></td>
+                <td class="bordered">{{ format_timestamp(event["event_time"]) }}</td>
+                <td class="bordered">{{event["event_state"]["email"] |e}}</td>
+                <td class="bordered">{{event["event_state"]["template"] |e}}</td>
             </tr>
-            <tr>
-                <td>Event Type:</td>
-                <td><b>{{event["event_type"] |e}} / {{event["event_subtype"] |e}}</b></td>
-            </tr>
-            <tr>
-                <td>State:</td>
-                <td><pre>{{event["event_state"] |tojson_pretty|safe}}</pre></td>
-            </tr>
-            <hr>
             {% endfor %}
         </table>
 
@@ -170,9 +175,8 @@
         <input type="hidden" name="sample_barcode" value="{{barcode_info.barcode}}"/>
         <input type="hidden" name="recorded_type" value="{{sample_info.site}}"/>
         <hr>
+            <h4>Contact End User</h4>
         <table>
-            <tr>
-                <td><b>Issue Resolution</b></td>
             <tr>
                 <td>Issue Type:</td>
                 <td>
