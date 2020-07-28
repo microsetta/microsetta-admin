@@ -1,0 +1,541 @@
+{% extends "sitebase.html" %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="/static/vendor/bootstrap-4.4.1-dist/css/bootstrap.css">
+<link rel="stylesheet" type="text/css" href="/static/vendor/DataTables/DataTables-1.10.21/css/jquery.dataTables.css">
+<link rel="stylesheet" type="text/css" href="/static/vendor/DataTables/Buttons-1.6.2/css/buttons.dataTables.css">
+<script type="text/javascript" language="javascript" src="/static/vendor/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" language="javascript" src="/static/vendor/DataTables/DataTables-1.10.21/js/jquery.dataTables.js"></script>
+<script type="text/javascript" language="javascript" src="/static/vendor/DataTables/Buttons-1.6.2/js/dataTables.buttons.js"></script>
+<script type="text/javascript" language="javascript" src="/static/vendor/DataTables/Buttons-1.6.2/js/buttons.colVis.js"></script>
+<script type="text/javascript" language="javascript" src="/static/vendor/bootstrap-4.4.1-dist/js/bootstrap.js"></script>
+    <style>
+    th { white-space: normal; }
+    div.dataTables_wrapper {
+            width: 1000px;
+            margin: 0 auto;
+        }
+
+    .modal-backdrop {
+        /* bug fix - no overlay */
+        display: none;
+    }
+</style>
+<script type="text/javascript" class="init">
+    const numCols = 41;
+
+    // from https://davidwalsh.name/fill-array-javascript
+    const fillRange = (start, end) => {
+      return Array(end - start + 1).fill().map((item, index) => start + index);
+    };
+
+    // zero-based
+    // 
+    const hideableColNums = fillRange(3, numCols - 1);
+    // end from https://davidwalsh.name/fill-array-javascript
+    const basicGroupColNums = fillRange(3, 14);
+    const dispositionGroupColNums = fillRange(15, 18);
+    const sampleTypeGroupColNums = fillRange(19, 23);
+    const profilingGroupColNums = fillRange(24, 34);
+    const brandingGroupColNums = fillRange(35, 36);
+    const statusGroupColNums = fillRange(37, 39);
+
+    function resetModal(){
+        document.getElementById("project_form").reset();
+    }
+
+    function readRow(projId){
+        let projIdSuffix = "_" + projId;
+        let projRowIdSelector = "#tr_project" + projIdSuffix;
+        $(projRowIdSelector).children('td').each(function () {
+            // any non-data columns (like edit button column)
+            // don't have an id, so we know to skip them
+            if (this.id) {
+                // get the form element in the modal edit form
+                // that has the same base id as the data cell we're examining
+                let formElmId = this.id.replace("td_", "");
+                formElmId = formElmId.replace(projIdSuffix, "");
+                let formElm = $("#" + formElmId);
+
+                // if we got an editable element with this id (which we
+                // won't always--e.g., no editable element for num_received_samples
+                // bc that is read-only from db)
+                if (formElm.length === 1){
+                    // if the element is a checkbox, it needs special
+                    // finicky handling
+                    if (formElm.is(":checkbox")) {
+                        // set checked property to boolean value of data field
+                        let isChecked = (this.innerText.toLowerCase() === "true");
+                        formElm.prop('checked', isChecked);
+                    } else {
+                        // all other inputs can be set using jquery's val()
+                        formElm.val(this.innerText);
+                    }
+                }
+
+            }
+        });
+    }
+
+    $(document).ready(function() {
+        document.getElementById('bank_samples').onchange = function() {
+            document.getElementById('plating_start_date').disabled = !this.checked;
+        };
+
+        // from https://getbootstrap.com/docs/4.0/components/modal/
+        $('#exampleModal').on('show.bs.modal', function (event) {
+          let button = $(event.relatedTarget); // Button that triggered the modal
+          let action = button.data('whatever'); // Extract info from data-* attributes
+          let modal = $(this);
+          modal.find('.modal-title').text(action + ' Project');
+          $("#modal_submit").text(action);
+        });
+        // end from https://getbootstrap.com/docs/4.0/components/modal/
+
+        $('#projects_list').DataTable({
+            "scrollX": true,
+            // modified from https://datatables.net/extensions/buttons/examples/column_visibility/columnGroups.html#:~:text=SearchPanes-,Column%20groups,provides%20this%20ability%20for%20Buttons
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'colvisGroup',
+                    text: 'Show all',
+                    show: ':hidden'
+                },
+                {
+                    extend: 'colvisGroup',
+                    text: 'Basics',
+                    show: basicGroupColNums,
+                    hide: hideableColNums.filter(i => !basicGroupColNums.includes(i))
+                },
+                {
+                    extend: 'colvisGroup',
+                    text: 'Disposition',
+                    show: dispositionGroupColNums,
+                    hide: hideableColNums.filter(i => !dispositionGroupColNums.includes(i))
+                },
+                {
+                    extend: 'colvisGroup',
+                    text: 'Sample Types',
+                    show: sampleTypeGroupColNums,
+                    hide: hideableColNums.filter(i => !sampleTypeGroupColNums.includes(i))
+                },
+                {
+                    extend: 'colvisGroup',
+                    text: 'Profiling',
+                    show: profilingGroupColNums,
+                    hide: hideableColNums.filter(i => !profilingGroupColNums.includes(i))
+                },
+                {
+                    extend: 'colvisGroup',
+                    text: 'Branding',
+                    show: brandingGroupColNums,
+                    hide: hideableColNums.filter(i => !brandingGroupColNums.includes(i))
+                },
+                {
+                    extend: 'colvisGroup',
+                    text: 'Status',
+                    show: statusGroupColNums,
+                    hide: hideableColNums.filter(i => !statusGroupColNums.includes(i))
+                }
+            ]
+            // end modified from https://datatables.net/extensions/buttons/examples/column_visibility/columnGroups.html#:~:text=SearchPanes-,Column%20groups,provides%20this%20ability%20for%20Buttons
+
+        });
+
+    } );
+</script>
+{% endblock %}
+
+{% block content %}
+<h3>Projects</h3>
+{% if 'error_message' in result %}
+    <p>{{ result['error_message'] }}</p>
+{% else %}
+    <div>
+        <div class="result_container">
+            <div class="dataTables_wrapper">
+                <table id="projects_list" class="display wrap" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Edit</th>
+                            <th>ID</th>
+                            <th>Study Name</th>
+                            <!--Basics group-->
+                            <th>Flight Sub-Project Name</th>
+                            <th>Alias</th>
+                            <th>Is Microsetta</th>
+                            <th>Sponsor</th>
+                            <th>Coordination</th>
+                            <th>POC</th>
+                            <th>Additional POC</th>
+                            <th>POC e-mail address</th>
+                            <th>Deadlines</th>
+                            <th># Subjects</th>
+                            <th>Timepoints</th>
+                            <th>Start Date</th>
+                            <!--Disposition group-->
+                            <th>Bank Samples (was Disposition)</th>
+                            <th>Plating Start Date</th>
+                            <th>Disposition Comments</th>
+                            <th>Collection</th>
+                            <!--Sample Types group -->
+                            <th>Fecal</th>
+                            <th>Saliva</th>
+                            <th>Skin</th>
+                            <th>Blood</th>
+                            <th>Other Type</th>
+                            <!--Profiling group-->
+                            <th>16s</th>
+                            <th>Shallow Shotgun</th>
+                            <th>Shotgun</th>
+                            <th>RT-qPCR</th>
+                            <th>Serology</th>
+                            <th>Meta-transcriptomics</th>
+                            <th>Mass Spec</th>
+                            <th>Mass Spec Comments</th>
+                            <th>Mass Spec Contact</th>
+                            <th>POC email</th>
+                            <th>Other Profiling</th>
+                            <!--Branding group -->
+                            <th>Branding Associated Instructions</th>
+                            <th>Branding Status</th>
+                            <!--Status group -->
+                            <th>Num Kits</th>
+                            <th>Num Samples</th>
+                            <th>Num Samples Received</th>
+                            <th>Num Unique Sources</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for project in result['projects'] %}
+                        {% set curr_id = project['project_id'] %}
+                        <tr id = "tr_project_{{ curr_id }}">
+                            <td>
+                                <button type="button" data-toggle="modal" data-target="#exampleModal" data-whatever="Update" onclick="readRow({{ curr_id }});">
+                                    Edit
+                                </button>
+                            </td>
+                            <td id="td_project_id_{{ curr_id }}">{{ project['project_id'] }}</td>
+                            <td id="td_project_name_{{ curr_id }}">{{ project['project_name'] }}</td>
+                            <td id="td_subproject_name_{{ curr_id }}">{{ project['subproject_name'] }}</td>
+                            <td id="td_alias_{{ curr_id }}">{{ project['alias'] }}</td>
+                            <td id="td_is_microsetta_{{ curr_id }}">{{ project['is_microsetta'] }}</td>
+                            <td id="td_sponsor_{{ curr_id }}">{{ project['sponsor'] }}</td>
+                            <td id="td_coordination_{{ curr_id }}">{{ project['coordination'] }}</td>
+                            <td id="td_contact_name_{{ curr_id }}">{{ project['contact_name'] }}</td>
+                            <td id="td_addtl_contact_name_{{ curr_id }}">{{ project['additional_contact_name'] }}</td>
+                            <td id="td_contact_email_{{ curr_id }}">{{ project['contact_email'] }}</td>
+                            <td id="td_deadlines_{{ curr_id }}">{{ project['deadlines'] }}</td>
+                            <td id="td_num_subjects_{{ curr_id }}">{{ project['num_subjects'] }}</td>
+                            <td id="td_num_timepoints_{{ curr_id }}">{{ project['num_timepoints'] }}</td>
+                            <td id="td_start_date_{{ curr_id }}">{{ project['start_date'] }}</td>
+                            <td id="td_bank_samples_{{ curr_id }}">{{ project['bank_samples'] }}</td>
+                            <td id="td_plating_start_date_{{ curr_id }}">{{ project['plating_start_date'] }}</td>
+                            <td id="td_disposition_comments_{{ curr_id }}">{{ project['disposition_comments'] }}</td>
+                            <td id="td_collection_{{ curr_id }}">{{ project['collection'] }}</td>
+                            <td id="td_is_fecal_{{ curr_id }}">{{ project['is_fecal'] }}</td>
+                            <td id="td_is_saliva_{{ curr_id }}">{{ project['is_saliva'] }}</td>
+                            <td id="td_is_skin_{{ curr_id }}">{{ project['is_skin'] }}</td>
+                            <td id="td_is_blood_{{ curr_id }}">{{ project['is_blood'] }}</td>
+                            <td id="td_is_other_{{ curr_id }}">{{ project['is_other'] }}</td>
+                            <td id="td_do_16s_{{ curr_id }}">{{ project['do_16s'] }}</td>
+                            <td id="td_do_shallow_shotgun_{{ curr_id }}">{{ project['do_shallow_shotgun'] }}</td>
+                            <td id="td_do_shotgun_{{ curr_id }}">{{ project['do_shotgun'] }}</td>
+                            <td id="td_do_rt_qpcr_{{ curr_id }}">{{ project['do_rt_qpcr'] }}</td>
+                            <td id="td_do_serology_{{ curr_id }}">{{ project['do_serology'] }}</td>
+                            <td id="td_do_metatranscriptomics_{{ curr_id }}">{{ project['do_metatranscriptomics'] }}</td>
+                            <td id="td_do_mass_spec_{{ curr_id }}">{{ project['do_mass_spec'] }}</td>
+                            <td id="td_mass_spec_comments_{{ curr_id }}">{{ project['mass_spec_comments'] }}</td>
+                            <td id="td_mass_spec_contact_name_{{ curr_id }}">{{ project['mass_spec_contact_name'] }}</td>
+                            <td id="td_mass_spec_contact_email_{{ curr_id }}">{{ project['mass_spec_contact_email'] }}</td>
+                            <td id="td_do_other_{{ curr_id }}">{{ project['do_other'] }}</td>
+                            <td id="td_branding_associated_instructions_{{ curr_id }}">{{ project['branding_associated_instructions'] }}</td>
+                            <td id="td_branding_status_{{ curr_id }}">{{ project['branding_status'] }}</td>
+                            <td id="td_num_kits_{{ curr_id }}">{{ project['num_kits'] }}</td>
+                            <td id="td_num_samples_{{ curr_id }}">{{ project['num_samples'] }}</td>
+                            <td id="td_num_samples_received_{{ curr_id }}">{{ project['num_samples_received'] }}</td>
+                            <td id="td_num_unique_sources_{{ curr_id }}">{{ project['num_unique_sources'] }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <button type="button" data-toggle="modal" data-target="#exampleModal" data-whatever="Create" onClick="resetModal();">Create New Project</button>
+    <button type="submit" onClick="window.location.reload();">Refresh Results</button>
+{% endif %}
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Edit Project</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form name="project_form" id="project_form" method="POST">
+                <table>
+                    <tr>
+                        <td><label for="project_name">Project Name: </label></td>
+                        <td><input type="text" name="project_name" id="project_name" /></td>
+                    </tr>
+                </table>
+                <p></p>
+                <div class="accordion" id="myAccordion">
+                    <div class="card">
+                        <div class="card-header" id="headingOne">
+                            <h2 class="mb-0">
+                                <button type="button" class="btn btn-link"
+                                        data-toggle="collapse" data-target="#collapseOne">
+                                    Basics
+                                </button>
+                            </h2>
+                        </div>
+                        <div id="collapseOne" class="collapse" aria-labelledby="headingOne">
+                            <div class="card-body">
+                                <table>
+                                    <tr>
+                                        <td><label for="subproject_name">Sub-Project Name: </label></td>
+                                        <td><input type="text" name="subproject_name" id="subproject_name" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="alias">Alias: </label></td>
+                                        <td><input type="text" name="alias" id="alias" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="is_microsetta">Microsetta Project: </label></td>
+                                        <td><input type="checkbox" name="is_microsetta" id="is_microsetta" value='Yes' /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="sponsor">Sponsor: </label></td>
+                                        <td><input type="text" name="sponsor" id="sponsor" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="coordination">Coordination: </label></td>
+                                        <td><input type="text" name="coordination" id="coordination" /></td>
+                                    </tr>
+                                     <tr>
+                                        <td><label for="contact_name">Contact Name: </label></td>
+                                        <td><input type="text" name="contact_name" id="contact_name" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="addtl_contact_name">Additional Contact Name: </label></td>
+                                        <td><input type="text" name="addtl_contact_name" id="addtl_contact_name" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="contact_email">Contact Email: </label></td>
+                                        <td><input type="email" name="contact_email" id="contact_email" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="deadlines">Deadlines: </label></td>
+                                        <td><input type="text" name="deadlines" id="deadlines" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="num_subjects">Number of Subjects: </label></td>
+                                        <td><input type="number" name="num_subjects" id="num_subjects" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="num_timepoints">Number of Timepoints: </label></td>
+                                        <td><input type="number" name="num_timepoints" id="num_timepoints" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="start_date">Start Date: </label></td>
+                                        <td><input type="text" name="start_date" id="start_date" /></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header" id="headingTwo">
+                            <h2 class="mb-0">
+                                <button type="button" class="btn btn-link"
+                                        data-toggle="collapse" data-target="#collapseTwo">
+                                    Disposition
+                                </button>
+                            </h2>
+                        </div>
+                        <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo">
+                            <div class="card-body">
+                                <table>
+                                    <tr>
+                                        <td><label for="bank_samples">Bank Samples: </label></td>
+                                        <td><input type="checkbox" name="bank_samples" id="bank_samples" value='Yes' /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="plating_start_date">Plate On (Optional): </label></td>
+                                        <td><input type="text" name="plating_start_date" id="plating_start_date" placeholder="2020-07-04"
+                                                   pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}" disabled/><br>
+                                            <small>Format: YYYY-MM-DD</small>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="disposition_comments">Disposition Comments: </label></td>
+                                        <td><input type="text" name="disposition_comments" id="disposition_comments" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="collection">Collection: </label></td>
+                                        <td><input type="text" name="collection" id="collection" /></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header" id="headingThree">
+                            <h2 class="mb-0">
+                                <button type="button" class="btn btn-link"
+                                        data-toggle="collapse" data-target="#collapseThree">
+                                    Sample Types
+                                </button>
+                            </h2>
+                        </div>
+                        <div id="collapseThree" class="collapse" aria-labelledby="headingThree">
+                            <div class="card-body">
+                                <table>
+                                    <tr>
+                                        <td><label for="is_fecal">Fecal: </label></td>
+                                        <td>
+                                            <select name="is_fecal" id="is_fecal">
+                                              <option value=""></option>
+                                              <option value="X">X</option>
+                                              <option value="?">?</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="is_saliva">Saliva: </label></td>
+                                        <td>
+                                            <select name="is_saliva" id="is_saliva">
+                                              <option value=""></option>
+                                              <option value="X">X</option>
+                                              <option value="?">?</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="is_skin">Skin: </label></td>
+                                        <td>
+                                            <select name="is_skin" id="is_skin">
+                                              <option value=""></option>
+                                              <option value="X">X</option>
+                                              <option value="?">?</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="is_blood">Blood: </label></td>
+                                        <td>
+                                            <select name="is_blood" id="is_blood">
+                                              <option value=""></option>
+                                              <option value="X">X</option>
+                                              <option value="?">?</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                        <tr>
+                                        <td><label for="is_other">Other </label></td>
+                                        <td><input type="text" name="is_other" id="is_other" /></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header" id="headingFour">
+                            <h2 class="mb-0">
+                                <button type="button" class="btn btn-link"
+                                        data-toggle="collapse" data-target="#collapseFour">
+                                    Sample Types
+                                </button>
+                            </h2>
+                        </div>
+                        <div id="collapseFour" class="collapse" aria-labelledby="headingFour">
+                            <div class="card-body">
+                                <table>
+                                    <tr>
+                                        <td><label for="do_16s">16S: </label></td>
+                                        <td><input type="text" name="do_16s" id="do_16s" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="do_shallow_shotgun">Shallow Shotgun: </label></td>
+                                        <td><input type="text" name="do_shallow_shotgun" id="do_shallow_shotgun" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="do_shotgun">Shotgun: </label></td>
+                                        <td><input type="text" name="do_shotgun" id="do_shotgun" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="do_rt_qpcr">RT-qPCR: </label></td>
+                                        <td><input type="text" name="do_rt_qpcr" id="do_rt_qpcr" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="do_serology">Serology: </label></td>
+                                        <td><input type="text" name="do_serology" id="do_serology" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="do_metatranscriptomics">Meta-transcriptomics: </label></td>
+                                        <td><input type="text" name="do_metatranscriptomics" id="do_metatranscriptomics" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="do_mass_spec">Mass Spec: </label></td>
+                                        <td><input type="text" name="do_mass_spec" id="do_mass_spec" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="mass_spec_comments">Mass Spec Comments: </label></td>
+                                        <td><input type="text" name="mass_spec_comments" id="mass_spec_comments" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="mass_spec_contact_name">Mass Spec Contact: </label></td>
+                                        <td><input type="text" name="mass_spec_contact_name" id="mass_spec_contact_name" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="mass_spec_contact_email">POC email: </label></td>
+                                        <td><input type="email" name="mass_spec_contact_email" id="mass_spec_contact_email" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="do_other">Other: </label></td>
+                                        <td><input type="text" name="do_other" id="do_other" /></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header" id="headingFive">
+                            <h2 class="mb-0">
+                                <button type="button" class="btn btn-link"
+                                        data-toggle="collapse" data-target="#collapseFive">
+                                    Sample Types
+                                </button>
+                            </h2>
+                        </div>
+                        <div id="collapseFive" class="collapse" aria-labelledby="headingFive">
+                            <div class="card-body">
+                                <table>
+                                    <tr>
+                                        <td><label for="branding_associated_instructions">Associated Instructions: </label></td>
+                                        <td><input type="text" name="branding_associated_instructions" id="branding_associated_instructions" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="branding_status">Status: </label></td>
+                                        <td><input type="text" name="branding_status" id="branding_status" /></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary" id="modal_submit">Update</button>
+          </div>
+        </div>
+      </div>
+    </div>
+{% endblock %}
