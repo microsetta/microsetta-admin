@@ -38,7 +38,7 @@
     const sampleTypeGroupColNums = fillRange(19, 23);
     const profilingGroupColNums = fillRange(24, 34);
     const brandingGroupColNums = fillRange(35, 36);
-    const statusGroupColNums = fillRange(37, 39);
+    const statusGroupColNums = fillRange(37, 40);
 
     function resetModal(){
         document.getElementById("project_form").reset();
@@ -68,13 +68,19 @@
                         let isChecked = (this.innerText.toLowerCase() === "true");
                         formElm.prop('checked', isChecked);
                     } else {
-                        // all other inputs can be set using jquery's val()
                         formElm.val(this.innerText);
                     }
                 }
 
             }
         });
+    }
+
+
+    // when the modal submit is clicked (NOT onsubmit--too late)
+    function unhideAllPanels() {
+        // make all the panels visible
+        $(".collapse").addClass("show").css("height","auto");
     }
 
     $(document).ready(function() {
@@ -264,19 +270,20 @@
         </div>
     </div>
     <button type="button" data-toggle="modal" data-target="#exampleModal" data-whatever="Create" onClick="resetModal();">Create New Project</button>
-    <button type="submit" onClick="window.location.reload();">Refresh Results</button>
+    <button type="button" onClick="window.location.reload();">Refresh Results</button>
 {% endif %}
-    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="exampleModalLabel">Edit Project</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <form name="project_form" id="project_form" method="POST">
+    <form name="project_form" id="project_form" method="POST">
+        <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Edit Project</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <input type="hidden" name="project_id" id="project_id" value="" />
                 <table>
                     <tr>
                         <td><label for="project_name">Project Name: </label></td>
@@ -307,7 +314,7 @@
                                     </tr>
                                     <tr>
                                         <td><label for="is_microsetta">Microsetta Project: </label></td>
-                                        <td><input type="checkbox" name="is_microsetta" id="is_microsetta" value='Yes' /></td>
+                                        <td><input type="checkbox" name="is_microsetta" id="is_microsetta" value='true' /></td>
                                     </tr>
                                     <tr>
                                         <td><label for="sponsor">Sponsor: </label></td>
@@ -335,11 +342,11 @@
                                     </tr>
                                     <tr>
                                         <td><label for="num_subjects">Number of Subjects: </label></td>
-                                        <td><input type="number" name="num_subjects" id="num_subjects" /></td>
+                                        <td><input type="text" name="num_subjects" id="num_subjects" /></td>
                                     </tr>
                                     <tr>
                                         <td><label for="num_timepoints">Number of Timepoints: </label></td>
-                                        <td><input type="number" name="num_timepoints" id="num_timepoints" /></td>
+                                        <td><input type="text" name="num_timepoints" id="num_timepoints" /></td>
                                     </tr>
                                     <tr>
                                         <td><label for="start_date">Start Date: </label></td>
@@ -363,7 +370,7 @@
                                 <table>
                                     <tr>
                                         <td><label for="bank_samples">Bank Samples: </label></td>
-                                        <td><input type="checkbox" name="bank_samples" id="bank_samples" value='Yes' /></td>
+                                        <td><input type="checkbox" name="bank_samples" id="bank_samples" value='true' /></td>
                                     </tr>
                                     <tr>
                                         <td><label for="plating_start_date">Plate On (Optional): </label></td>
@@ -449,7 +456,7 @@
                             <h2 class="mb-0">
                                 <button type="button" class="btn btn-link"
                                         data-toggle="collapse" data-target="#collapseFour">
-                                    Sample Types
+                                    Profiling
                                 </button>
                             </h2>
                         </div>
@@ -509,7 +516,7 @@
                             <h2 class="mb-0">
                                 <button type="button" class="btn btn-link"
                                         data-toggle="collapse" data-target="#collapseFive">
-                                    Sample Types
+                                    Branding
                                 </button>
                             </h2>
                         </div>
@@ -529,13 +536,13 @@
                         </div>
                     </div>
                 </div>
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-primary" id="modal_submit">Update</button>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary" id="modal_submit" onclick="unhideAllPanels();">Update</button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+    </form>
 {% endblock %}
