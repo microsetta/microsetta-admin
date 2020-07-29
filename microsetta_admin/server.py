@@ -167,9 +167,63 @@ def new_project():
                                    **build_login_variables())
 
 
+def _translate_nones(a_dict, do_none_to_str):
+    # Note: this ISN'T a deep copy. This function is NOT set up
+    # for recursing through a multi-layer dictionary
+    result = a_dict.copy()
+    for k, v in result.items():
+        if do_none_to_str and v is None:
+            result[k] = ""
+        elif not do_none_to_str and v == '':
+            result[k] = None
+    return result
+
+
+@app.route('/manage_projects', methods=['GET', 'POST'])
+def manage_projects():
+    if request.method == 'POST':
+        projects_uri = '/api/admin/projects'
+
+        model = {x: request.form[x] for x in request.form}
+        project_id = model.pop('project_id')
+        model['is_microsetta'] = model.get('is_microsetta', False) == 'true'
+        model['bank_samples'] = model.get('bank_samples', False) == 'true'
+        model = _translate_nones(model, False)
+
+        if project_id.isdigit():
+            # update (put) an existing project
+            status, api_output = APIRequest.put(
+                '{}/{}'.format(projects_uri, project_id),
+                json=model)
+        else:
+            # create (post) a new project
+            status, api_output = APIRequest.post(
+                projects_uri, json=model)
+
+        if status >= 400:
+            result = {'error_message': api_output}
+
+    # regardless of whether this was a post or a get, we
+    # always get and return the project list
+    status, projects_list = APIRequest.get('/api/admin/projects')
+
+    if status >= 400:
+        result = {'error_message': "Unknown error"}
+    else:
+        for i in range(0, len(projects_list)):
+            curr_dict = projects_list[i]
+            projects_list[i] = _translate_nones(curr_dict, True)
+
+        result = {'projects': projects_list}
+
+    return render_template('list_projects.html',
+                           **build_login_variables(),
+                           result=result), 200
+
+
 @app.route('/create_kits', methods=['GET', 'POST'])
 def new_kits():
-    _, result = APIRequest.get('/api/admin/statistics/projects')
+    _, result = APIRequest.get('/api/admin/projects')
     projects = sorted([stats['project_name'] for stats in result])
 
     if request.method == 'GET':
