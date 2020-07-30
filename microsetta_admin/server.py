@@ -208,7 +208,9 @@ def manage_projects():
     status, projects_list = APIRequest.get('/api/admin/projects')
 
     if status >= 400:
-        result = {'error_message': "Unknown error"}
+        print(projects_list)
+        result = {'error_message': "Error detected; check console print for "
+                                   "details"}
     else:
         for i in range(0, len(projects_list)):
             curr_dict = projects_list[i]
