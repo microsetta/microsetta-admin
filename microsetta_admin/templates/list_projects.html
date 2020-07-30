@@ -22,6 +22,7 @@
     }
 </style>
 <script type="text/javascript" class="init">
+    var projectTable = undefined; //defined on document ready
     const numCols = 41;
 
     // from https://davidwalsh.name/fill-array-javascript
@@ -40,11 +41,18 @@
     const brandingGroupColNums = fillRange(35, 36);
     const statusGroupColNums = fillRange(37, 40);
 
+    function showAllCols(){
+        projectTable.columns().visible(true);
+    }
+
     function resetModal(){
+        showAllCols();
         document.getElementById("project_form").reset();
     }
 
     function readRow(projId){
+        showAllCols();
+
         let projIdSuffix = "_" + projId;
         let projRowIdSelector = "#tr_project" + projIdSuffix;
         $(projRowIdSelector).children('td').each(function () {
@@ -98,7 +106,7 @@
         });
         // end from https://getbootstrap.com/docs/4.0/components/modal/
 
-        $('#projects_list').DataTable({
+        projectTable = $('#projects_list').DataTable({
             "scrollX": true,
             // modified from https://datatables.net/extensions/buttons/examples/column_visibility/columnGroups.html#:~:text=SearchPanes-,Column%20groups,provides%20this%20ability%20for%20Buttons
             dom: 'Bfrtip',
