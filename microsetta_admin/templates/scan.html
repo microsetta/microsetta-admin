@@ -25,25 +25,16 @@
     <br>
 
     {% if barcode_info %}
-        <div id="sample-status" class="sample-status" style="background-color:{{ status_color }};">
-           <div>
-                {% if status_warnings %}
-                <tr>
-                    <td>Status Warnings: </td>
-                </tr>
-                <tr>
-                    <td></td>
-                    <td>
-                        <ul>
-                        {% for warning in status_warnings %}
-                            <li>{{warning}}</li>
-                        {% endfor %}
-                        </ul>
-                    </td>
-                </tr>
-                {% endif %}
+        {% if status_warning %}
+            <div id="sample-status" class="sample-status" style="background-color:orange;">
+                <p>
+                    <br />
+                    Status Warning: {{status_warning}}
+                    <br/>
+                    <br/>
+                </p>
             </div>
-        </div>
+        {% endif %}
         <form action="/scan" name="update_form" id="update_form" onsubmit="return verify_status();"   method="post">
         <input type="hidden" name="sample_barcode" value="{{barcode_info.barcode}}"/>
         <table>
@@ -110,13 +101,7 @@
                 <td>Sample Status: </td>
                 <td>
                 <select id="sample_status" name="sample_status">
-                {% for status in [dummy_status,
-                        "sample-is-valid",
-                         "no-associated-source",
-                         "no-registered-account",
-                         "no-collection-info",
-                         "sample-has-inconsistencies",
-                         "received-unknown-validity"] %}
+                {% for status in status_options %}
                     <option value="{{status}}" {% if latest_status == status %}selected{% endif %} %}>{{status}}</option>
                 {% endfor %}
                 </select>
