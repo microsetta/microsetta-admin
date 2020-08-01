@@ -1,6 +1,56 @@
+{% set SAMPLE_DROPDOWN = [dummy_status, "Blood (skin prick)", "Saliva", "Ear wax", "Forehead", "Fur", "Hair", "Left hand", "Left leg", "Mouth", "Nares", "Nasal mucus",
+                             "Right hand", "Right leg", "Stool", "Tears", "Torso", "Vaginal mucus"] %}
+
 {% extends "sitebase.html" %}
 {% block head %}
 <link rel="stylesheet" type="text/css" href="/static/css/table_style.css">
+<script type="text/javascript" language="javascript" src="/static/js/collapse_helper.js"></script>
+<script>
+    // prevent submit with dummy status
+    function verify_status() {
+        let result = true;
+        let select_element = document.getElementById("sample_status");
+        let selected_status = select_element.options[select_element.selectedIndex].text;
+        if (selected_status === '{{ dummy_status }}'){
+            result = false;
+            alert("A scan cannot be saved without selecting a sample_status.");
+        }
+
+        return result;
+    }
+
+    function verify_send_email() {
+        let result = true;
+        let template = document.getElementById("template");
+        let received_type = document.getElementById("received_type");
+
+        let template_text = template.options[template.selectedIndex].text;
+        let received_type_text = received_type.options[received_type.selectedIndex].text;
+
+        if (template_text === '{{ dummy_status }}' ||
+            received_type_text === '{{ dummy_status }}'){
+            result = false;
+            alert("Technician must select email issue type and specify received sample type before templated email can be sent to user");
+        }
+
+        return result;
+    }
+
+    $(function(){
+        document.search_form.sample_barcode.focus();
+        register_select_collapse("sample_status", "{{latest_status}}")
+    });
+</script>
+<style>
+.collapse_sample_status {
+  transition: none !important;
+}
+table
+{
+    table-layout: fixed;
+    width: 100;
+}
+</style>
 {% endblock %}
 {% block content %}
 <h3>Microsetta Scan</h3>
@@ -136,6 +186,62 @@
                 </select>
                 </td>
             </tr>
+            <!-- Begin collapsible email template fields -->
+            <tr class="collapse collapse_sample_status_changed">
+                <td>Send Email Notification:</td>
+                <td><input type="checkbox" id="send_email" name="send_email" checked/></td>
+            </tr>
+            <tr class="collapse collapse_sample_status collapse_sample-is-valid">
+                <td>Ba Ba Ba, Ba Ba Baram</td>
+            </tr>
+            <tr class="collapse collapse_sample_status collapse_no-associated-source">
+                <td>Ha Ha Ha, Ha Ha Haram</td>
+            </tr>
+            <tr class="collapse collapse_sample_status collapse_no-registered-account">
+                <td><b>User cannot be notified.  No contact email known.</b></td>
+            </tr>
+            <tr class="collapse collapse_sample_status collapse_no-collection-info">
+                <td>Issue Type:</td>
+                <td>
+                    <select name="template" readonly>
+                        <option value="missing_sample_info">Missing Sample Info</option>
+                    </select>
+                </td>
+            <tr class="collapse collapse_sample_status collapse_no-collection-info">
+                <td>Apparent Sample Site:</td>
+                <td>
+                    <select name="received_type">
+                        {% for received_type in SAMPLE_DROPDOWN %}
+                        <option value="{{received_type |e}}">{{received_type |e}}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+            </tr>
+            <tr class="collapse collapse_sample_status collapse_sample-has-inconsistencies">
+                <td>Issue Type:</td>
+                <td>
+                    <select name="template" readonly>
+                        <option value="incorrect_sample_type">Incorrect Sample Site</option>
+                    </select>
+                </td>
+            </tr>
+            <tr class="collapse collapse_sample_status collapse_sample-has-inconsistencies">
+                <td>Apparent Sample Site:</td>
+                <td>
+                    <select name="received_type">
+                        {% for received_type in SAMPLE_DROPDOWN %}
+                        <option value="{{received_type |e}}">{{received_type |e}}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+            </tr>
+            <tr class="collapse collapse_sample_status collapse_no-registered-account">
+                <td>Pa Pa Pa, Pa Pa Param</td>
+            </tr>
+
+
+
+            <!-- End collapsible email template fields -->
             <tr>
                 <td>Technician Notes: </td>
                 <td>
@@ -206,39 +312,5 @@
         </table>
         </form>
     {% endif %}
-
-    <script>
-        // prevent submit with dummy status
-        function verify_status() {
-            let result = true;
-            let select_element = document.getElementById("sample_status");
-            let selected_status = select_element.options[select_element.selectedIndex].text;
-            if (selected_status === '{{ dummy_status }}'){
-                result = false;
-                alert("A scan cannot be saved without selecting a sample_status.");
-            }
-
-            return result;
-        }
-
-        function verify_send_email() {
-            let result = true;
-            let template = document.getElementById("template");
-            let received_type = document.getElementById("received_type");
-
-            let template_text = template.options[template.selectedIndex].text;
-            let received_type_text = received_type.options[received_type.selectedIndex].text;
-
-            if (template_text === '{{ dummy_status }}' ||
-                received_type_text === '{{ dummy_status }}'){
-                result = false;
-                alert("Technician must select email issue type and specify received sample type before templated email can be sent to user");
-            }
-
-            return result;
-        }
-
-        document.search_form.sample_barcode.focus();
-    </script>
 </div>
 {% endblock %}
