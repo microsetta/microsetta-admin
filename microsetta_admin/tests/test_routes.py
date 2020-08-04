@@ -154,7 +154,8 @@ class RouteTests(TestBase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'<td>000004216</td>', response.data)
-        self.assertIn(b'Status Warning: received-unknown-validity', response.data)
+        self.assertIn(b'Status Warning: received-unknown-validity',
+                      response.data)
 
     def test_create_kits_simple(self):
         self.mock_get.return_value.status_code = 200
