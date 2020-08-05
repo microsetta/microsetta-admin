@@ -395,7 +395,7 @@ def scan():
     if request.method == 'POST':
         # Without some extra ajax, we can't persist the send_email checkbox
         # until they actually post the form
-        send_email = request.form['send_email']
+        send_email = request.form.get('send_email', False)
         session[SEND_EMAIL_CHECKBOX_DEFAULT_NAME] = send_email
 
         sample_barcode = request.form['sample_barcode']
