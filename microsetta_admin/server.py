@@ -13,7 +13,6 @@ from microsetta_admin import metadata_util
 from microsetta_admin.config_manager import SERVER_CONFIG
 from microsetta_admin._api import APIRequest
 import importlib.resources as pkg_resources
-import json
 
 TOKEN_KEY_NAME = 'token'
 SEND_EMAIL_CHECKBOX_DEFAULT_NAME = 'send_email'
@@ -416,6 +415,7 @@ def scan():
                                       template,
                                       received_type,
                                       recorded_type)
+
 
 @app.route('/metadata_pulldown', methods=['GET', 'POST'])
 def metadata_pulldown():
