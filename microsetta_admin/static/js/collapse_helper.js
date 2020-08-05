@@ -18,22 +18,15 @@
 // }
 // where XXX is the select_id to the css
 
-function register_select_collapse(select_id, start_value) {
+function register_select_collapse(select_id) {
     $('#' + select_id).change(function()
     {
         var value = $(this).val();
         var to_hide = '.collapse_' + select_id;
         var to_show = '.collapse_' + value;
-        var not_default = '.collapse_' + select_id + '_changed';
 
         $(to_hide).collapse('hide');
-        if (value !== start_value) {
-            $(to_show).collapse('show');
-            $(not_default).collapse('show');
-        }
-        else {
-            $(not_default).collapse('hide');
-        }
+        $(to_show).collapse('show');
     }
 );
 

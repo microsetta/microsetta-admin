@@ -16,6 +16,7 @@ import importlib.resources as pkg_resources
 import json
 
 TOKEN_KEY_NAME = 'token'
+SEND_EMAIL_CHECKBOX_DEFAULT_NAME = 'send_email'
 
 PUB_KEY = pkg_resources.read_text(
     'microsetta_admin',
@@ -75,14 +76,6 @@ def build_app():
 
     # Set mapping from exception type to response code
     app.register_error_handler(PyJWTError, handle_pyjwt)
-
-    # Tell jinja2 how to show pretty json
-    # See https://stackoverflow.com/questions/34646055/encoding-json-inside-flask-template  # noqa
-    def to_pretty_json(value):
-        return json.dumps(value, sort_keys=True,
-                          indent=4, separators=(',', ': '))
-
-    app.jinja_env.filters['tojson_pretty'] = to_pretty_json
 
     return app
 
@@ -265,10 +258,10 @@ def _check_sample_status(extended_barcode_info):
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
 
-    # Set up handlers for the three cases,
+    # Set up handlers for the cases,
     #   GET to view the page,
-    #   POST to update info for a barcode -OR-
-    #   POST to email end user about sample status,
+    #   POST to update info for a barcode -AND (possibly)-
+    #        email end user about the change in sample status,
     def _scan_get(sample_barcode, update_error):
         # If there is no sample_barcode in the GET
         # they still need to enter one in the box, so show empty page
@@ -308,6 +301,7 @@ def scan():
                 scans_info=result['scans_info'],
                 latest_status=latest_status,
                 dummy_status=DUMMY_SELECT_TEXT,
+                send_email=session.get(SEND_EMAIL_CHECKBOX_DEFAULT_NAME, True),
                 sample_info=result['sample'],
                 extended_info=result,
                 status_warnings=status_warnings,
@@ -332,7 +326,13 @@ def scan():
 
     def _scan_post_update_info(sample_barcode,
                                technician_notes,
-                               sample_status):
+                               sample_status,
+                               action,
+                               issue_type,
+                               template,
+                               received_type,
+                               recorded_type):
+
         # Do the actual update
         status, response = APIRequest.post(
             '/api/admin/scan/%s' % sample_barcode,
@@ -345,16 +345,22 @@ def scan():
         # if the update failed, keep track of the error so it can be displayed
         if status != 201:
             update_error = response
+            return _scan_get(sample_barcode, update_error)
         else:
             update_error = None
 
-        return _scan_get(sample_barcode, update_error)
+        # If we're not supposed to send an email, go back to GET
+        if action != "send_email":
+            return _scan_get(sample_barcode, update_error)
 
-    def _scan_post_send_email(sample_barcode,
-                              issue_type,
-                              template,
-                              received_type,
-                              recorded_type):
+        # This is what we'll hit if there are no email templates to send for
+        # the new sample status (or if we screw up javascript side :D )
+        if template is None:
+            update_error = "Cannot Send Email: No Issue Type Specified " \
+                           "(or no issue types available)"
+            return _scan_get(sample_barcode, update_error)
+
+        # Otherwise, send out an email to the end user
         status, response = APIRequest.post(
             '/api/admin/email',
             json={
@@ -387,26 +393,29 @@ def scan():
 
     # If its a post, make the changes, then refresh the page
     if request.method == 'POST':
-        action = request.form['action']
-        if action == 'update_status':
-            sample_barcode = request.form['sample_barcode']
-            technician_notes = request.form['technician_notes']
-            sample_status = request.form['sample_status']
-            return _scan_post_update_info(sample_barcode,
-                                          technician_notes,
-                                          sample_status)
-        elif action == 'send_email':
-            sample_barcode = request.form['sample_barcode']
-            issue_type = request.form['issue_type']
-            template = request.form['template']
-            received_type = request.form['received_type']
-            recorded_type = request.form['recorded_type']
-            return _scan_post_send_email(sample_barcode,
-                                         issue_type,
-                                         template,
-                                         received_type,
-                                         recorded_type)
+        # Without some extra ajax, we can't persist the send_email checkbox
+        # until they actually post the form
+        send_email = request.form['send_email']
+        session[SEND_EMAIL_CHECKBOX_DEFAULT_NAME] = send_email
 
+        sample_barcode = request.form['sample_barcode']
+        technician_notes = request.form['technician_notes']
+        sample_status = request.form['sample_status']
+
+        action = request.form.get('action')
+        issue_type = request.form.get('issue_type')
+        template = request.form.get('template')
+        received_type = request.form.get('received_type')
+        recorded_type = request.form.get('recorded_type')
+
+        return _scan_post_update_info(sample_barcode,
+                                      technician_notes,
+                                      sample_status,
+                                      action,
+                                      issue_type,
+                                      template,
+                                      received_type,
+                                      recorded_type)
 
 @app.route('/metadata_pulldown', methods=['GET', 'POST'])
 def metadata_pulldown():
