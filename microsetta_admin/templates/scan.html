@@ -4,7 +4,6 @@
 {% extends "sitebase.html" %}
 {% block head %}
 <link rel="stylesheet" type="text/css" href="/static/css/table_style.css">
-<script type="text/javascript" language="javascript" src="/static/js/collapse_helper.js"></script>
 <script type="text/javascript" language="javascript" src="/static/js/ruleset.js"></script>
 <script>
     // prevent submit with dummy status
@@ -22,7 +21,6 @@
 
     $(function(){
         document.search_form.sample_barcode.focus();
-        register_select_collapse("sample_status", "{{latest_status}}")
 
         old_status = new NamedExpression("OLD_SAMPLE_STATUS", "{{latest_status}}")
         new_status = new JQuerySelectInput("NEW_SAMPLE_STATUS", "#sample_status")
