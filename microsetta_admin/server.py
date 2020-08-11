@@ -373,7 +373,8 @@ def scan():
             }
         )
 
-        # if the update failed, keep track of the error so it can be displayed
+        # if the email failed to send, keep track of the error
+        # so it can be displayed
         if status != 200:
             update_error = response
         else:
