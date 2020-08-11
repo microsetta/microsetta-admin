@@ -74,8 +74,6 @@ class RouteTests(TestBase):
                                 follow_redirects=True)
 
         self.assertEqual(response.status_code, 200)
-        print(response.status_code)
-        print(response.data)
         self.assertIn(b'<td>000004216</td>', response.data)
         self.assertNotIn(b'Status Warnings:', response.data)
 
