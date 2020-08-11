@@ -53,6 +53,12 @@
                 $("#email_template_row").addClass('show');
                 $("#received_type_row").addClass('show');
             }
+            else if (selected_status == "sample-is-valid" ||
+                     selected_status == "no-associated-source")
+            {
+                $("#email_template_row").addClass('show');
+                $("#received_type_row").removeClass('show');
+            }
             else
             {
                 $("#email_template_row").removeClass('show');
@@ -64,15 +70,25 @@
         new DelegateOutput(function(selected_status){
             //Remove the current set of options
             $("#email_template option").remove()
-            if (selected_status == "no-collection-info")
+            if (selected_status === "no-collection-info")
             {
                 $("#email_template").append('<option value="missing_sample_info">Missing Sample Info</option>')
                 $("#email_template").val("missing_sample_info")
             }
-            else if (selected_status == "sample-has-inconsistencies")
+            else if (selected_status === "sample-has-inconsistencies")
             {
                 $("#email_template").append('<option value="incorrect_sample_type">Incorrect Sample Site</option>')
                 $("#email_template").val("incorrect_sample_type")
+            }
+            else if (selected_status === "sample-is-valid")
+            {
+                $("#email_template").append('<option value="sample_is_valid">Sample Is Valid</option>')
+                $("#email_template").val("sample_is_valid")
+            }
+            else if (selected_status === "no-associated-source")
+            {
+                $("#email_template").append('<option value="no_associated_source">No Associated Source</option>')
+                $("#email_template").val("no_associated_source")
             }
             else
             {
