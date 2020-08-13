@@ -10,6 +10,7 @@ lint:
 
 test: all
 	py.test
+	./run_js_tests.sh	
 
 test-cov: all
 	py.test --cov=microsetta_admin
