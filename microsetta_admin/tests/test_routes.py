@@ -45,6 +45,7 @@ class RouteTests(TestBase):
         resp = {"barcode_info": {"barcode": "000004216"},
                 "projects_info": [],
                 "scans_info": [],
+                "latest_scan": None,
                 "sample": {'site': 'baz'},
                 "account": 'foo',
                 "source": 'bar'}
@@ -64,6 +65,7 @@ class RouteTests(TestBase):
         resp = {"barcode_info": {"barcode": "000004216"},
                 "projects_info": [],
                 "scans_info": [],
+                "latest_scan": None,
                 "sample": {'site': None},
                 "account": 'foo',
                 "source": 'bar'}
@@ -83,6 +85,7 @@ class RouteTests(TestBase):
         resp = {"barcode_info": {"barcode": "000004216"},
                 "projects_info": [],
                 "scans_info": [],
+                "latest_scan": None,
                 "sample": None,
                 "account": None,
                 "source": 'bar'}
@@ -102,6 +105,7 @@ class RouteTests(TestBase):
         resp = {"barcode_info": {"barcode": "000004216"},
                 "projects_info": [],
                 "scans_info": [],
+                "latest_scan": None,
                 "sample": None,
                 "account": None,
                 "source": None}
