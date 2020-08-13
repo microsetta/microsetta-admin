@@ -14,6 +14,7 @@ test: all
 
 test-cov: all
 	py.test --cov=microsetta_admin
+	./run_js_tests.sh
 
 install: all
 	$(PYTHON) setup.py install
