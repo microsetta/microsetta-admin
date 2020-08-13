@@ -1,5 +1,5 @@
 highFive = function(){ return 5; }
-ret7 = function(){return 12;}
+ret7 = function(){return 7;}
 
 // Expose any unit testable functionality to node's module.exports
 // This will enable these functions to be called by our test suite.
