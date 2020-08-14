@@ -159,3 +159,14 @@ class ConsoleOutput {
         console.log(this.X.name + ": " + this.X.value)
     }
 }
+
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined'){
+  module.exports = {
+    "NamedExpression": NamedExpression,
+    "AndExpression": AndExpression,
+    "OrExpression": OrExpression,
+    "NotExpression": NotExpression,
+    "EqualsExpression": EqualsExpression,
+    "DelegateOutput": DelegateOutput
+  }
+}
