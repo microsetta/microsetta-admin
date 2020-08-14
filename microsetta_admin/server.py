@@ -22,6 +22,9 @@ PUB_KEY = pkg_resources.read_text(
     "authrocket.pubkey")
 
 DUMMY_SELECT_TEXT = '-------'
+RECEIVED_TYPE_DROPDOWN = \
+    [DUMMY_SELECT_TEXT, "Blood (skin prick)", "Saliva", "Stool",
+     "Sample Type Unclear (Swabs Included)"]
 
 
 def handle_pyjwt(pyjwt_error):
@@ -254,133 +257,137 @@ def _check_sample_status(extended_barcode_info):
     return warnings, color
 
 
+# Set up handlers for the cases,
+#   GET to view the page,
+#   POST to update info for a barcode -AND (possibly)-
+#        email end user about the change in sample status,
+def _scan_get(sample_barcode, update_error):
+    # If there is no sample_barcode in the GET
+    # they still need to enter one in the box, so show empty page
+    if sample_barcode is None:
+        return render_template('scan.html', **build_login_variables())
+
+    # Assuming there is a sample barcode, grab that sample's information
+    status, result = APIRequest.get(
+        '/api/admin/search/samples/%s' % sample_barcode)
+
+    # If we successfully grab it, show the page to the user
+    if status == 200:
+        # Process result in python because its easier than jinja2.
+        status_warnings, status_color = _check_sample_status(result)
+
+        # check the latest scan to find the default sample_status for form
+        latest_status = DUMMY_SELECT_TEXT
+        if result['latest_scan']:
+            latest_status = result['latest_scan']['sample_status']
+
+        account = result.get('account')
+        events = []
+        if account:
+            event_status, event_result = APIRequest.get(
+                '/api/admin/events/accounts/%s' % account['id']
+            )
+            if event_status != 200:
+                raise Exception("Couldn't pull event history")
+
+            events = event_result
+
+        return render_template(
+            'scan.html',
+            **build_login_variables(),
+            barcode_info=result["barcode_info"],
+            projects_info=result['projects_info'],
+            scans_info=result['scans_info'],
+            latest_status=latest_status,
+            dummy_status=DUMMY_SELECT_TEXT,
+            send_email=session.get(SEND_EMAIL_CHECKBOX_DEFAULT_NAME, True),
+            sample_info=result['sample'],
+            extended_info=result,
+            status_warnings=status_warnings,
+            update_error=update_error,
+            status_color=status_color,
+            received_type_dropdown=RECEIVED_TYPE_DROPDOWN,
+            events=events
+        )
+    elif status == 401:
+        # If we fail due to unauthorized, need the user to log in again
+        return redirect('/logout')
+    elif status == 404:
+        # If we fail due to not found, need to tell the user to pick a diff
+        # barcode
+        return render_template(
+            'scan.html',
+            **build_login_variables(),
+            search_error="Barcode %s Not Found" % sample_barcode,
+            update_error=update_error,
+            received_type_dropdown=RECEIVED_TYPE_DROPDOWN
+        )
+    else:
+        raise BadRequest()
+
+
+def _scan_post_update_info(sample_barcode,
+                           technician_notes,
+                           sample_status,
+                           action,
+                           issue_type,
+                           template,
+                           received_type,
+                           recorded_type):
+
+    # Do the actual update
+    status, response = APIRequest.post(
+        '/api/admin/scan/%s' % sample_barcode,
+        json={
+            "sample_status": sample_status,
+            "technician_notes": technician_notes
+        }
+    )
+
+    # if the update failed, keep track of the error so it can be displayed
+    if status != 201:
+        update_error = response
+        return _scan_get(sample_barcode, update_error)
+    else:
+        update_error = None
+
+    # If we're not supposed to send an email, go back to GET
+    if action != "send_email":
+        return _scan_get(sample_barcode, update_error)
+
+    # This is what we'll hit if there are no email templates to send for
+    # the new sample status (or if we screw up javascript side :D )
+    if template is None:
+        update_error = "Cannot Send Email: No Issue Type Specified " \
+                       "(or no issue types available)"
+        return _scan_get(sample_barcode, update_error)
+
+    # Otherwise, send out an email to the end user
+    status, response = APIRequest.post(
+        '/api/admin/email',
+        json={
+            "issue_type": issue_type,
+            "template": template,
+            "template_args": {
+                "sample_barcode": sample_barcode,
+                "recorded_type": recorded_type,
+                "received_type": received_type
+            }
+        }
+    )
+
+    # if the email failed to send, keep track of the error
+    # so it can be displayed
+    if status != 200:
+        update_error = response
+    else:
+        update_error = None
+
+    return _scan_get(sample_barcode, update_error)
+
+
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
-
-    # Set up handlers for the cases,
-    #   GET to view the page,
-    #   POST to update info for a barcode -AND (possibly)-
-    #        email end user about the change in sample status,
-    def _scan_get(sample_barcode, update_error):
-        # If there is no sample_barcode in the GET
-        # they still need to enter one in the box, so show empty page
-        if sample_barcode is None:
-            return render_template('scan.html', **build_login_variables())
-
-        # Assuming there is a sample barcode, grab that sample's information
-        status, result = APIRequest.get(
-            '/api/admin/search/samples/%s' % sample_barcode)
-
-        # If we successfully grab it, show the page to the user
-        if status == 200:
-            # Process result in python because its easier than jinja2.
-            status_warnings, status_color = _check_sample_status(result)
-
-            # check the latest scan to find the default sample_status for form
-            latest_status = DUMMY_SELECT_TEXT
-            if result['latest_scan']:
-                latest_status = result['latest_scan']['sample_status']
-
-            account = result.get('account')
-            events = []
-            if account:
-                event_status, event_result = APIRequest.get(
-                    '/api/admin/events/accounts/%s' % account['id']
-                )
-                if event_status != 200:
-                    raise Exception("Couldn't pull event history")
-
-                events = event_result
-
-            return render_template(
-                'scan.html',
-                **build_login_variables(),
-                barcode_info=result["barcode_info"],
-                projects_info=result['projects_info'],
-                scans_info=result['scans_info'],
-                latest_status=latest_status,
-                dummy_status=DUMMY_SELECT_TEXT,
-                send_email=session.get(SEND_EMAIL_CHECKBOX_DEFAULT_NAME, True),
-                sample_info=result['sample'],
-                extended_info=result,
-                status_warnings=status_warnings,
-                update_error=update_error,
-                status_color=status_color,
-                events=events
-            )
-        elif status == 401:
-            # If we fail due to unauthorized, need the user to log in again
-            return redirect('/logout')
-        elif status == 404:
-            # If we fail due to not found, need to tell the user to pick a diff
-            # barcode
-            return render_template(
-                'scan.html',
-                **build_login_variables(),
-                search_error="Barcode %s Not Found" % sample_barcode,
-                update_error=update_error
-            )
-        else:
-            raise BadRequest()
-
-    def _scan_post_update_info(sample_barcode,
-                               technician_notes,
-                               sample_status,
-                               action,
-                               issue_type,
-                               template,
-                               received_type,
-                               recorded_type):
-
-        # Do the actual update
-        status, response = APIRequest.post(
-            '/api/admin/scan/%s' % sample_barcode,
-            json={
-                "sample_status": sample_status,
-                "technician_notes": technician_notes
-            }
-        )
-
-        # if the update failed, keep track of the error so it can be displayed
-        if status != 201:
-            update_error = response
-            return _scan_get(sample_barcode, update_error)
-        else:
-            update_error = None
-
-        # If we're not supposed to send an email, go back to GET
-        if action != "send_email":
-            return _scan_get(sample_barcode, update_error)
-
-        # This is what we'll hit if there are no email templates to send for
-        # the new sample status (or if we screw up javascript side :D )
-        if template is None:
-            update_error = "Cannot Send Email: No Issue Type Specified " \
-                           "(or no issue types available)"
-            return _scan_get(sample_barcode, update_error)
-
-        # Otherwise, send out an email to the end user
-        status, response = APIRequest.post(
-            '/api/admin/email',
-            json={
-                "issue_type": issue_type,
-                "template": template,
-                "template_args": {
-                    "sample_barcode": sample_barcode,
-                    "recorded_type": recorded_type,
-                    "received_type": received_type
-                }
-            }
-        )
-
-        # if the email failed to send, keep track of the error
-        # so it can be displayed
-        if status != 200:
-            update_error = response
-        else:
-            update_error = None
-
-        return _scan_get(sample_barcode, update_error)
 
     # Now that the handlers are set up, parse the request to determine what
     # to do.

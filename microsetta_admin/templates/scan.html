@@ -1,5 +1,3 @@
-{% set SAMPLE_DROPDOWN = [dummy_status, "Blood (skin prick)", "Saliva", "Stool", "Sample Type Unclear (Swabs Included)"] %}
-
 {% extends "sitebase.html" %}
 {% block head %}
 <link rel="stylesheet" type="text/css" href="/static/css/table_style.css">
@@ -301,7 +299,7 @@ table
                 <td>Apparent Sample Site:</td>
                 <td>
                     <select class="send_email_disables" id="received_type" name="received_type">
-                        {% for received_type in SAMPLE_DROPDOWN %}
+                        {% for received_type in received_type_dropdown %}
                         <option value="{{received_type |e}}">{{received_type |e}}</option>
                         {% endfor %}
                     </select>
