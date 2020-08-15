@@ -1,4 +1,153 @@
 {% extends "sitebase.html" %}
+{% block head %}
+<link rel="stylesheet" type="text/css" href="/static/css/table_style.css">
+<script type="text/javascript" language="javascript" src="/static/js/ruleset.js"></script>
+<script>
+    // prevent submit with dummy status
+    function verify_status() {
+        let result = true;
+        let select_element = document.getElementById("sample_status");
+        let selected_status = select_element.options[select_element.selectedIndex].text;
+        if (selected_status === '{{ dummy_status }}'){
+            result = false;
+            alert("A scan cannot be saved without selecting a sample_status.");
+        }
+
+        return result;
+    }
+
+    $(function(){
+        document.search_form.sample_barcode.focus();
+
+        old_status = new NamedExpression("OLD_SAMPLE_STATUS", "{{latest_status}}")
+        new_status = new JQuerySelectInput("NEW_SAMPLE_STATUS", "#sample_status")
+        user_can_be_emailed = new NotExpression(new EqualsExpression(new_status, new NamedExpression("no-registered-account", "no-registered-account")))
+        sample_status_changed = new NotExpression(new EqualsExpression(old_status, new_status))
+        send_email = new JQueryCheckboxInput("SEND_EMAIL", "#send_email")
+
+        should_send_email = new AndExpression(send_email, new AndExpression(sample_status_changed, user_can_be_emailed))
+
+        // Notify server of intent to scan during post
+        new DelegateOutput(function(should_send){
+            if (should_send)
+                $("#action_input").prop("value", "send_email")
+            else
+                $("#action_input").prop("value", "scan_only")
+        }, should_send_email)
+
+        // Change scan button text dependent on should_send_email
+        new DelegateOutput(function(should_send){
+            if (should_send)
+                $("#scan_button").prop("value", "Add Scan And Notify User")
+            else
+                $("#scan_button").prop("value", "Add Scan")
+        }, should_send_email)
+
+        // Hide/Show email template inputs based on sample_status select
+        new DelegateOutput(function(selected_status){
+            if (selected_status == "sample-has-inconsistencies" ||
+                selected_status == "no-collection-info")
+            {
+                $("#email_template_row").addClass('show');
+                $("#received_type_row").addClass('show');
+            }
+            else if (selected_status == "sample-is-valid" ||
+                     selected_status == "no-associated-source")
+            {
+                $("#email_template_row").addClass('show');
+                $("#received_type_row").removeClass('show');
+            }
+            else
+            {
+                $("#email_template_row").removeClass('show');
+                $("#received_type_row").removeClass('show');
+            }
+        }, new_status)
+
+        // Match email template selection to selected status
+        new DelegateOutput(function(selected_status){
+            //Remove the current set of options
+            $("#email_template option").remove()
+            if (selected_status === "no-collection-info")
+            {
+                $("#email_template").append('<option value="missing_sample_info">Missing Sample Info</option>')
+                $("#email_template").val("missing_sample_info")
+            }
+            else if (selected_status === "sample-has-inconsistencies")
+            {
+                $("#email_template").append('<option value="incorrect_sample_type">Incorrect Sample Site</option>')
+                $("#email_template").val("incorrect_sample_type")
+            }
+            else if (selected_status === "sample-is-valid")
+            {
+                $("#email_template").append('<option value="sample_is_valid">Sample Is Valid</option>')
+                $("#email_template").val("sample_is_valid")
+            }
+            else if (selected_status === "no-associated-source")
+            {
+                $("#email_template").append('<option value="no_associated_source">No Associated Source</option>')
+                $("#email_template").val("no_associated_source")
+            }
+            else
+            {
+                // Set template options for remaining statuses
+            }
+        }, new_status)
+
+        // Enable/Disable email template inputs based on whether or not email would be sent
+        new JQueryOutput(new NotExpression(should_send_email), ".send_email_disables", 'disabled')
+
+        // Enable/Disable Scan button when input fields remain to be filled
+        received_type = new JQuerySelectInput("RECEIVED", "#received_type")
+        new DelegateOutput(function(should_send_email, sample_status, received_type){
+            var enable = true;
+            var not_set = "{{dummy_status}}"
+
+            // Technician cannot set invalid sample status
+            if (sample_status === not_set)
+                enable = false
+
+            // Technician cannot send email unless necessary fields are filled in.
+            if (should_send_email)
+            {
+                if (sample_status === 'sample-has-inconsistencies' &&
+                    received_type === not_set)
+                    enable = false
+                else if (sample_status === 'no-collection-info' &&
+                    received_type === not_set)
+                    enable = false
+            }
+
+            $("#scan_button").prop("disabled", !enable)
+        }, should_send_email, new_status, received_type)
+
+        //Tell technician why email can't be sent if they indicate that they
+        // are trying to
+        new DelegateOutput(function(send_email, sample_status_changed, user_can_be_emailed){
+            if (send_email){
+                if (!sample_status_changed)
+                    $("#send_email_label_text").text("*Notification will not be sent: Sample Status is unchanged")
+                else if (!user_can_be_emailed)
+                    $("#send_email_label_text").text("*User cannot be emailed if no account is registered")
+                else
+                    $("#send_email_label_text").text("")
+            }
+            else
+                $("#send_email_label_text").text("")
+        }, send_email, sample_status_changed, user_can_be_emailed)
+    });
+</script>
+<style>
+.collapse_sample_status {
+  transition: none !important;
+}
+table
+{
+    table-layout: fixed;
+    width: 100;
+}
+</style>
+{% endblock %}
 {% block content %}
 <h3>Microsetta Scan</h3>
 <div>
@@ -22,7 +171,12 @@
 
     <br>
     <hr>
-    <br>
+    <h4>Barcode Info</h4>
+    {% if update_error %}
+        <p style="color:red">
+        {{update_error |e}}
+        </p>
+    {% endif %}
 
     {% if barcode_info %}
         <div id="sample-status" class="sample-status" style="background-color:{{ status_color }};">
@@ -44,7 +198,7 @@
                 {% endif %}
             </div>
         </div>
-        <form action="/scan" name="update_form" id="update_form" onsubmit="return verify_status();"   method="post">
+        <form action="/scan" name="update_form" id="update_form" onsubmit="return verify_status();" method="post">
         <input type="hidden" name="sample_barcode" value="{{barcode_info.barcode}}"/>
         <table>
             <tr>
@@ -80,20 +234,22 @@
             <tr>
                 <td colspan="100%">
                     {% if scans_info|length > 0 %}
-                    <table id="barcode_scans" class="display" style="width:100%;margin: 12px">
+                    <hr>
+                    <h4>Scan History</h4>
+                    <table class="bordered" id="barcode_scans" class="display" style="width:100%;margin: 12px">
                         <thead>
                             <tr>
-                                <th>Scan Timestamp</th>
-                                <th>Sample Status</th>
-                                <th>Technician Notes</th>
+                                <th class="bordered">Scan Timestamp</th>
+                                <th class="bordered">Sample Status</th>
+                                <th class="bordered">Technician Notes</th>
                             </tr>
                         </thead>
                         <tbody>
                         {% for scan in scans_info %}
                             <tr>
-                                <td>{{ format_timestamp(scan['scan_timestamp']) }}</td>
-                                <td>{{ scan['sample_status'] }}</td>
-                                <td>{{ scan['technician_notes'] }}</td>
+                                <td class="bordered">{{ format_timestamp(scan['scan_timestamp']) }}</td>
+                                <td class="bordered">{{ scan['sample_status'] }}</td>
+                                <td class="bordered">{{ scan['technician_notes'] }}</td>
                             </tr>
                         {% endfor %}
                         </tbody>
@@ -107,11 +263,14 @@
               <td colspan="100%"><hr></td>
             </tr>
             <tr>
+              <td colspan="100%"><h4>Edit Sample/Add Notes</h4></td>
+            </tr>
+            <tr>
                 <td>Sample Status: </td>
                 <td>
                 <select id="sample_status" name="sample_status">
                 {% for status in [dummy_status,
-                        "sample-is-valid",
+                         "sample-is-valid",
                          "no-associated-source",
                          "no-registered-account",
                          "no-collection-info",
@@ -123,6 +282,31 @@
                 </td>
             </tr>
             <tr>
+                <td>Send Email Upon Status Update:</td>
+                <td><input type="checkbox" id="send_email" name="send_email" {% if send_email %}checked{% endif %}/><label for="send_email"><small> <b><i><span id="send_email_label_text"></span></i></b></small></label></td>
+            </tr>
+            <!-- Begin collapsible email template fields -->
+            <input type="hidden" id="issue_type" name="issue_type" value="sample"/>
+            <input type="hidden" name="recorded_type" value="{{sample_info.site}}"/>
+            <input type="hidden" id="action_input" name="action" value="send_email"/>
+            <tr id="email_template_row" class="collapse">
+                <td>Issue Type:</td>
+                <td>
+                    <select class="send_email_disables" id="email_template" name="template">
+                    </select>
+                </td>
+            <tr id="received_type_row" class="collapse">
+                <td>Apparent Sample Site:</td>
+                <td>
+                    <select class="send_email_disables" id="received_type" name="received_type">
+                        {% for received_type in received_type_dropdown %}
+                        <option value="{{received_type |e}}">{{received_type |e}}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+            </tr>
+            <!-- End collapsible email template fields -->
+            <tr>
                 <td>Technician Notes: </td>
                 <td>
                     <textarea name="technician_notes" rows="10" cols="50"></textarea>
@@ -130,33 +314,30 @@
             </tr>
             <tr>
                 <td/>
-                <td><input type="submit" value="Add Scan"></td>
+                <td><input type="submit" id="scan_button" value="Add Scan"></td>
             </tr>
         </table>
-    </form>
+        </form>
+
+        <br>
+        <hr>
+        <h4>Event Log</h4>
+        <table class="bordered">
+            <thead>
+                <tr>
+                    <th class="bordered">Event Timestamp</th>
+                    <th class="bordered">Email Address</th>
+                    <th class="bordered">Email Template</th>
+                </tr>
+            </thead>
+            {% for event in events %}
+            <tr>
+                <td class="bordered">{{ format_timestamp(event["event_time"]) }}</td>
+                <td class="bordered">{{event["event_state"]["email"] |e}}</td>
+                <td class="bordered">{{event["event_state"]["template"] |e}}</td>
+            </tr>
+            {% endfor %}
+        </table>
     {% endif %}
-    
-    {% if update_error %}
-        <p style="color:red">
-        {{update_error |e}}
-        </p>
-    {% endif %}
-
-    <script>
-        // prevent submit with dummy status
-        function verify_status() {
-            let result = true;
-            let select_element = document.getElementById("sample_status");
-            let selected_status = select_element.options[select_element.selectedIndex].text;
-            if (selected_status === '{{ dummy_status }}'){
-                result = false;
-                alert("A scan cannot be saved without selecting a sample_status.");
-            }
-
-            return result;
-        }
-
-        document.search_form.sample_barcode.focus();
-    </script>
 </div>
 {% endblock %}
