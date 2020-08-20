@@ -244,9 +244,8 @@ def new_kits():
 def _check_sample_status(extended_barcode_info):
     warning = None
 
-    is_microsetta_by_project = [x["is_microsetta"] for x in
-                                extended_barcode_info["projects_info"]]
-    in_microsetta_project = True in is_microsetta_by_project
+    in_microsetta_project = any(
+        [x['is_microsetta'] for x in extended_barcode_info['projects_info']])
 
     # one warning to rule them all; check in order of precendence
     if not in_microsetta_project:
