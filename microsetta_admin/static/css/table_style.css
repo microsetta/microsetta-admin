@@ -1,0 +1,21 @@
+<style>
+
+
+table.bordered{
+    border-collapse: collapse;
+}
+
+/* Set style for all td and th within tables (where all three have class bordered) */
+table.bordered td.bordered, table.bordered th.bordered
+{
+    padding-right: 7.5px
+}
+
+/* Set style for td cells with a td cell to their left (same for th and only within a table) */
+table.bordered td.bordered + td.bordered, table.bordered th.bordered + th.bordered
+{
+    padding-left: 7.5px;
+    border-left: 1px solid black;
+}
+
+</style>
