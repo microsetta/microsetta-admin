@@ -23,7 +23,7 @@
 </style>
 <script type="text/javascript" class="init">
     var projectTable = undefined; //defined on document ready
-    const numCols = 41;
+    const numCols = 49;
 
     // from https://davidwalsh.name/fill-array-javascript
     const fillRange = (start, end) => {
@@ -39,7 +39,9 @@
     const sampleTypeGroupColNums = fillRange(19, 23);
     const profilingGroupColNums = fillRange(24, 34);
     const brandingGroupColNums = fillRange(35, 36);
-    const statusGroupColNums = fillRange(37, 40);
+    const kitsGroupColNums = fillRange(37, 41);
+    const samplesGroupColNums = fillRange(42, 48);
+    console.log(samplesGroupColNums);
 
     function showAllCols(){
         projectTable.columns().visible(true);
@@ -148,9 +150,15 @@
                 },
                 {
                     extend: 'colvisGroup',
-                    text: 'Status',
-                    show: statusGroupColNums,
-                    hide: hideableColNums.filter(i => !statusGroupColNums.includes(i))
+                    text: 'Kits',
+                    show: kitsGroupColNums,
+                    hide: hideableColNums.filter(i => !kitsGroupColNums.includes(i))
+                },
+                {
+                    extend: 'colvisGroup',
+                    text: 'Samples',
+                    show: samplesGroupColNums,
+                    hide: hideableColNums.filter(i => !samplesGroupColNums.includes(i))
                 }
             ]
             // end modified from https://datatables.net/extensions/buttons/examples/column_visibility/columnGroups.html#:~:text=SearchPanes-,Column%20groups,provides%20this%20ability%20for%20Buttons
@@ -214,11 +222,20 @@
                             <!--Branding group -->
                             <th>Branding Associated Instructions</th>
                             <th>Branding Status</th>
-                            <!--Status group -->
+                            <!--Kits group -->
+                            <th>Num Unique Sources</th>
                             <th>Num Kits</th>
+                            <th>Num Partially Returned Kits</th>
+                            <th>Num Fully Returned Kits</th>
+                            <th>Num Kits with Problem Sample(s)</th>
+                            <!--Samples group -->
                             <th>Num Samples</th>
                             <th>Num Samples Received</th>
-                            <th>Num Unique Sources</th>
+                            <th>Num Valid Samples</th>
+                            <th>Num Samples of Unknown Validity</th>
+                            <th>Num Samples w/o Account</th>
+                            <th>Num Samples w/o Source</th>
+                            <th>Num Samples w/o Collection Info</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -266,10 +283,18 @@
                             <td id="td_do_other_{{ curr_id }}">{{ project['do_other'] }}</td>
                             <td id="td_branding_associated_instructions_{{ curr_id }}">{{ project['branding_associated_instructions'] }}</td>
                             <td id="td_branding_status_{{ curr_id }}">{{ project['branding_status'] }}</td>
-                            <td id="td_num_kits_{{ curr_id }}">{{ project['num_kits'] }}</td>
-                            <td id="td_num_samples_{{ curr_id }}">{{ project['num_samples'] }}</td>
-                            <td id="td_num_samples_received_{{ curr_id }}">{{ project['num_samples_received'] }}</td>
-                            <td id="td_num_unique_sources_{{ curr_id }}">{{ project['num_unique_sources'] }}</td>
+                            <td id="td_num_unique_sources_{{ curr_id }}">{{ project['computed_stats']['num_unique_sources'] }}</td>
+                            <td id="td_num_kits_{{ curr_id }}">{{ project['computed_stats']['num_kits'] }}</td>
+                            <td id="td_num_partially_returned_kits_{{ curr_id }}">{{ project['computed_stats']['num_partially_returned_kits'] }}</td>
+                            <td id="td_num_fully_returned_kits_{{ curr_id }}">{{ project['computed_stats']['num_fully_returned_kits'] }}</td>
+                            <td id="td_num_kits_w_problems_{{ curr_id }}">{{ project['computed_stats']['num_kits_w_problems'] }}</td>
+                            <td id="td_num_samples_{{ curr_id }}">{{ project['computed_stats']['num_samples'] }}</td>
+                            <td id="td_num_samples_received_{{ curr_id }}">{{ project['computed_stats']['num_samples_received'] }}</td>
+                            <td id="td_num_sample_is_valid_{{ curr_id }}">{{ project['computed_stats']['num_sample_is_valid'] }}</td>
+                            <td id="td_num_received_unknown_validity_{{ curr_id }}">{{ project['computed_stats']['num_received_unknown_validity'] }}</td>
+                            <td id="td_num_no_registered_account_{{ curr_id }}">{{ project['computed_stats']['num_no_registered_account'] }}</td>
+                            <td id="td_num_no_associated_source_{{ curr_id }}">{{ project['computed_stats']['num_no_associated_source'] }}</td>
+                            <td id="td_num_no_collection_info_{{ curr_id }}">{{ project['computed_stats']['num_no_collection_info'] }}</td>
                         </tr>
                     {% endfor %}
                     </tbody>
