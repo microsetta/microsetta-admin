@@ -248,8 +248,6 @@ def new_kits():
 
 def _check_sample_status(extended_barcode_info):
     warning = None
-    warnings = []
-    sample = extended_barcode_info['sample']
     in_microsetta_project = any(
         [x['is_microsetta'] for x in extended_barcode_info['projects_info']])
 

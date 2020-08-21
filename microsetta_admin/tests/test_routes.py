@@ -116,17 +116,17 @@ class RouteTests(TestBase):
 
     def test_scan_specific_no_associated_source_warning(self):
         resp1 = {"barcode_info": {"barcode": "000004216"},
-                "projects_info": [{
+                 "projects_info": [{
                     "project": "American Gut Project",
                     "is_microsetta": True,
                     "bank_samples": False,
                     "plating_start_date": None
-                }],
-                "scans_info": [],
-                "latest_scan": None,
-                "sample": None,
-                "account": {"id": "foo"},
-                "source": None}
+                 }],
+                 "scans_info": [],
+                 "latest_scan": None,
+                 "sample": None,
+                 "account": {"id": "foo"},
+                 "source": None}
 
         resp2 = []
 
