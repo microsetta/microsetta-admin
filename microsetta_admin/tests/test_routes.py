@@ -45,7 +45,7 @@ class RouteTests(TestBase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'<h3>Microsetta Scan</h3>', response.data)
 
-    def test_scan_specific_okay(self):
+    def test_scan_specific_no_warnings(self):
         resp1 = {
             "barcode_info": {"barcode": "000004216"},
             "projects_info": [],
@@ -77,13 +77,18 @@ class RouteTests(TestBase):
         self.assertIn(b'<td>000004216</td>', response.data)
         self.assertNotIn(b'Status Warnings:', response.data)
 
-    def test_scan_specific_uncollected(self):
+    def test_scan_specific_no_collection_info_warning(self):
         resp1 = {
             "barcode_info": {"barcode": "000004216"},
-            "projects_info": [],
+            "projects_info": [{
+                    "project": "American Gut Project",
+                    "is_microsetta": True,
+                    "bank_samples": False,
+                    "plating_start_date": None
+            }],
             "scans_info": [],
             "latest_scan": None,
-            "sample": {'site': None},
+            "sample": {'datetime_collected': None},
             "account": {'id': "ThizIzNotReal"},
             "source": 'bar'
         }
@@ -107,9 +112,69 @@ class RouteTests(TestBase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'<td>000004216</td>', response.data)
-        self.assertIn(b'Sample site not specified', response.data)
+        self.assertIn(b'Status Warning: no-collection-info', response.data)
 
-    def test_scan_specific_no_account(self):
+    def test_scan_specific_no_associated_source_warning(self):
+        resp1 = {"barcode_info": {"barcode": "000004216"},
+                 "projects_info": [{
+                    "project": "American Gut Project",
+                    "is_microsetta": True,
+                    "bank_samples": False,
+                    "plating_start_date": None
+                 }],
+                 "scans_info": [],
+                 "latest_scan": None,
+                 "sample": None,
+                 "account": {"id": "foo"},
+                 "source": None}
+
+        resp2 = []
+
+        dynObj = DynamicObj()
+        dynObj.status_code = 200
+        dynObj.text = json.dumps(resp1)
+        dynObj.json = lambda: resp1
+
+        dynObj2 = DynamicObj()
+        dynObj2.status_code = 200
+        dynObj2.text = json.dumps(resp2)
+        dynObj2.json = lambda: resp2
+
+        self.mock_get.side_effect = [dynObj, dynObj2]
+
+        response = self.app.get('/scan?sample_barcode=000004216',
+                                follow_redirects=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'<td>000004216</td>', response.data)
+        self.assertIn(b'Status Warning: no-associated-source', response.data)
+
+    def test_scan_specific_no_registered_account_warning(self):
+        resp = {"barcode_info": {"barcode": "000004216"},
+                "projects_info": [{
+                    "project": "American Gut Project",
+                    "is_microsetta": True,
+                    "bank_samples": False,
+                    "plating_start_date": None
+                }],
+                "scans_info": [],
+                "latest_scan": None,
+                "sample": None,
+                "account": None,
+                "source": 'bar'}
+
+        self.mock_get.return_value.status_code = 200
+        self.mock_get.return_value.text = json.dumps(resp)
+        self.mock_get.return_value.json = lambda: resp  # noqa
+
+        response = self.app.get('/scan?sample_barcode=000004216',
+                                follow_redirects=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'<td>000004216</td>', response.data)
+        self.assertIn(b'Status Warning: no-registered-account', response.data)
+
+    def test_scan_specific_received_unknown_validity_warning(self):
         resp = {"barcode_info": {"barcode": "000004216"},
                 "projects_info": [],
                 "scans_info": [],
@@ -127,27 +192,8 @@ class RouteTests(TestBase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'<td>000004216</td>', response.data)
-        self.assertIn(b'No associated account', response.data)
-
-    def test_scan_specific_no_source(self):
-        resp = {"barcode_info": {"barcode": "000004216"},
-                "projects_info": [],
-                "scans_info": [],
-                "latest_scan": None,
-                "sample": None,
-                "account": None,
-                "source": None}
-
-        self.mock_get.return_value.status_code = 200
-        self.mock_get.return_value.text = json.dumps(resp)
-        self.mock_get.return_value.json = lambda: resp  # noqa
-
-        response = self.app.get('/scan?sample_barcode=000004216',
-                                follow_redirects=True)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b'<td>000004216</td>', response.data)
-        self.assertIn(b'No associated source', response.data)
+        self.assertIn(b'Status Warning: received-unknown-validity',
+                      response.data)
 
     def test_create_kits_simple(self):
         self.mock_get.return_value.status_code = 200
