@@ -346,6 +346,23 @@ def _scan_post_update_info(sample_barcode,
                            received_type,
                            recorded_type):
 
+    ###
+    # Bugfix Part 1 for duplicate emails being sent.  Theory is that client is
+    # out of sync due to hitting back button after a scan has changed
+    # state.
+    # Can't test if client is up to date without ETags, so for right now,
+    # we just validate whether or not they should send an email, duplicating
+    # the client log.  (This can still break with multiple admin clients,
+    # but that is unlikely at the moment.)
+    latest_status = None
+    # TODO:  Replace this with ETags!
+    status, result = APIRequest.get(
+        '/api/admin/search/samples/%s' % sample_barcode)
+
+    if result['latest_scan']:
+        latest_status = result['latest_scan']['sample_status']
+    ###
+
     # Do the actual update
     status, response = APIRequest.post(
         '/api/admin/scan/%s' % sample_barcode,
@@ -365,6 +382,17 @@ def _scan_post_update_info(sample_barcode,
     # If we're not supposed to send an email, go back to GET
     if action != "send_email":
         return _scan_get(sample_barcode, update_error)
+
+    ###
+    # Bugfix Part 2 for duplicate emails being sent.
+    if sample_status == latest_status:
+        # This is what we'll hit if javascript thinks it's updating status
+        # but is out of sync with the database.
+        update_error = "Ignoring Send Email, sample_status would " \
+                       "not have been updated (Displayed page was out of " \
+                       "sync)"
+        return _scan_get(sample_barcode, update_error)
+    ###
 
     # This is what we'll hit if there are no email templates to send for
     # the new sample status (or if we screw up javascript side :D )
@@ -399,7 +427,6 @@ def _scan_post_update_info(sample_barcode,
 
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
-
     # Now that the handlers are set up, parse the request to determine what
     # to do.
 
