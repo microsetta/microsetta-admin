@@ -52,8 +52,10 @@ class RouteTests(TestBase):
             "scans_info": [],
             "latest_scan": None,
             "sample": {'site': 'baz'},
-            "account": {'id': 'd8592c74-9694-2135-e040-8a80115d6401'},
-            "source": 'bar'
+            "source": {'name': 'a source a name',
+                       'source_type': 'human',
+                       'source_data': {'description': None}},
+            "account": {'id': 'd8592c74-9694-2135-e040-8a80115d6401'}
         }
 
         resp2 = []
@@ -90,7 +92,9 @@ class RouteTests(TestBase):
             "latest_scan": None,
             "sample": {'datetime_collected': None},
             "account": {'id': "ThizIzNotReal"},
-            "source": 'bar'
+            "source": {'name': 'a source a name',
+                       'source_type': 'human',
+                       'source_data': {'description': None}},
         }
 
         resp2 = []
@@ -161,7 +165,7 @@ class RouteTests(TestBase):
                 "latest_scan": None,
                 "sample": None,
                 "account": None,
-                "source": 'bar'}
+                "source": None}
 
         self.mock_get.return_value.status_code = 200
         self.mock_get.return_value.text = json.dumps(resp)
@@ -181,7 +185,7 @@ class RouteTests(TestBase):
                 "latest_scan": None,
                 "sample": None,
                 "account": None,
-                "source": 'bar'}
+                "source": None}
 
         self.mock_get.return_value.status_code = 200
         self.mock_get.return_value.text = json.dumps(resp)

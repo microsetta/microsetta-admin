@@ -214,6 +214,20 @@ table
                     </ul>
                 </td>
             </tr>
+            {% if source is not none %}
+            <tr>
+                <td>Source Type: </td>
+                <td>{{source.source_type}}</td>
+            </tr>
+            <tr>
+                <td>Source Name: </td>
+                <td>{{source.name}}</td>
+            </tr>
+            <tr>
+                <td>Source Description: </td>
+                <td>{{source.source_data.description}}</td>
+            </tr>
+            {% endif %}
             <tr>
                 <td>Sample Site: </td>
                 <td>{{sample_info.site}}</td>

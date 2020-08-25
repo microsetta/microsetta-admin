@@ -318,6 +318,7 @@ def _scan_get(sample_barcode, update_error):
             status_warning=status_warning,
             update_error=update_error,
             received_type_dropdown=RECEIVED_TYPE_DROPDOWN,
+            source=result['source'],
             events=events
         )
     elif status == 401:
