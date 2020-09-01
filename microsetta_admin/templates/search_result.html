@@ -132,7 +132,15 @@
                     <tbody>
                     {% for sample in result['kit']['samples'] %}
                         <tr>
-                            <td><a href="{{ ui_endpoint }}/accounts/{{ result['account']['id'] }}/sources/{{ result['source']['id'] }}/samples/{{ sample['id'] }}" target="_blank">Edit sample</a></td>
+                            <td>
+                            {% if sample['account_id'] is none %}
+                            No account
+                            {% elif sample['source_id'] is none %}
+                            No source
+                            {% else %}
+                            <a href="{{ ui_endpoint }}/accounts/{{ sample['account_id'] }}/sources/{{ sample['source_id'] }}/samples/{{ sample['id'] }}" target="_blank">Edit sample</a>
+                            {% endif %}
+                            </td>
                             <td>{{ sample['barcode'] }}</td>
                             <td>{{ sample['site'] }}</td>
                             <td>{{ sample['datetime_collected'] }}</td>
