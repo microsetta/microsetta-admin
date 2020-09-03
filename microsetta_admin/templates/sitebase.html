@@ -5,11 +5,23 @@
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <link rel="stylesheet" href="/static/vendor/bootstrap-4.4.1-dist/css/bootstrap.min.css" />
 <link rel="stylesheet" href="/static/css/ma_interface.css" />
+<style>
+    .modal-backdrop {
+        /* bug fix - no overlay */
+        display: none;
+    }
+</style>
 
 <!-- jquery must be enabled before bootstrap for collapsible functionality -->
 <script src="/static/vendor/js/jquery-3.4.1.min.js"></script>
 <script src="/static/vendor/js/jquery.validate.min.js"></script>
 <script src="/static/vendor/bootstrap-4.4.1-dist/js/bootstrap.min.js"></script>
+<script type="application/javascript">
+    function showWait(url_to_load){
+        $('#wait').modal('show');
+        window.location.replace(url_to_load);
+    }
+</script>
 
 {% block head %}
 {% endblock %}
@@ -23,7 +35,7 @@
         <ul class="mainmenu">
             {% if email %}
             <li><a href="/search">Search</a></li>
-            <li><a href="/manage_projects">Manage Projects</a></li>
+            <li><a href="#" onclick="showWait('/manage_projects')">Manage Projects</a></li>
             <li><a href="/create_kits">Create Kit</a></li>
             <li><a href="/scan">Scan Barcode</a></li>
             <li><a href="/metadata_pulldown">Retrieve Metadata</a></li>
@@ -36,6 +48,25 @@
     </div>
 
   <div class="content">
+<!-- wait modal -->
+<div class="modal fade bs-example-modal-sm" id="wait" tabindex="-1"
+    role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="d-flex justify-content-center">
+                    Gathering data ...
+                </div>
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-grow" role="status">
+                      <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- end wait modal -->
     {% block content %}
     {% endblock %}
   </div>
