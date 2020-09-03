@@ -26,6 +26,17 @@ RECEIVED_TYPE_DROPDOWN = \
     [DUMMY_SELECT_TEXT, "Blood (skin prick)", "Saliva", "Stool",
      "Sample Type Unclear (Swabs Included)"]
 
+VALID_STATUS = "sample-is-valid"
+NO_SOURCE_STATUS = "no-associated-source"
+NO_ACCOUNT_STATUS = "no-registered-account"
+NO_COLLECTION_INFO_STATUS = "no-collection-info"
+INCONSISTENT_SAMPLE_STATUS = "sample-has-inconsistencies"
+UNKNOWN_VALIDITY_STATUS = "received-unknown-validity"
+
+STATUS_OPTIONS = [DUMMY_SELECT_TEXT, VALID_STATUS, NO_SOURCE_STATUS,
+                  NO_ACCOUNT_STATUS, NO_COLLECTION_INFO_STATUS,
+                  INCONSISTENT_SAMPLE_STATUS, UNKNOWN_VALIDITY_STATUS]
+
 
 def handle_pyjwt(pyjwt_error):
     # PyJWTError (Aka, anything wrong with token) will force user to log out
@@ -292,25 +303,25 @@ def new_kits():
 
 
 def _check_sample_status(extended_barcode_info):
-    # TODO:  What are the error conditions we need to know about a barcode?
-    warnings = []
-    sample = extended_barcode_info['sample']
+    warning = None
+    in_microsetta_project = any(
+        [x['is_microsetta'] for x in extended_barcode_info['projects_info']])
 
-    if extended_barcode_info['account'] is None:
-        warnings.append("No associated account")
-    if extended_barcode_info['source'] is None:
-        warnings.append("No associated source")
-    if extended_barcode_info['sample'] is None:
-        warnings.append("No associated sample")
-    elif 'site' not in sample or sample['site'] is None:
-        warnings.append("Sample site not specified")
+    # one warning to rule them all; check in order of precendence
+    if not in_microsetta_project:
+        warning = UNKNOWN_VALIDITY_STATUS
+    elif extended_barcode_info['account'] is None:
+        warning = NO_ACCOUNT_STATUS
+    elif extended_barcode_info['source'] is None:
+        warning = NO_SOURCE_STATUS
+    # collection datetime is used as the bellwether for the whole
+    # set of sample collection info because it is relevant to all
+    # kinds of samples (whereas previously used field, sample site, is not
+    # filled when environmental samples are returned).
+    elif extended_barcode_info['sample'].get('datetime_collected') is None:
+        warning = NO_COLLECTION_INFO_STATUS
 
-    if len(warnings) == 0:
-        color = 'inherit'
-    else:
-        color = 'orange'
-
-    return warnings, color
+    return warning
 
 
 # Set up handlers for the cases,
@@ -330,7 +341,7 @@ def _scan_get(sample_barcode, update_error):
     # If we successfully grab it, show the page to the user
     if status == 200:
         # Process result in python because its easier than jinja2.
-        status_warnings, status_color = _check_sample_status(result)
+        status_warning = _check_sample_status(result)
 
         # check the latest scan to find the default sample_status for form
         latest_status = DUMMY_SELECT_TEXT
@@ -356,13 +367,14 @@ def _scan_get(sample_barcode, update_error):
             scans_info=result['scans_info'],
             latest_status=latest_status,
             dummy_status=DUMMY_SELECT_TEXT,
+            status_options=STATUS_OPTIONS,
             send_email=session.get(SEND_EMAIL_CHECKBOX_DEFAULT_NAME, True),
             sample_info=result['sample'],
             extended_info=result,
-            status_warnings=status_warnings,
+            status_warning=status_warning,
             update_error=update_error,
-            status_color=status_color,
             received_type_dropdown=RECEIVED_TYPE_DROPDOWN,
+            source=result['source'],
             events=events
         )
     elif status == 401:
@@ -391,6 +403,23 @@ def _scan_post_update_info(sample_barcode,
                            received_type,
                            recorded_type):
 
+    ###
+    # Bugfix Part 1 for duplicate emails being sent.  Theory is that client is
+    # out of sync due to hitting back button after a scan has changed
+    # state.
+    # Can't test if client is up to date without ETags, so for right now,
+    # we just validate whether or not they should send an email, duplicating
+    # the client log.  (This can still break with multiple admin clients,
+    # but that is unlikely at the moment.)
+    latest_status = None
+    # TODO:  Replace this with ETags!
+    status, result = APIRequest.get(
+        '/api/admin/search/samples/%s' % sample_barcode)
+
+    if result['latest_scan']:
+        latest_status = result['latest_scan']['sample_status']
+    ###
+
     # Do the actual update
     status, response = APIRequest.post(
         '/api/admin/scan/%s' % sample_barcode,
@@ -410,6 +439,17 @@ def _scan_post_update_info(sample_barcode,
     # If we're not supposed to send an email, go back to GET
     if action != "send_email":
         return _scan_get(sample_barcode, update_error)
+
+    ###
+    # Bugfix Part 2 for duplicate emails being sent.
+    if sample_status == latest_status:
+        # This is what we'll hit if javascript thinks it's updating status
+        # but is out of sync with the database.
+        update_error = "Ignoring Send Email, sample_status would " \
+                       "not have been updated (Displayed page was out of " \
+                       "sync)"
+        return _scan_get(sample_barcode, update_error)
+    ###
 
     # This is what we'll hit if there are no email templates to send for
     # the new sample status (or if we screw up javascript side :D )
@@ -444,7 +484,6 @@ def _scan_post_update_info(sample_barcode,
 
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
-
     # Now that the handlers are set up, parse the request to determine what
     # to do.
 

@@ -33,7 +33,7 @@
                 $("#action_input").prop("value", "send_email")
             else
                 $("#action_input").prop("value", "scan_only")
-        }, should_send_email)
+        }, should_send_email);
 
         // Change scan button text dependent on should_send_email
         new DelegateOutput(function(should_send){
@@ -41,7 +41,7 @@
                 $("#scan_button").prop("value", "Add Scan And Notify User")
             else
                 $("#scan_button").prop("value", "Add Scan")
-        }, should_send_email)
+        }, should_send_email);
 
         // Hide/Show email template inputs based on sample_status select
         new DelegateOutput(function(selected_status){
@@ -62,12 +62,12 @@
                 $("#email_template_row").removeClass('show');
                 $("#received_type_row").removeClass('show');
             }
-        }, new_status)
+        }, new_status);
 
         // Match email template selection to selected status
         new DelegateOutput(function(selected_status){
             //Remove the current set of options
-            $("#email_template option").remove()
+            $("#email_template option").remove();
             if (selected_status === "no-collection-info")
             {
                 $("#email_template").append('<option value="missing_sample_info">Missing Sample Info</option>')
@@ -92,7 +92,7 @@
             {
                 // Set template options for remaining statuses
             }
-        }, new_status)
+        }, new_status);
 
         // Enable/Disable email template inputs based on whether or not email would be sent
         new JQueryOutput(new NotExpression(should_send_email), ".send_email_disables", 'disabled')
@@ -105,21 +105,21 @@
 
             // Technician cannot set invalid sample status
             if (sample_status === not_set)
-                enable = false
+                enable = false;
 
             // Technician cannot send email unless necessary fields are filled in.
             if (should_send_email)
             {
                 if (sample_status === 'sample-has-inconsistencies' &&
                     received_type === not_set)
-                    enable = false
+                    enable = false;
                 else if (sample_status === 'no-collection-info' &&
                     received_type === not_set)
-                    enable = false
+                    enable = false;
             }
 
             $("#scan_button").prop("disabled", !enable)
-        }, should_send_email, new_status, received_type)
+        }, should_send_email, new_status, received_type);
 
         //Tell technician why email can't be sent if they indicate that they
         // are trying to
@@ -179,25 +179,16 @@ table
     {% endif %}
 
     {% if barcode_info %}
-        <div id="sample-status" class="sample-status" style="background-color:{{ status_color }};">
-           <div>
-                {% if status_warnings %}
-                <tr>
-                    <td>Status Warnings: </td>
-                </tr>
-                <tr>
-                    <td></td>
-                    <td>
-                        <ul>
-                        {% for warning in status_warnings %}
-                            <li>{{warning}}</li>
-                        {% endfor %}
-                        </ul>
-                    </td>
-                </tr>
-                {% endif %}
+        {% if status_warning %}
+            <div id="sample-status" class="sample-status" style="background-color:orange;">
+                <p>
+                    <br />
+                    Status Warning: {{status_warning}}
+                    <br/>
+                    <br/>
+                </p>
             </div>
-        </div>
+        {% endif %}
         <form action="/scan" name="update_form" id="update_form" onsubmit="return verify_status();" method="post">
         <input type="hidden" name="sample_barcode" value="{{barcode_info.barcode}}"/>
         <table>
@@ -223,6 +214,20 @@ table
                     </ul>
                 </td>
             </tr>
+            {% if source is not none %}
+            <tr>
+                <td>Source Type: </td>
+                <td>{{source.source_type}}</td>
+            </tr>
+            <tr>
+                <td>Source Name: </td>
+                <td>{{source.name}}</td>
+            </tr>
+            <tr>
+                <td>Source Description: </td>
+                <td>{{source.source_data.description}}</td>
+            </tr>
+            {% endif %}
             <tr>
                 <td>Sample Site: </td>
                 <td>{{sample_info.site}}</td>
@@ -269,14 +274,8 @@ table
                 <td>Sample Status: </td>
                 <td>
                 <select id="sample_status" name="sample_status">
-                {% for status in [dummy_status,
-                         "sample-is-valid",
-                         "no-associated-source",
-                         "no-registered-account",
-                         "no-collection-info",
-                         "sample-has-inconsistencies",
-                         "received-unknown-validity"] %}
-                    <option value="{{status}}" {% if latest_status == status %}selected{% endif %} %}>{{status}}</option>
+                {% for status in status_options %}
+                    <option value="{{status}}" {% if latest_status == status %}selected{% endif %}>{{status}}</option>
                 {% endfor %}
                 </select>
                 </td>
