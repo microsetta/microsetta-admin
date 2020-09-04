@@ -327,6 +327,8 @@ table
                     <th class="bordered">Event Timestamp</th>
                     <th class="bordered">Email Address</th>
                     <th class="bordered">Email Template</th>
+                    <th class="bordered">Apparent Site</th>
+                    <th class="bordered">User Recorded Site</th>
                 </tr>
             </thead>
             {% for event in events %}
@@ -334,6 +336,18 @@ table
                 <td class="bordered">{{ format_timestamp(event["event_time"]) }}</td>
                 <td class="bordered">{{event["event_state"]["email"] |e}}</td>
                 <td class="bordered">{{event["event_state"]["template"] |e}}</td>
+                <td class="bordered">
+                    {% if "template_args" in event["event_state"] and
+                       "received_type" in event["event_state"]["template_args"] %}
+                    {{event["event_state"]["template_args"]["received_type"] |e}}
+                    {% endif %}
+                </td>
+                <td class="bordered">
+                    {% if "template_args" in event["event_state"] and
+                       "recorded_type" in event["event_state"]["template_args"] %}
+                    {{event["event_state"]["template_args"]["recorded_type"] |e}}
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </table>
