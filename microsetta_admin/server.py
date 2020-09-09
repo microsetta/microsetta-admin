@@ -154,36 +154,6 @@ def _search(resource=None):
             return result
 
 
-@app.route('/create_project', methods=['GET', 'POST'])
-def new_project():
-    if request.method == 'GET':
-        return render_template('create_project.html',
-                               **build_login_variables())
-    elif request.method == 'POST':
-        project_name = request.form['project_name']
-        is_microsetta = request.form.get('is_microsetta', 'No') == 'Yes'
-        bank_samples = request.form.get('bank_samples', 'No') == 'Yes'
-        plating_start_date = request.form.get('plating_start_date')
-        if plating_start_date == '':
-            plating_start_date = None
-
-        status, result = APIRequest.post('/api/admin/create/project',
-                                         json={'project_name': project_name,
-                                               'is_microsetta': is_microsetta,
-                                               'bank_samples': bank_samples,
-                                               'plating_start_date':
-                                                   plating_start_date
-                                               })
-
-        if status == 201:
-            return render_template('create_project.html', message='Created!',
-                                   **build_login_variables())
-        else:
-            return render_template('create_project.html',
-                                   message='Unable to create',
-                                   **build_login_variables())
-
-
 def _translate_nones(a_dict, do_none_to_str):
     # Note: this ISN'T a deep copy. This function is NOT set up
     # for recursing through a multi-layer dictionary
@@ -198,6 +168,7 @@ def _translate_nones(a_dict, do_none_to_str):
 
 @app.route('/manage_projects', methods=['GET', 'POST'])
 def manage_projects():
+    result = None
     if request.method == 'POST':
         projects_uri = '/api/admin/projects'
 
@@ -209,31 +180,32 @@ def manage_projects():
 
         if project_id.isdigit():
             # update (put) an existing project
+            action = "update"
             status, api_output = APIRequest.put(
                 '{}/{}'.format(projects_uri, project_id),
                 json=model)
         else:
             # create (post) a new project
+            action = "create"
             status, api_output = APIRequest.post(
                 projects_uri, json=model)
 
+        # if api post or put failed
         if status >= 400:
-            result = {'error_message': api_output}
+            result = {'error_message': f'Unable to {action} project.'}
+    # end if post
 
-    # regardless of whether this was a post or a get, we
-    # always get and return the project list
-    status, projects_list = APIRequest.get('/api/admin/projects')
+    # if the above work (if any) didn't produce an error message, return
+    # the projects list
+    if result is None:
+        status, projects_output = APIRequest.get('/api/admin/projects')
 
-    if status >= 400:
-        print(projects_list)
-        result = {'error_message': "Error detected; check console print for "
-                                   "details"}
-    else:
-        for i in range(0, len(projects_list)):
-            curr_dict = projects_list[i]
-            projects_list[i] = _translate_nones(curr_dict, True)
-
-        result = {'projects': projects_list}
+        if status >= 400:
+            result = {'error_message': "Unable to load project list."}
+        else:
+            cleaned_projects = [_translate_nones(x, True) for x in
+                                projects_output]
+            result = {'projects': cleaned_projects}
 
     return render_template('list_projects.html',
                            **build_login_variables(),
