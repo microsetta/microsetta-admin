@@ -1,13 +1,117 @@
 import json
+from copy import deepcopy
 
 from microsetta_admin.tests.base import TestBase
 
 
-class DynamicObj(object):
-    pass
+class DummyResponse(object):
+    def __init__(self, status_code, output_dict):
+        self.status_code = status_code
+        self.text = json.dumps(output_dict)
+        self.json = lambda: output_dict
 
 
 class RouteTests(TestBase):
+    PROJ_LIST = [{'additional_contact_name': None,
+                  'alias': None,
+                  'bank_samples': False,
+                  'branding_associated_instructions': None,
+                  'branding_status': None,
+                  'collection': None,
+                  'computed_stats': {
+                      'num_fully_returned_kits': 1,
+                      'num_kits': 5,
+                      'num_kits_w_problems': 0,
+                      'num_no_associated_source': 0,
+                      'num_no_collection_info': 0,
+                      'num_no_registered_account': 0,
+                      'num_partially_returned_kits': 1,
+                      'num_received_unknown_validity': 0,
+                      'num_sample_is_valid': 4,
+                      'num_samples': 20,
+                      'num_samples_received': 4,
+                      'num_unique_sources': 4},
+                  'contact_email': None,
+                  'contact_name': None,
+                  'coordination': None,
+                  'deadlines': None,
+                  'disposition_comments': None,
+                  'do_16s': None,
+                  'do_mass_spec': None,
+                  'do_metatranscriptomics': None,
+                  'do_other': None,
+                  'do_rt_qpcr': None,
+                  'do_serology': None,
+                  'do_shallow_shotgun': None,
+                  'do_shotgun': None,
+                  'is_blood': None,
+                  'is_fecal': None,
+                  'is_microsetta': False,
+                  'is_other': None,
+                  'is_saliva': None,
+                  'is_skin': None,
+                  'mass_spec_comments': None,
+                  'mass_spec_contact_email': None,
+                  'mass_spec_contact_name': None,
+                  'num_subjects': None,
+                  'num_timepoints': None,
+                  'plating_start_date': None,
+                  'project_id': 8,
+                  'project_name': 'Project - %u[zGmÅq=g',
+                  'sponsor': None,
+                  'start_date': None,
+                  'subproject_name': None},
+                 {'additional_contact_name': None,
+                  'alias': None,
+                  'bank_samples': False,
+                  'branding_associated_instructions': None,
+                  'branding_status': None,
+                  'collection': None,
+                  'computed_stats': {
+                      'num_fully_returned_kits': 4,
+                      'num_kits': 5,
+                      'num_kits_w_problems': 1,
+                      'num_no_associated_source': 1,
+                      'num_no_collection_info': 0,
+                      'num_no_registered_account': 0,
+                      'num_partially_returned_kits': 1,
+                      'num_received_unknown_validity': 0,
+                      'num_sample_is_valid': 2,
+                      'num_samples': 12,
+                      'num_samples_received': 5,
+                      'num_unique_sources': 2},
+                  'contact_email': None,
+                  'contact_name': None,
+                  'coordination': None,
+                  'deadlines': None,
+                  'disposition_comments': None,
+                  'do_16s': None,
+                  'do_mass_spec': None,
+                  'do_metatranscriptomics': None,
+                  'do_other': None,
+                  'do_rt_qpcr': None,
+                  'do_serology': None,
+                  'do_shallow_shotgun': None,
+                  'do_shotgun': None,
+                  'is_blood': None,
+                  'is_fecal': None,
+                  'is_microsetta': False,
+                  'is_other': None,
+                  'is_saliva': None,
+                  'is_skin': None,
+                  'mass_spec_comments': None,
+                  'mass_spec_contact_email': None,
+                  'mass_spec_contact_name': None,
+                  'num_subjects': None,
+                  'num_timepoints': None,
+                  'plating_start_date': None,
+                  'project_id': 12,
+                  'project_name': 'New proj',
+                  'sponsor': None,
+                  'start_date': None,
+                  'subproject_name': "sub sub"}
+                 ]
+
     def test_home_simple(self):
         response = self.app.get('/', follow_redirects=True)
         self.assertEqual(response.status_code, 200)
@@ -30,9 +134,7 @@ class RouteTests(TestBase):
 
     def test_search_missing_barcode(self):
         # server side issues a GET to the API
-        self.mock_get.return_value.status_code = 404
-        self.mock_get.return_value.text = '{}'
-        self.mock_get.return_value.json = lambda: {}  # noqa
+        self.mock_get.return_value = DummyResponse(404, {})
 
         response = self.app.post('/search/sample',
                                  data={'search_samples': 'missing'},
@@ -58,19 +160,9 @@ class RouteTests(TestBase):
             "account": {'id': 'd8592c74-9694-2135-e040-8a80115d6401'}
         }
 
-        resp2 = []
-
-        dynObj = DynamicObj()
-        dynObj.status_code = 200
-        dynObj.text = json.dumps(resp1)
-        dynObj.json = lambda: resp1
-
-        dynObj2 = DynamicObj()
-        dynObj2.status_code = 200
-        dynObj2.text = json.dumps(resp2)
-        dynObj2.json = lambda: resp2
-
-        self.mock_get.side_effect = [dynObj, dynObj2]
+        api_get_1 = DummyResponse(200, resp1)
+        api_get_2 = DummyResponse(200, [])
+        self.mock_get.side_effect = [api_get_1, api_get_2]
 
         response = self.app.get('/scan?sample_barcode=000004216',
                                 follow_redirects=True)
@@ -83,10 +175,10 @@ class RouteTests(TestBase):
         resp1 = {
             "barcode_info": {"barcode": "000004216"},
             "projects_info": [{
-                    "project": "American Gut Project",
-                    "is_microsetta": True,
-                    "bank_samples": False,
-                    "plating_start_date": None
+                "project": "American Gut Project",
+                "is_microsetta": True,
+                "bank_samples": False,
+                "plating_start_date": None
             }],
             "scans_info": [],
             "latest_scan": None,
@@ -97,19 +189,9 @@ class RouteTests(TestBase):
                        'source_data': {'description': None}},
         }
 
-        resp2 = []
-
-        dynObj = DynamicObj()
-        dynObj.status_code = 200
-        dynObj.text = json.dumps(resp1)
-        dynObj.json = lambda: resp1
-
-        dynObj2 = DynamicObj()
-        dynObj2.status_code = 200
-        dynObj2.text = json.dumps(resp2)
-        dynObj2.json = lambda: resp2
-
-        self.mock_get.side_effect = [dynObj, dynObj2]
+        api_get_1 = DummyResponse(200, resp1)
+        api_get_2 = DummyResponse(200, [])
+        self.mock_get.side_effect = [api_get_1, api_get_2]
 
         response = self.app.get('/scan?sample_barcode=000004216',
                                 follow_redirects=True)
@@ -121,10 +203,10 @@ class RouteTests(TestBase):
     def test_scan_specific_no_associated_source_warning(self):
         resp1 = {"barcode_info": {"barcode": "000004216"},
                  "projects_info": [{
-                    "project": "American Gut Project",
-                    "is_microsetta": True,
-                    "bank_samples": False,
-                    "plating_start_date": None
+                     "project": "American Gut Project",
+                     "is_microsetta": True,
+                     "bank_samples": False,
+                     "plating_start_date": None
                  }],
                  "scans_info": [],
                  "latest_scan": None,
@@ -132,19 +214,9 @@ class RouteTests(TestBase):
                  "account": {"id": "foo"},
                  "source": None}
 
-        resp2 = []
-
-        dynObj = DynamicObj()
-        dynObj.status_code = 200
-        dynObj.text = json.dumps(resp1)
-        dynObj.json = lambda: resp1
-
-        dynObj2 = DynamicObj()
-        dynObj2.status_code = 200
-        dynObj2.text = json.dumps(resp2)
-        dynObj2.json = lambda: resp2
-
-        self.mock_get.side_effect = [dynObj, dynObj2]
+        api_get_1 = DummyResponse(200, resp1)
+        api_get_2 = DummyResponse(200, [])
+        self.mock_get.side_effect = [api_get_1, api_get_2]
 
         response = self.app.get('/scan?sample_barcode=000004216',
                                 follow_redirects=True)
@@ -166,10 +238,7 @@ class RouteTests(TestBase):
                 "sample": None,
                 "account": None,
                 "source": None}
-
-        self.mock_get.return_value.status_code = 200
-        self.mock_get.return_value.text = json.dumps(resp)
-        self.mock_get.return_value.json = lambda: resp  # noqa
+        self.mock_get.return_value = DummyResponse(200, resp)
 
         response = self.app.get('/scan?sample_barcode=000004216',
                                 follow_redirects=True)
@@ -186,10 +255,7 @@ class RouteTests(TestBase):
                 "sample": None,
                 "account": None,
                 "source": None}
-
-        self.mock_get.return_value.status_code = 200
-        self.mock_get.return_value.text = json.dumps(resp)
-        self.mock_get.return_value.json = lambda: resp  # noqa
+        self.mock_get.return_value = DummyResponse(200, resp)
 
         response = self.app.get('/scan?sample_barcode=000004216',
                                 follow_redirects=True)
@@ -200,15 +266,84 @@ class RouteTests(TestBase):
                       response.data)
 
     def test_create_kits_simple(self):
-        self.mock_get.return_value.status_code = 200
-        self.mock_get.return_value.text = '[{"project_name": "foo"}]'
-        self.mock_get.return_value.json = lambda: [{"project_name": "foo"}]
+        self.mock_get.return_value = DummyResponse(200,
+                                                   [{"project_name": "foo"}])
 
         response = self.app.get('/create_kits', follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'<h3>Microsetta Create Kits</h3>', response.data)
 
-    def test_create_project_simple(self):
-        response = self.app.get('/create_project', follow_redirects=True)
+    def test_create_project_success(self):
+        api_post_dummy = DummyResponse(201, {})
+        api_get_dummy = DummyResponse(200, self.PROJ_LIST)
+        self.mock_post.return_value = api_post_dummy
+        self.mock_get.return_value = api_get_dummy
+
+        create_input = deepcopy(self.PROJ_LIST[1])
+        create_input["project_id"] = ""
+        create_input.pop('computed_stats')
+        response = self.app.post('/manage_projects',
+                                 data=create_input,
+                                 follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'<h3>Microsetta Create Project</h3>', response.data)
+        # if the below is on the page, the table of projects is shown
+        self.assertIn(b'<th>Flight Sub-Project Name</th>', response.data)
+
+    def test_create_project_fail(self):
+        self.mock_post.return_value = DummyResponse(401, {})
+
+        create_input = deepcopy(self.PROJ_LIST[1])
+        create_input["project_id"] = ""
+        create_input.pop('computed_stats')
+        response = self.app.post('/manage_projects',
+                                 data=create_input,
+                                 follow_redirects=True)
+        # the api call failed, but the admin page call succeeds--in returning
+        # a page reporting the error :)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Unable to create project.', response.data)
+
+    def test_update_project_success(self):
+        self.mock_put.return_value = DummyResponse(204, {})
+        self.mock_get.return_value = DummyResponse(200, self.PROJ_LIST)
+
+        create_input = deepcopy(self.PROJ_LIST[1])
+        create_input.pop('computed_stats')
+        response = self.app.post('/manage_projects',
+                                 data=create_input,
+                                 follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        # if the below is on the page, the table of projects is shown
+        self.assertIn(b'<th>Flight Sub-Project Name</th>', response.data)
+
+    def test_update_project_fail(self):
+        self.mock_put.return_value = DummyResponse(400, {})
+
+        create_input = deepcopy(self.PROJ_LIST[1])
+        create_input.pop('computed_stats')
+        response = self.app.post('/manage_projects',
+                                 data=create_input,
+                                 follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        # the api call failed, but the admin page call succeeds--in returning
+        # a page reporting the error :)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Unable to update project.', response.data)
+
+    def test_list_projects_success(self):
+        self.mock_get.return_value = DummyResponse(200, self.PROJ_LIST)
+
+        response = self.app.get('/manage_projects', follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        # if the below is on the page, the table of projects is shown
+        self.assertIn(b'<th>Flight Sub-Project Name</th>', response.data)
+
+    def test_list_projects_fail(self):
+        self.mock_get.return_value = DummyResponse(
+            400, {"message": "hideous error"})
+
+        response = self.app.get('/manage_projects', follow_redirects=True)
+        # the api call failed, but the admin page call succeeds--in returning
+        # a page reporting the error :)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Unable to load project list.', response.data)
