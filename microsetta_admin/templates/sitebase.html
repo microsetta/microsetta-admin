@@ -19,7 +19,9 @@
 <script type="application/javascript">
     function showWait(url_to_load){
         $('#wait').modal('show');
-        window.location.replace(url_to_load);
+        if (url_to_load != null){
+            window.location.replace(url_to_load);
+        }
     }
 </script>
 
