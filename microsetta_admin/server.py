@@ -207,7 +207,7 @@ def manage_projects():
                                 projects_output]
             result = {'projects': cleaned_projects}
 
-    return render_template('list_projects.html',
+    return render_template('manage_projects.html',
                            **build_login_variables(),
                            result=result), 200
 

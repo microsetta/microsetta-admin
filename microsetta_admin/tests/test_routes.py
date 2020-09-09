@@ -330,7 +330,7 @@ class RouteTests(TestBase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Unable to update project.', response.data)
 
-    def test_list_projects_success(self):
+    def test_manage_projects_success(self):
         self.mock_get.return_value = DummyResponse(200, self.PROJ_LIST)
 
         response = self.app.get('/manage_projects', follow_redirects=True)
@@ -338,7 +338,7 @@ class RouteTests(TestBase):
         # if the below is on the page, the table of projects is shown
         self.assertIn(b'<th>Flight Sub-Project Name</th>', response.data)
 
-    def test_list_projects_fail(self):
+    def test_manage_projects_fail(self):
         self.mock_get.return_value = DummyResponse(
             400, {"message": "hideous error"})
 
