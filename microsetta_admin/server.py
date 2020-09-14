@@ -174,8 +174,8 @@ def manage_projects():
 
         model = {x: request.form[x] for x in request.form}
         project_id = model.pop('project_id')
-        model['is_microsetta'] = model.get('is_microsetta', False) == 'true'
-        model['bank_samples'] = model.get('bank_samples', False) == 'true'
+        model['is_microsetta'] = model.get('is_microsetta', '') == 'true'
+        model['bank_samples'] = model.get('bank_samples', '') == 'true'
         model = _translate_nones(model, False)
 
         if project_id.isdigit():

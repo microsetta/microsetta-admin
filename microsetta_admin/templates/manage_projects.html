@@ -79,6 +79,8 @@
                         // set checked property to boolean value of data field
                         let isChecked = (this.innerText.toLowerCase() === "true");
                         formElm.prop('checked', isChecked);
+                        // trigger onchange event manually via jquery
+                        formElm.change();
                     } else {
                         // set the value of the form element to the value
                         // of the relevant cell in the projects table
@@ -418,7 +420,7 @@
                                     <tr>
                                         <td><label for="plating_start_date">Plate On (Optional): </label></td>
                                         <td><input type="text" name="plating_start_date" id="plating_start_date" placeholder="2020-07-04"
-                                                   pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}" disabled/><br>
+                                                   pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}" disabled /><br>
                                             <small>Format: YYYY-MM-DD</small>
                                         </td>
                                     </tr>

@@ -39,7 +39,7 @@ class APIRequest:
         if response.status_code == 401:
             # redirect to home page for login
             output = redirect("/")
-        elif response.status_code > 400:
+        elif response.status_code >= 400:
             if response.text:
                 output = response.text
             else:
