@@ -161,6 +161,7 @@ class ConsoleOutput {
     }
 }
 
+// Expose any unit-testable functionality to node's module.exports
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined'){
   module.exports = {
     "NamedExpression": NamedExpression,

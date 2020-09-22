@@ -154,39 +154,67 @@ def _search(resource=None):
             return result
 
 
-@app.route('/create_project', methods=['GET', 'POST'])
-def new_project():
-    if request.method == 'GET':
-        return render_template('create_project.html',
-                               **build_login_variables())
-    elif request.method == 'POST':
-        project_name = request.form['project_name']
-        is_microsetta = request.form.get('is_microsetta', 'No') == 'Yes'
-        bank_samples = request.form.get('bank_samples', 'No') == 'Yes'
-        plating_start_date = request.form.get('plating_start_date')
-        if plating_start_date == '':
-            plating_start_date = None
+def _translate_nones(a_dict, do_none_to_str):
+    # Note: this ISN'T a deep copy. This function is NOT set up
+    # for recursing through a multi-layer dictionary
+    result = a_dict.copy()
+    for k, v in result.items():
+        if do_none_to_str and v is None:
+            result[k] = ""
+        elif not do_none_to_str and v == '':
+            result[k] = None
+    return result
 
-        status, result = APIRequest.post('/api/admin/create/project',
-                                         json={'project_name': project_name,
-                                               'is_microsetta': is_microsetta,
-                                               'bank_samples': bank_samples,
-                                               'plating_start_date':
-                                                   plating_start_date
-                                               })
 
-        if status == 201:
-            return render_template('create_project.html', message='Created!',
-                                   **build_login_variables())
+@app.route('/manage_projects', methods=['GET', 'POST'])
+def manage_projects():
+    result = None
+    if request.method == 'POST':
+        projects_uri = '/api/admin/projects'
+
+        model = {x: request.form[x] for x in request.form}
+        project_id = model.pop('project_id')
+        model['is_microsetta'] = model.get('is_microsetta', '') == 'true'
+        model['bank_samples'] = model.get('bank_samples', '') == 'true'
+        model = _translate_nones(model, False)
+
+        if project_id.isdigit():
+            # update (put) an existing project
+            action = "update"
+            status, api_output = APIRequest.put(
+                '{}/{}'.format(projects_uri, project_id),
+                json=model)
         else:
-            return render_template('create_project.html',
-                                   message='Unable to create',
-                                   **build_login_variables())
+            # create (post) a new project
+            action = "create"
+            status, api_output = APIRequest.post(
+                projects_uri, json=model)
+
+        # if api post or put failed
+        if status >= 400:
+            result = {'error_message': f'Unable to {action} project.'}
+    # end if post
+
+    # if the above work (if any) didn't produce an error message, return
+    # the projects list
+    if result is None:
+        status, projects_output = APIRequest.get('/api/admin/projects')
+
+        if status >= 400:
+            result = {'error_message': "Unable to load project list."}
+        else:
+            cleaned_projects = [_translate_nones(x, True) for x in
+                                projects_output]
+            result = {'projects': cleaned_projects}
+
+    return render_template('manage_projects.html',
+                           **build_login_variables(),
+                           result=result), 200
 
 
 @app.route('/create_kits', methods=['GET', 'POST'])
 def new_kits():
-    _, result = APIRequest.get('/api/admin/statistics/projects')
+    _, result = APIRequest.get('/api/admin/projects')
     projects = sorted([stats['project_name'] for stats in result])
 
     if request.method == 'GET':
