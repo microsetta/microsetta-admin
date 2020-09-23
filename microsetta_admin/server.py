@@ -169,9 +169,9 @@ def _translate_nones(a_dict, do_none_to_str):
 @app.route('/manage_projects', methods=['GET', 'POST'])
 def manage_projects():
     result = None
+    is_active = request.args.get('is_active', None)
+    projects_uri = '/api/admin/projects'
     if request.method == 'POST':
-        projects_uri = '/api/admin/projects'
-
         model = {x: request.form[x] for x in request.form}
         project_id = model.pop('project_id')
         model['is_microsetta'] = model.get('is_microsetta', '') == 'true'
@@ -198,7 +198,10 @@ def manage_projects():
     # if the above work (if any) didn't produce an error message, return
     # the projects list
     if result is None:
-        status, projects_output = APIRequest.get('/api/admin/projects')
+        get_url = projects_uri
+        if is_active is not None:
+            get_url += f"?is_active={is_active}"
+        status, projects_output = APIRequest.get(get_url)
 
         if status >= 400:
             result = {'error_message': "Unable to load project list."}
