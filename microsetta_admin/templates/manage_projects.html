@@ -102,7 +102,25 @@
         $('#wait_msg').show();
     }
 
+    function loadByActiveStatus(statusSelect){
+        let manage_projects_url = "/manage_projects";
+        let active_status_filter = statusSelect.value;
+        if (active_status_filter !== "all"){
+            manage_projects_url+= "?is_active="+ active_status_filter;
+        }
+        showWait(manage_projects_url);
+    }
+
     $(document).ready(function() {
+        // set active status drop-down value; note that this code-level change
+        // does NOT trigger the drop-down's onchange event (which reloads the page)
+        let urlParams = new URLSearchParams(window.location.search);
+        let is_active_val = "all";
+        if (urlParams.has('is_active')){
+            is_active_val = urlParams.get('is_active');
+        }
+        $('#is_active_val').val(is_active_val);
+
         document.getElementById('bank_samples').onchange = function() {
             // the 'plating_start_date input field is disabled if
             // the 'bank_samples' checkbox is NOT checked, and enabled if it is.
@@ -189,6 +207,14 @@
     <div>
         <div class="result_container">
             <div class="dataTables_wrapper">
+                <div>
+                    <select id="is_active_val" onchange="loadByActiveStatus(this);">
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                        <option value="all">All</option>
+                    </select>
+                </div>
+                <br />
                 <table id="projects_list" class="display wrap" style="width:100%">
                     <thead>
                         <tr>
