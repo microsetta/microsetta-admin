@@ -141,7 +141,21 @@
         // end from https://getbootstrap.com/docs/4.0/components/modal/
 
         projectTable = $('#projects_list').DataTable({
+            // Set the "Branding Associated Instructions" column to display
+            // its content as a link if they contain :// (as in http://, https://, etc)
+            "columnDefs": [{
+                "targets": 35,
+                "render": function (data, type, row, meta) {
+                    let result = data;
+                    if (data.indexOf("://") > -1) {
+                        result = '<a href="' + data + '">' + data + '</a>';
+                    }
+                    return result;
+                }
+            }],
+            // Enable horizontal scrolling of DataTable
             "scrollX": true,
+            // Define groups of columns that will be showed/hidden by named buttons
             // modified from https://datatables.net/extensions/buttons/examples/column_visibility/columnGroups.html#:~:text=SearchPanes-,Column%20groups,provides%20this%20ability%20for%20Buttons
             dom: 'Bfrtip',
             buttons: [
