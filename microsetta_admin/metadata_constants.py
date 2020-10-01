@@ -311,6 +311,17 @@ HUMAN_SITE_INVARIANTS = {
         'empo_3': 'Animal surface',
         'description': 'American Gut Project right leg sample',
         'body_site': 'UBERON:skin of leg'},
+    'Saliva': {
+        'body_product': 'UBERON:saliva',
+        'sample_type': 'Mouth',
+        'scientific_name': 'human oral metagenome',
+        'taxon_id': '447426',
+        'body_habitat': 'UBERON:oral cavity',
+        'env_material': 'saliva',
+        'env_package': 'human-oral',
+        'empo_3': 'Animal secretion',
+        'description': 'American Gut Project Mouth sample',
+        'body_site': 'UBERON:tongue'},
     'Mouth': {
         'body_product': 'UBERON:saliva',
         'sample_type': 'Mouth',
