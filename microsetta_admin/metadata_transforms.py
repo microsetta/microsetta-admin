@@ -183,6 +183,7 @@ class AlcoholConsumption(Transformer):
                    'Regularly (3-5 times/week)': 'Yes',
                    'Daily': 'Yes',
                    'Never': 'No',
+                   'Unspecified': MISSING_VALUE,
                    MISSING_VALUE: MISSING_VALUE}
 
         # using value_counts() here as it drops NA by default whereas
