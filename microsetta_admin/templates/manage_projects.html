@@ -1,15 +1,9 @@
 {% extends "sitebase.html" %}
 
 {% block head %}
-<link rel="stylesheet" type="text/css" href="/static/vendor/bootstrap-4.4.1-dist/css/bootstrap.css">
 <link rel="stylesheet" type="text/css" href="/static/vendor/DataTables/DataTables-1.10.21/css/jquery.dataTables.css">
 <link rel="stylesheet" type="text/css" href="/static/vendor/DataTables/Buttons-1.6.2/css/buttons.dataTables.css">
-<script type="text/javascript" language="javascript" src="/static/vendor/jquery-3.5.1.min.js"></script>
-<script type="text/javascript" language="javascript" src="/static/vendor/DataTables/DataTables-1.10.21/js/jquery.dataTables.js"></script>
-<script type="text/javascript" language="javascript" src="/static/vendor/DataTables/Buttons-1.6.2/js/dataTables.buttons.js"></script>
-<script type="text/javascript" language="javascript" src="/static/vendor/DataTables/Buttons-1.6.2/js/buttons.colVis.js"></script>
-<script type="text/javascript" language="javascript" src="/static/vendor/bootstrap-4.4.1-dist/js/bootstrap.js"></script>
-    <style>
+<style>
     th { white-space: normal; }
     div.dataTables_wrapper {
             width: 1000px;
@@ -21,7 +15,11 @@
         display: none;
     }
 </style>
-<script type="text/javascript" class="init">
+
+<script src="/static/vendor/DataTables/DataTables-1.10.21/js/jquery.dataTables.js"></script>
+<script src="/static/vendor/DataTables/Buttons-1.6.2/js/dataTables.buttons.js"></script>
+<script src="/static/vendor/DataTables/Buttons-1.6.2/js/buttons.colVis.js"></script>
+<script class="init">
     // set up for DataTable of project info:
     var projectTable = undefined; //defined on document ready
     const numCols = 49;

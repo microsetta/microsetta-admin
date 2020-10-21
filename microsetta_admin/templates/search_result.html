@@ -1,10 +1,10 @@
 {% extends "sitebase.html" %}
 
 {% block head %}
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
-<script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-3.5.1.js"></script>
-<script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
-<script type="text/javascript" class="init">
+<link rel="stylesheet" type="text/css" href="/static/vendor/DataTables/DataTables-1.10.21/css/jquery.dataTables.css">
+
+<script src="/static/vendor/DataTables/DataTables-1.10.21/js/jquery.dataTables.js"></script>
+<script class="init">
     $(document).ready(function() {
         {% if resource == 'samples' or resource == 'kit' %}
         $('#search_results_samples').DataTable();
