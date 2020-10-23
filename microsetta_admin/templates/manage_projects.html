@@ -20,6 +20,7 @@
 <script src="/static/vendor/DataTables/Buttons-1.6.2/js/dataTables.buttons.js"></script>
 <script src="/static/vendor/DataTables/Buttons-1.6.2/js/buttons.colVis.js"></script>
 <script class="init">
+    var projectFormId = "project_form";
     // set up for DataTable of project info:
     var projectTable = undefined; //defined on document ready
     const numCols = 49;
@@ -49,7 +50,13 @@
     // create/update modal
     function resetModal(){
         showAllCols();
-        document.getElementById("project_form").reset();
+        enableAllModalInputs();
+        document.getElementById(projectFormId).reset();
+    }
+
+    function enableAllModalInputs(){
+        let inputs_selector = "#" + projectFormId + " :input";
+        $(inputs_selector).prop("disabled", false);
     }
 
     function readRow(projId){
@@ -84,6 +91,10 @@
                         // of the relevant cell in the projects table
                         formElm.val(this.innerText);
                     }
+
+                    // some fields can be set only on creating a new project, not modifying an existing one
+                    let is_create_only = $("#" + this.id).hasClass("create_only");
+                    formElm.prop("disabled", is_create_only);
                 }
             }
         });
@@ -91,11 +102,13 @@
 
     // called when the modal submit is clicked (NOT at onsubmit, which is too late)
     function unhideAllPanels() {
-        // make all the panels visible.  This is a kludge needed because input elements
-        // that are not visible are not included when the form is posted :(
+        // make all the panels visible and all inputs enabled.  This is a kludge needed because
+        // input elements that are not visible and/or not enabled are not included when the form is posted :(
         $(".collapse").addClass("show").css("height","auto");
         // disable the submit button
         $('#modal_submit').addClass('disabled');
+        enableAllModalInputs();
+
         // show a wait message since the page reload is not instant
         $('#wait_msg').show();
     }
@@ -301,7 +314,7 @@
                             <td id="td_project_name_{{ curr_id }}">{{ project['project_name'] }}</td>
                             <td id="td_subproject_name_{{ curr_id }}">{{ project['subproject_name'] }}</td>
                             <td id="td_alias_{{ curr_id }}">{{ project['alias'] }}</td>
-                            <td id="td_is_microsetta_{{ curr_id }}">{{ project['is_microsetta'] }}</td>
+                            <td id="td_is_microsetta_{{ curr_id }}" class="create_only">{{ project['is_microsetta'] }}</td>
                             <td id="td_sponsor_{{ curr_id }}">{{ project['sponsor'] }}</td>
                             <td id="td_coordination_{{ curr_id }}">{{ project['coordination'] }}</td>
                             <td id="td_contact_name_{{ curr_id }}">{{ project['contact_name'] }}</td>
