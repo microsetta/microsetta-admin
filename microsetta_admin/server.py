@@ -37,6 +37,8 @@ STATUS_OPTIONS = [DUMMY_SELECT_TEXT, VALID_STATUS, NO_SOURCE_STATUS,
                   NO_ACCOUNT_STATUS, NO_COLLECTION_INFO_STATUS,
                   INCONSISTENT_SAMPLE_STATUS, UNKNOWN_VALIDITY_STATUS]
 
+API_PROJECTS_URL = '/api/admin/projects'
+
 
 def handle_pyjwt(pyjwt_error):
     # PyJWTError (Aka, anything wrong with token) will force user to log out
@@ -166,11 +168,31 @@ def _translate_nones(a_dict, do_none_to_str):
     return result
 
 
+def _get_projects(include_stats, is_active):
+    projects_uri = API_PROJECTS_URL + f"?include_stats={include_stats}"
+    if is_active is not None:
+        projects_uri += f"&is_active={is_active}"
+    status, projects_output = APIRequest.get(projects_uri)
+
+    if status >= 400:
+        result = {'error_message': "Unable to load project list."}
+    else:
+        cleaned_projects = [_translate_nones(x, True) for x in
+                            projects_output]
+        # if we're not using full project stats, sort
+        # alphabetically by project name
+        if not include_stats:
+            cleaned_projects = sorted(cleaned_projects,
+                                      key=lambda k: k['project_name'])
+        result = {'projects': cleaned_projects}
+
+    return status, result
+
+
 @app.route('/manage_projects', methods=['GET', 'POST'])
 def manage_projects():
     result = None
     is_active = request.args.get('is_active', None)
-    projects_uri = '/api/admin/projects'
     if request.method == 'POST':
         model = {x: request.form[x] for x in request.form}
         project_id = model.pop('project_id')
@@ -182,13 +204,13 @@ def manage_projects():
             # update (put) an existing project
             action = "update"
             status, api_output = APIRequest.put(
-                '{}/{}'.format(projects_uri, project_id),
+                '{}/{}'.format(API_PROJECTS_URL, project_id),
                 json=model)
         else:
             # create (post) a new project
             action = "create"
             status, api_output = APIRequest.post(
-                projects_uri, json=model)
+                API_PROJECTS_URL, json=model)
 
         # if api post or put failed
         if status >= 400:
@@ -198,17 +220,7 @@ def manage_projects():
     # if the above work (if any) didn't produce an error message, return
     # the projects list
     if result is None:
-        get_url = projects_uri
-        if is_active is not None:
-            get_url += f"?is_active={is_active}"
-        status, projects_output = APIRequest.get(get_url)
-
-        if status >= 400:
-            result = {'error_message': "Unable to load project list."}
-        else:
-            cleaned_projects = [_translate_nones(x, True) for x in
-                                projects_output]
-            result = {'projects': cleaned_projects}
+        _, result = _get_projects(include_stats=True, is_active=is_active)
 
     return render_template('manage_projects.html',
                            **build_login_variables(),
@@ -217,11 +229,12 @@ def manage_projects():
 
 @app.route('/create_kits', methods=['GET', 'POST'])
 def new_kits():
-    _, result = APIRequest.get('/api/admin/projects')
-    projects = sorted([stats['project_name'] for stats in result])
+    _, result = _get_projects(include_stats=False, is_active=True)
+    projects = result.get('projects')
 
     if request.method == 'GET':
         return render_template('create_kits.html',
+                               error_message=result.get('error_message'),
                                projects=projects,
                                **build_login_variables())
 
@@ -229,17 +242,10 @@ def new_kits():
         num_kits = int(request.form['num_kits'])
         num_samples = int(request.form['num_samples'])
         prefix = request.form['prefix']
-        selected_projects = request.form.getlist('projects')
-
-        if selected_projects is None:
-            return render_template('create_kits.html',
-                                   error='No project selected',
-                                   projects=projects,
-                                   **build_login_variables())
-
+        selected_project_ids = request.form.getlist('project_ids')
         payload = {'number_of_kits': num_kits,
                    'number_of_samples': num_samples,
-                   'projects': selected_projects}
+                   'project_ids': selected_project_ids}
         if prefix:
             payload['kit_id_prefix'] = prefix
 
@@ -249,7 +255,7 @@ def new_kits():
 
         if status != 201:
             return render_template('create_kits.html',
-                                   error='Failed to create kits',
+                                   error_message='Failed to create kits',
                                    projects=projects,
                                    **build_login_variables())
 

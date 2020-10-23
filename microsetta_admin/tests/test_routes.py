@@ -265,13 +265,21 @@ class RouteTests(TestBase):
         self.assertIn(b'Status Warning: received-unknown-validity',
                       response.data)
 
-    def test_create_kits_simple(self):
-        self.mock_get.return_value = DummyResponse(200,
-                                                   [{"project_name": "foo"}])
+    def test_create_kits_get_success(self):
+        proj_list = deepcopy(self.PROJ_LIST)
+        self.mock_get.return_value = DummyResponse(200, proj_list)
 
         response = self.app.get('/create_kits', follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'<h3>Microsetta Create Kits</h3>', response.data)
+        self.assertIn(b'<option value=\'12\'>New proj</option>',
+                      response.data)
+
+    def test_create_kits_get_fail(self):
+        self.mock_get.return_value = DummyResponse(400, "")
+
+        response = self.app.get('/create_kits', follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Unable to load project list', response.data)
 
     def test_create_project_success(self):
         api_post_dummy = DummyResponse(201, {})

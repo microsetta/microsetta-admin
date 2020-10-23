@@ -1,4 +1,31 @@
 {% extends "sitebase.html" %}
+{% block head %}
+
+<script src="/static/vendor/js/jquery.validate.min.js"></script>
+<script>
+    $(document).ready(function(){
+        // Initialize form validation on the registration form.
+        // It has the name attribute "registration"
+        $("form[name='kit_form']").validate({
+            // Specify validation rules
+            rules: {
+                // The key name on the left side is the name attribute
+                // of an input field. Validation rules are defined
+                // on the right side
+                num_kits: "required",
+                num_samples: "required",
+                project_ids: "required",
+                // Make sure the form is submitted to the destination defined
+                // in the "action" attribute of the form when valid
+                submitHandler: function (form) {
+                    form.submit();
+                }
+            }
+        });
+    });
+</script>
+
+{% endblock %}
 {% block content %}
 <h3>Microsetta Create Kits</h3>
 <style>
@@ -8,12 +35,12 @@
     }
 </style>
 <div style="height: 400px;">
-    {% if error %}
+    {% if error_message %}
         <p style="color:red">
-        {{error |e}}
+            {{ error_message |e }}
         </p>
     {% endif %}
-        
+
     <form name="kit_form" id="kit_form" method="POST">
         <table>
             <tr>
@@ -29,11 +56,15 @@
                 <td><input type="text" name="prefix" id="prefix" ></td>
             </tr>
             <tr>
-                <td><label for="project">Projects: </label></td>
-                <td><select id="create-select-project" name="projects" multiple class="chosen-select" size=10>
+                <td><label for="project_ids">Projects: </label></td>
+                <td><select id="project_ids" name="project_ids" multiple class="chosen-select" size=10>
+                    {% if projects %}
                     {% for p in projects %}
-                    <option value='{{p}}'>{{p}}</option>
+
+                    <option value='{{p['project_id']}}'>{{p['project_name']}}</option>
+
                     {% endfor %}
+                    {% endif %}
                 </select></td>
             </tr>
             <tr>
