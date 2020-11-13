@@ -272,20 +272,34 @@ def email_stats():
                                resource=None,
                                **build_login_variables())
 
-    # At a minimum, our table will display these fields.
+    # At a minimum, our table will display these columns.
     # We may show additional info depending on what comes back from the request
     base_data_template = {
         'email': 'XXX',
         'summary': 'XXX',
         'account_id': 'XXX',
         'creation_time': 'XXX',
-        'kit_name': 'XXX'
+        'kit_name': 'XXX',
+        'project': 'XXX',
+        'unclaimed-samples-in-kit': 0,
+        'never-scanned': 0,
+        'sample-is-valid': 0,
+        'no-associated-source': 0,
+        'no-registered-account': 0,
+        'no-collection-info': 0,
+        'sample-has-inconsistencies': 0,
+        'received-unknown-validity': 0
     }
 
     df = pd.DataFrame([base_data_template] + result)
-    df = df.drop(0)
-
-    print(df)
+    df = df.drop(0)  # remove the template row
+    numeric_cols = [
+        "unclaimed-samples-in-kit", "never-scanned", "sample-is-valid",
+        "no-associated-source", "no-registered-account", "no-collection-info",
+        "sample-has-inconsistencies", "received-unknown-validity"
+    ]
+    df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric)
+    df[numeric_cols] = df[numeric_cols].fillna(0)
     return render_template("email_stats_pulldown.html",
                            search_error=None,
                            resource=df,

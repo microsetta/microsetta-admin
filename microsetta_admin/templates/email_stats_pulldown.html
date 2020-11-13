@@ -69,8 +69,12 @@
                 {% for row in resource.index %}
                     <tr>
                         {% for col in resource.columns %}
+                        {% if col == "account_id" %}
+                        <td><a href="{{ ui_endpoint }}/accounts/{{resource.at[row, col] |e}}">{{resource.at[row, col] |e}}</a></td>
+                        {% else %}
                         <!-- It's so slow!! -->
-                        <td>{{resource.at[row, col]}}</td>
+                        <td>{{resource.at[row, col] |e}}</td>
+                        {% endif %}
                         {% endfor %}
                     </tr>
                 {% endfor %}
