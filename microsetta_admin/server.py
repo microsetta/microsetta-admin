@@ -9,7 +9,7 @@ from werkzeug.exceptions import BadRequest
 from werkzeug.utils import redirect
 import pandas as pd
 
-from microsetta_admin import metadata_util
+from microsetta_admin import metadata_util, upload_util
 from microsetta_admin.config_manager import SERVER_CONFIG
 from microsetta_admin._api import APIRequest
 import importlib.resources as pkg_resources
@@ -225,6 +225,71 @@ def manage_projects():
     return render_template('manage_projects.html',
                            **build_login_variables(),
                            result=result), 200
+
+
+@app.route('/email_stats', methods=['GET', 'POST'])
+def email_stats():
+    if request.method == 'GET':
+        project = request.args.get('project', None)
+        email = request.args.get('email')
+        if email is None:
+            # They want to search for emails, show them the search dialog
+            return render_template("email_stats_pulldown.html",
+                                   **build_login_variables(),
+                                   resource=None,
+                                   search_error=None)
+        emails = [email]
+    elif request.method == 'POST':
+        project = request.form.get('project', None)
+        emails, upload_err = upload_util.parse_request_csv_col(
+            request,
+            'file',
+            'email'
+        )
+        if upload_err is not None:
+            return render_template('email_stats_pulldown.html',
+                                   **build_login_variables(),
+                                   resource=None,
+                                   search_error=[{'error': upload_err}])
+    else:
+        raise BadRequest()
+
+    if project is str:
+        project = project.strip()
+        if project == "":
+            project = None
+
+    status, result = APIRequest.post(
+        '/api/admin/account_email_summary',
+        json={
+            "emails": emails,
+            "project": project
+        })
+
+    if status != 200:
+        return render_template('email_stats_pulldown.html',
+                               search_error=[{'error': result}],
+                               resource=None,
+                               **build_login_variables())
+
+    # At a minimum, our table will display these fields.
+    # We may show additional info depending on what comes back from the request
+    base_data_template = {
+        'email': 'XXX',
+        'summary': 'XXX',
+        'account_id': 'XXX',
+        'creation_time': 'XXX',
+        'kit_name': 'XXX'
+    }
+
+    df = pd.DataFrame([base_data_template] + result)
+    df = df.drop(0)
+
+    print(df)
+    return render_template("email_stats_pulldown.html",
+                           search_error=None,
+                           resource=df,
+                           **build_login_variables())
 
 
 @app.route('/create_kits', methods=['GET', 'POST'])
@@ -514,21 +579,15 @@ def metadata_pulldown():
                                    **build_login_variables())
         sample_barcodes = [sample_barcode]
     elif request.method == 'POST':
-        if 'file' not in request.files or \
-                request.files['file'].filename == '':
-            search_error = [{'error': 'Must specify a valid file'}]
+        sample_barcodes, upload_err = upload_util.parse_request_csv_col(
+                                                            request,
+                                                            'file',
+                                                            'sample_name'
+        )
+        if upload_err is not None:
             return render_template('metadata_pulldown.html',
                                    **build_login_variables(),
-                                   search_error=search_error)
-        file = request.files['file']
-        try:
-            barcodes_df = pd.read_csv(file, dtype=str)
-            sample_barcodes = barcodes_df['sample_name'].tolist()
-        except Exception as e:  # noqa
-            search_error = [{'error': 'Could not parse barcodes file'}]
-            return render_template('metadata_pulldown.html',
-                                   **build_login_variables(),
-                                   search_error=search_error)
+                                   search_error=[{'error': upload_err}])
     else:
         raise BadRequest()
 
@@ -581,6 +640,9 @@ def logout():
     if TOKEN_KEY_NAME in session:
         del session[TOKEN_KEY_NAME]
     return redirect("/")
+
+
+
 
 
 # If we're running in stand alone mode, run the application
