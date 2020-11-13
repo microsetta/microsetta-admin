@@ -656,9 +656,6 @@ def logout():
     return redirect("/")
 
 
-
-
-
 # If we're running in stand alone mode, run the application
 if __name__ == '__main__':
     if SERVER_CONFIG["ssl_cert_path"] and SERVER_CONFIG["ssl_key_path"]:
