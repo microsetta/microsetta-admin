@@ -260,10 +260,8 @@ def email_stats():
     else:
         raise BadRequest()
 
-    if project is str:
-        project = project.strip()
-        if project == "":
-            project = None
+    if project == "":
+        project = None
 
     status, result = APIRequest.post(
         '/api/admin/account_email_summary',

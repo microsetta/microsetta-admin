@@ -16,6 +16,6 @@ def parse_request_csv_col(request, file_name, col_name):
         df = pd.read_csv(request_file, dtype=str)
         col = df[col_name].tolist()
     except Exception as e:  # noqa
-        return None, 'Could not parse barcodes file'
+        return None, 'Could not parse csv file'
 
     return col, None
