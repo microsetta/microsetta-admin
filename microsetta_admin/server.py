@@ -307,6 +307,17 @@ def email_stats():
     ]
     df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric)
     df[numeric_cols] = df[numeric_cols].fillna(0)
+    # see https://stackoverflow.com/questions/20035518/insert-a-link-inside-a-pandas-table  # noqa
+    df['account_id'] = df["account_id"].apply(
+        lambda x: '<a ' +
+                  'target="_blank" ' +
+                  'href="' +
+                  SERVER_CONFIG['ui_endpoint'] +
+                  '/accounts/' +
+                  x +
+                  '">' +
+                  x +
+                  '</a>')
     return render_template("email_stats_pulldown.html",
                            search_error=None,
                            resource=df,

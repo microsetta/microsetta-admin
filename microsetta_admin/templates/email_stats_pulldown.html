@@ -70,31 +70,7 @@
     <hr>
     {% if resource is not none %}
     <div class="result_container">
-        <div>
-            <table id="search_results" class="display" style="width:100%">
-                <thead>
-                    <tr>
-                        {% for col in resource.columns %}
-                        <th>{{col |e}}</th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                {% for row in resource.index %}
-                    <tr>
-                        {% for col in resource.columns %}
-                        {% if col == "account_id" %}
-                        <td><a href="{{ ui_endpoint }}/accounts/{{resource.at[row, col] |e}}">{{resource.at[row, col] |e}}</a></td>
-                        {% else %}
-                        <!-- It's so slow!! -->
-                        <td>{{resource.at[row, col] |e}}</td>
-                        {% endif %}
-                        {% endfor %}
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        {{resource.to_html(table_id="search_results", classes=["display"], render_links=True, escape=False) |safe}}
     </div>
     {% endif %}
 </div>
