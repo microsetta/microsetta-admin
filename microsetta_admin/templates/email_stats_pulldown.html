@@ -26,8 +26,15 @@
             <tr>
                 <td><label for="email">Email: </label></td>
                 <td><input type="text" name="email" id="email" {% if info %} value="{{info.email}}"{% endif %}></td>
-                <td><label for="project1">Project: </label>
-                <input type="text" id="project1" name="project"><br/>
+                <td><label for="project1">Projects: </label></td>
+                <td><select id="project1" name="project">
+                    <option value="">All Projects</option>
+                    {% if projects %}
+                    {% for p in projects %}
+                    <option value='{{p['project_name']}}'>{{p['project_name']}}</option>
+                    {% endfor %}
+                    {% endif %}
+                </select></td>
                 <td><input type="submit" value="Retrieve Account Summary"></td>
             </tr>
         </table>
@@ -47,8 +54,15 @@
     <br/>
     <form name="upload_csv" id="search_csv" method="POST" enctype="multipart/form-data" onsubmit="return remove_error_messages()">
       <br/>
-      <label for="project2">Project: </label>
-      <input type="text" id="project2" name="project"><br/>
+      <label for="project2">Projects: </label>
+      <select id="project2" name="project">
+        <option value="">All Projects</option>
+        {% if projects %}
+        {% for p in projects %}
+        <option value='{{p['project_name']}}'>{{p['project_name']}}</option>
+        {% endfor %}
+        {% endif %}
+      </select>
       <input type=file name=file><br/>
       <input type=submit value=Upload>
     </form>

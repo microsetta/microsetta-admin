@@ -229,6 +229,10 @@ def manage_projects():
 
 @app.route('/email_stats', methods=['GET', 'POST'])
 def email_stats():
+    _, result = _get_projects(include_stats=False, is_active=True)
+    projects = result.get('projects')
+    print("PROJECTS:", projects)
+
     if request.method == 'GET':
         project = request.args.get('project', None)
         email = request.args.get('email')
@@ -237,7 +241,8 @@ def email_stats():
             return render_template("email_stats_pulldown.html",
                                    **build_login_variables(),
                                    resource=None,
-                                   search_error=None)
+                                   search_error=None,
+                                   projects=projects)
         emails = [email]
     elif request.method == 'POST':
         project = request.form.get('project', None)
@@ -250,7 +255,8 @@ def email_stats():
             return render_template('email_stats_pulldown.html',
                                    **build_login_variables(),
                                    resource=None,
-                                   search_error=[{'error': upload_err}])
+                                   search_error=[{'error': upload_err}],
+                                   projects=projects)
     else:
         raise BadRequest()
 
@@ -270,7 +276,8 @@ def email_stats():
         return render_template('email_stats_pulldown.html',
                                search_error=[{'error': result}],
                                resource=None,
-                               **build_login_variables())
+                               **build_login_variables(),
+                               projects=projects)
 
     # At a minimum, our table will display these columns.
     # We may show additional info depending on what comes back from the request
@@ -303,7 +310,8 @@ def email_stats():
     return render_template("email_stats_pulldown.html",
                            search_error=None,
                            resource=df,
-                           **build_login_variables())
+                           **build_login_variables(),
+                           projects=projects)
 
 
 @app.route('/create_kits', methods=['GET', 'POST'])
