@@ -231,7 +231,6 @@ def manage_projects():
 def email_stats():
     _, result = _get_projects(include_stats=False, is_active=True)
     projects = result.get('projects')
-    print("PROJECTS:", projects)
 
     if request.method == 'GET':
         project = request.args.get('project', None)
