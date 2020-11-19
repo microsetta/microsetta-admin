@@ -722,7 +722,8 @@ def post_submit_daklapack_order():
                             f"not match expected column names"
                             f" {expected_headers}")
 
-    # TODO: Where/how should validation that addresses meet FedEx rules happen?
+    # TODO: discuss: where/how should validation that addresses
+    #  meet FedEx rules happen?
 
     # add (same) contact phone number to every address
     addresses_df['phone'] = phone_number
