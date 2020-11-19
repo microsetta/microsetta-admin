@@ -569,6 +569,114 @@ def metadata_pulldown():
                                search_error=errors)
 
 
+@app.route('/submit_daklapack_order', methods=['GET'])
+def submit_daklapack_order():
+    error_msg_key = "error_message"
+
+    def return_error(msg):
+        return render_template('submit_daklapack_order.html',
+                               **build_login_variables(),
+                               error_message=msg)
+
+    status, dak_articles_output = APIRequest.get(
+        '/api/admin/daklapack_articles')
+    if status >= 400:
+        return_error("Unable to load daklapack articles list.")
+
+    status, projects_output = _get_projects(include_stats=False,
+                                            is_active=True)
+    if status >= 400:
+        return_error(projects_output[error_msg_key])
+
+    return render_template('submit_daklapack_order.html',
+                           **build_login_variables(),
+                           error_message=None,
+                           dummy_status=DUMMY_SELECT_TEXT,
+                           dak_articles=dak_articles_output,
+                           projects=projects_output['projects'])
+
+
+@app.route('/submit_daklapack_order', methods=['POST'])
+def post_submit_daklapack_order():
+    def return_error(msg):
+        return render_template('submit_daklapack_order.html',
+                               **build_login_variables(),
+                               error_message=msg)
+
+    error_message = success_message = headers = None
+    expected_headers = ["firstName", "lastName", "address1", "insertion",
+                        "address2", "postalCode", "city", "state",
+                        "country", "countryCode"]
+
+    # get required fields; cast where expected by api
+    # TODO: make sure to set phone number embedded in form to real one!
+    phone_number = request.form['contact_phone_number']
+    project_ids_list = list(map(int, request.form.getlist('projects')))
+    dak_article_code = int(request.form['dak_article_code'])
+    file = request.files['addresses_file']
+
+    # get optional fields or defaults
+    description = request.form.get('description')
+    fedex_ref_1 = request.form.get('fedex_ref_1')
+    fedex_ref_2 = request.form.get('fedex_ref_2')
+    fedex_ref_3 = request.form.get('fedex_ref_3')
+    fulfillment_hold_msg = request.form.get('fulfillment_hold_msg')
+
+    try:
+        addresses_df = pd.read_excel(file)
+        headers = list(addresses_df.columns)
+    except Exception as e:  # noqa
+        return return_error('Could not parse addresses file')
+
+    if headers != expected_headers:
+        return return_error(f"Received column names {headers} do "
+                            f"not match expected column names"
+                            f" {expected_headers}")
+
+    # TODO: Where/how should validation that addresses meet FedEx rules happen?
+
+    # add (same) contact phone number to every address
+    addresses_df['phone'] = phone_number
+
+    addresses_df = addresses_df.fillna("")
+    temp_dict = addresses_df.to_dict(orient='index')
+    addresses_list = [temp_dict[n] for n in range(len(temp_dict))]
+
+    status, post_output = APIRequest.post(
+        '/api/admin/daklapack_orders',
+        json={
+            "project_ids": project_ids_list,
+            "article_code": dak_article_code,
+            "addresses": addresses_list,
+            "description": description,
+            "fedex_ref_1": fedex_ref_1,
+            "fedex_ref_2": fedex_ref_2,
+            "fedex_ref_3": fedex_ref_3,
+            "fulfillment_hold_msg": fulfillment_hold_msg
+        }
+    )
+
+    # if the post failed, keep track of the error so it can be displayed
+    if status != 201:
+        error_message = post_output
+    else:
+        order_id = post_output.get("order_id")
+        success_message = f"Order {order_id } submitted. " \
+                          f"Well, not really, but soon :)"
+        # TODO: AB: Take out test message :)
+
+        if not post_output.get("email_success"):
+            success_message = f"{success_message}</p>" \
+                              f"<p>HOWEVER, fulfillment hold" \
+                              f" email could NOT be sent. Contact Daklapack" \
+                              f" manually to initiate order hold!"
+
+    return render_template('submit_daklapack_order.html',
+                           **build_login_variables(),
+                           error_message=error_message,
+                           success_message=success_message)
+
+
 @app.route('/authrocket_callback')
 def authrocket_callback():
     token = request.args.get('token')

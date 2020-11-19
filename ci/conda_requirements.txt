@@ -2,3 +2,4 @@ flake8
 flask
 requests
 pandas
+xlrd
