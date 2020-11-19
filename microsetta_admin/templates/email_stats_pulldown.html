@@ -1,0 +1,77 @@
+{% extends "sitebase.html" %}
+{% block head %}
+<link rel="stylesheet" type="text/css" href="/static/vendor/DataTables/DataTables-1.10.21/css/jquery.dataTables.css">
+<script src="/static/vendor/DataTables/DataTables-1.10.21/js/jquery.dataTables.js"></script>
+
+<script class="init">
+    function remove_error_messages () {
+        block = document.getElementById("search_errors");
+        if (block !== null) {
+            block.innerHTML = "";
+        }
+    };
+
+    $(document).ready(function() {
+        {% if resource is not none %}
+            $('#search_results').DataTable();
+        {% endif %}
+    });
+</script>
+{% endblock %}
+{% block content %}
+<h3>Account Summaries</h3>
+<div>
+    <form name="search_form" id="search_form" method="GET">
+        <table>
+            <tr>
+                <td><label for="email">Email: </label></td>
+                <td><input type="text" name="email" id="email" {% if info %} value="{{info.email}}"{% endif %}></td>
+                <td><label for="project1">Projects: </label></td>
+                <td><select id="project1" name="project">
+                    <option value="">All Projects</option>
+                    {% if projects %}
+                    {% for p in projects %}
+                    <option value='{{p['project_name']}}'>{{p['project_name']}}</option>
+                    {% endfor %}
+                    {% endif %}
+                </select></td>
+                <td><input type="submit" value="Retrieve Account Summary"></td>
+            </tr>
+        </table>
+        {% if search_error %}
+            <p style="color:red" id=search_errors>
+            {% for error in search_error %}
+                {{error |e}}<br/>
+            {% endfor %}
+            </p>
+        {% endif %}
+        <script>
+           document.search_form.email.focus()
+        </script>
+    </form>
+    <br/>
+    Or upload a comma-separated value file (CSV) and pull account summaries for all emails listed in the column "email"
+    <br/>
+    <form name="upload_csv" id="search_csv" method="POST" enctype="multipart/form-data" onsubmit="return remove_error_messages()">
+      <br/>
+      <label for="project2">Projects: </label>
+      <select id="project2" name="project">
+        <option value="">All Projects</option>
+        {% if projects %}
+        {% for p in projects %}
+        <option value='{{p['project_name']}}'>{{p['project_name']}}</option>
+        {% endfor %}
+        {% endif %}
+      </select>
+      <input type=file name=file><br/>
+      <input type=submit value=Upload>
+    </form>
+
+    <hr>
+    {% if resource is not none %}
+    <div class="result_container">
+        {{resource.to_html(table_id="search_results", classes=["display"], render_links=True, escape=False) |safe}}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

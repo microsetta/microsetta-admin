@@ -275,7 +275,6 @@ class RouteTests(TestBase):
                       response.data)
 
     def test_create_kits_get_fail(self):
-        proj_list = deepcopy(self.PROJ_LIST)
         self.mock_get.return_value = DummyResponse(400, "")
 
         response = self.app.get('/create_kits', follow_redirects=True)
