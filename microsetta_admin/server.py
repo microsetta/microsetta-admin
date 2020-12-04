@@ -242,7 +242,7 @@ def email_stats():
                                    resource=None,
                                    search_error=None,
                                    projects=projects)
-        emails = [email]
+        emails = [email, ]
     elif request.method == 'POST':
         project = request.form.get('project', None)
         emails, upload_err = upload_util.parse_request_csv_col(
@@ -261,6 +261,9 @@ def email_stats():
 
     if project == "":
         project = None
+
+    # de-duplicate
+    emails = list(set(emails))
 
     status, result = APIRequest.post(
         '/api/admin/account_email_summary',
@@ -304,17 +307,17 @@ def email_stats():
     ]
     df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric)
     df[numeric_cols] = df[numeric_cols].fillna(0)
+
+    def urlify_account_id(id_):
+        if pd.isnull(id_):
+            return "No associated account"
+        else:
+            ui_endpoint = SERVER_CONFIG['ui_endpoint']
+            account_url = f"{ui_endpoint}/accounts/{id_}"
+            return f'<a target="_blank" href="{account_url}">{id_}</a>'
+
     # see https://stackoverflow.com/questions/20035518/insert-a-link-inside-a-pandas-table  # noqa
-    df['account_id'] = df["account_id"].apply(
-        lambda x: '<a ' +
-                  'target="_blank" ' +
-                  'href="' +
-                  SERVER_CONFIG['ui_endpoint'] +
-                  '/accounts/' +
-                  x +
-                  '">' +
-                  x +
-                  '</a>')
+    df['account_id'] = df["account_id"].apply(urlify_account_id)
     return render_template("email_stats_pulldown.html",
                            search_error=None,
                            resource=df,
