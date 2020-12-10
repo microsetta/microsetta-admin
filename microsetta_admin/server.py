@@ -670,18 +670,20 @@ def submit_daklapack_order():
     status, dak_articles_output = APIRequest.get(
         '/api/admin/daklapack_articles')
     if status >= 400:
-        return_error("Unable to load daklapack articles list.")
+        return return_error("Unable to load daklapack articles list.")
 
     status, projects_output = _get_projects(include_stats=False,
                                             is_active=True)
     if status >= 400:
-        return_error(projects_output[error_msg_key])
+        return return_error(projects_output[error_msg_key])
 
     return render_template('submit_daklapack_order.html',
                            **build_login_variables(),
                            error_message=None,
                            dummy_status=DUMMY_SELECT_TEXT,
                            dak_articles=dak_articles_output,
+                           contact_phone_number=SERVER_CONFIG[
+                               "order_contact_phone"],
                            projects=projects_output['projects'])
 
 
@@ -698,7 +700,6 @@ def post_submit_daklapack_order():
                         "country", "countryCode"]
 
     # get required fields; cast where expected by api
-    # TODO: make sure to set phone number embedded in form to real one!
     phone_number = request.form['contact_phone_number']
     project_ids_list = list(map(int, request.form.getlist('projects')))
     dak_article_code = int(request.form['dak_article_code'])
@@ -751,9 +752,7 @@ def post_submit_daklapack_order():
         error_message = post_output
     else:
         order_id = post_output.get("order_id")
-        success_message = f"Order {order_id } submitted. " \
-                          f"Well, not really, but soon :)"
-        # TODO: AB: Take out test message :)
+        success_message = f"Order {order_id } submitted."
 
         if not post_output.get("email_success"):
             success_message = f"{success_message}</p>" \

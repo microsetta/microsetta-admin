@@ -57,8 +57,10 @@
 
 <h3>Submit Daklapack Order</h3>
 {% if error_message %}
-
-<p class="error">{{ error_message }}</p>
+<p class="error">ORDER SUBMISSION FAILED.  Please see error information below:</p>
+{% autoescape false %}
+{{ error_message }}
+{% endautoescape %}
 
 {% elif success_message %}
 {% autoescape false %}
@@ -71,7 +73,7 @@
 
 <div class="extended-width">
     <form name="new_daklapack_order" class="form-horizontal" method="POST" enctype="multipart/form-data">
-        <input type="hidden" name="contact_phone_number" id="contact_phone_number" value="(858) 555-1212" />
+        <input type="hidden" name="contact_phone_number" id="contact_phone_number" value="{{ contact_phone_number }}" />
         <div class="form-group row">
             <label for="projects" class="control-label col-sm-4">Project(s) </label>
             <div class="col-sm-8">

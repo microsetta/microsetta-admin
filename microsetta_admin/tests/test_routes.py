@@ -1,7 +1,17 @@
 import json
 from copy import deepcopy
+import os
 
 from microsetta_admin.tests.base import TestBase
+
+DUMMY_DAK_ORDER = {'contact_phone_number': '(858) 555-1212',
+                            'projects': ['1', '32'],
+                            'dak_article_code': '350101',
+                            'description': '',
+                            'fedex_ref_1': '',
+                            'fedex_ref_2': '',
+                            'fedex_ref_3': '',
+                            'addresses_file': None}
 
 
 class DummyResponse(object):
@@ -355,3 +365,192 @@ class RouteTests(TestBase):
         # a page reporting the error :)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Unable to load project list.', response.data)
+
+    def test_get_submit_daklapack_order_success(self):
+        # server side issues two GETs to the API
+        dak_article = {'dak_article_code': 350100,
+                       'short_description': 'TMI 1 tube',
+                       'num_2point5ml_etoh_tubes': 1,
+                       'num_7ml_etoh_tube': 0,
+                       'num_neoteryx_kit': 0,
+                       'outer_sleeve': 'Microsetta',
+                       'box': 'Microsetta',
+                       'return_label': 'Microsetta',
+                       'compartment_bag': 'Microsetta',
+                       'num_stool_collector': 0,
+                       'instructions': 'Fv1',
+                       'registration_card': 'Microsetta',
+                       'swabs': '1x bag of two',
+                       'rigid_safety_bag': 'yes'}
+        a_project = {'project_name': 'test_proj', 'is_microsetta': True,
+                     'bank_samples': False, 'plating_start_date': None,
+                     'contact_name': 'Jane Doe',
+                     'contact_email': 'jd@test.com',
+                     'additional_contact_name': 'John Doe',
+                     'deadlines': 'Spring 2021', 'num_subjects': 'Variable',
+                     'num_timepoints': '4', 'start_date': 'Fall 2020',
+                     'disposition_comments': 'Store', 'collection': 'AGP',
+                     'is_fecal': 'X', 'is_saliva': '', 'is_skin': '?',
+                     'is_blood': 'X', 'is_other': 'Nares, mouth',
+                     'do_16s': '', 'do_shallow_shotgun': 'Subset',
+                     'do_shotgun': 'X', 'do_rt_qpcr': '', 'do_serology': '',
+                     'do_metatranscriptomics': 'X', 'do_mass_spec': 'X',
+                     'mass_spec_comments': 'Dorrestein',
+                     'mass_spec_contact_name': 'Ted Doe',
+                     'mass_spec_contact_email': 'td@test.com',
+                     'do_other': '',
+                     'branding_associated_instructions': 'branding_doc.pdf',
+                     'branding_status': 'In Review',
+                     'subproject_name': 'IBL SIBL',
+                     'alias': 'Healthy Sitting', 'sponsor': 'Crowdfunded',
+                     'coordination': 'TMI', 'is_active': True,
+                     'project_id': 8}
+
+        api_get_1 = DummyResponse(200, [dak_article])
+        api_get_2 = DummyResponse(200, [a_project])
+        self.mock_get.side_effect = [api_get_1, api_get_2]
+
+        response = self.app.get('/submit_daklapack_order',
+                                follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'<strong>HOLD FULFILLMENT</strong>', response.data)
+
+    def test_get_submit_daklapack_order_fail_articles(self):
+        # server side issues two GETs to the API
+        dak_article = {'error_msg': 'hit a problem'}
+
+        a_project = {'project_name': 'test_proj', 'is_microsetta': True,
+                     'bank_samples': False, 'plating_start_date': None,
+                     'contact_name': 'Jane Doe',
+                     'contact_email': 'jd@test.com',
+                     'additional_contact_name': 'John Doe',
+                     'deadlines': 'Spring 2021', 'num_subjects': 'Variable',
+                     'num_timepoints': '4', 'start_date': 'Fall 2020',
+                     'disposition_comments': 'Store', 'collection': 'AGP',
+                     'is_fecal': 'X', 'is_saliva': '', 'is_skin': '?',
+                     'is_blood': 'X', 'is_other': 'Nares, mouth',
+                     'do_16s': '', 'do_shallow_shotgun': 'Subset',
+                     'do_shotgun': 'X', 'do_rt_qpcr': '', 'do_serology': '',
+                     'do_metatranscriptomics': 'X', 'do_mass_spec': 'X',
+                     'mass_spec_comments': 'Dorrestein',
+                     'mass_spec_contact_name': 'Ted Doe',
+                     'mass_spec_contact_email': 'td@test.com',
+                     'do_other': '',
+                     'branding_associated_instructions': 'branding_doc.pdf',
+                     'branding_status': 'In Review',
+                     'subproject_name': 'IBL SIBL',
+                     'alias': 'Healthy Sitting', 'sponsor': 'Crowdfunded',
+                     'coordination': 'TMI', 'is_active': True,
+                     'project_id': 8}
+
+        api_get_1 = DummyResponse(400, [dak_article])
+        api_get_2 = DummyResponse(200, [a_project])
+        self.mock_get.side_effect = [api_get_1, api_get_2]
+
+        response = self.app.get('/submit_daklapack_order',
+                                follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Unable to load daklapack articles list.',
+                      response.data)
+
+    def test_get_submit_daklapack_order_fail_projects(self):
+        # server side issues two GETs to the API
+        dak_article = {'dak_article_code': 350100,
+                       'short_description': 'TMI 1 tube',
+                       'num_2point5ml_etoh_tubes': 1,
+                       'num_7ml_etoh_tube': 0,
+                       'num_neoteryx_kit': 0,
+                       'outer_sleeve': 'Microsetta',
+                       'box': 'Microsetta',
+                       'return_label': 'Microsetta',
+                       'compartment_bag': 'Microsetta',
+                       'num_stool_collector': 0,
+                       'instructions': 'Fv1',
+                       'registration_card': 'Microsetta',
+                       'swabs': '1x bag of two',
+                       'rigid_safety_bag': 'yes'}
+        a_project = {'error_message': 'no projects for you'}
+
+        api_get_1 = DummyResponse(200, [dak_article])
+        api_get_2 = DummyResponse(400, [a_project])
+        self.mock_get.side_effect = [api_get_1, api_get_2]
+
+        response = self.app.get('/submit_daklapack_order',
+                                follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Unable to load project list.', response.data)
+
+    def _test_post_submit_daklapack_order(self, addresses_filename=None):
+        if addresses_filename is None:
+            addresses_filename = "order_addresses_sample.xlsx"
+        addresses_fp = os.path.join(os.getcwd(), "tests", "inputs", addresses_filename)
+        with open(addresses_fp, "rb") as addresses_file:
+            request_form = deepcopy(DUMMY_DAK_ORDER)
+            request_form['addresses_file'] = addresses_file
+
+            response = self.app.post('/submit_daklapack_order',
+                                     data=request_form,
+                                     follow_redirects=True)
+
+        self.assertEqual(response.status_code, 200)
+        return response
+
+    def test_post_submit_daklapack_order_success(self):
+        # server side issues one POST to the API
+        api_post_1 = DummyResponse(201, {'order_id': '11211',
+                                         'email_success': None})
+        self.mock_post.side_effect = [api_post_1]
+
+        response = self._test_post_submit_daklapack_order()
+        self.assertIn(b'Order 11211 submitted.', response.data)
+
+    def test_post_submit_daklapack_order_success_but_email_fail(self):
+        # server side issues one POST to the API
+        api_post_1 = DummyResponse(201, {'order_id': '11211',
+                                         'email_success': False})
+        self.mock_post.side_effect = [api_post_1]
+
+        response = self._test_post_submit_daklapack_order()
+        self.assertIn(b'Order 11211 submitted.', response.data)
+        self.assertIn(b'HOWEVER, fulfillment hold', response.data)
+
+    def test_post_submit_daklapack_order_fail_api(self):
+        # server side issues one POST to the API
+        api_post_1 = DummyResponse(400, {
+            "isValid": False,
+            "errors": [
+                {
+                    "propertyName": "orderId",
+                    "errorMessage": "invalid format",
+                    "severity": "Error",
+                    "errorCode": "12",
+                    "formattedMessagePlaceholderValues": {}
+                }
+            ],
+            "ruleSetsExecuted": []
+        })
+        self.mock_post.side_effect = [api_post_1]
+
+        response = self._test_post_submit_daklapack_order(
+            "order_addresses_sample.xlsx")
+
+        self.assertIn(b'formattedMessagePlaceholderValues', response.data)
+
+    def test_post_submit_daklapack_order_fail_xlsx_format(self):
+        # actually code shouldn't make it to private api call, but in case:
+        api_post_1 = DummyResponse(201, {'order_id': '11211',
+                                         'email_success': None})
+        self.mock_post.side_effect = [api_post_1]
+
+        response = self._test_post_submit_daklapack_order("empty.txt")
+        self.assertIn(b'Could not parse addresses file', response.data)
+
+    def test_post_submit_daklapack_order_fail_xlsx_headers(self):
+        # actually code shouldn't make it to private api call, but in case:
+        api_post_1 = DummyResponse(201, {'order_id': '11211',
+                                         'email_success': None})
+        self.mock_post.side_effect = [api_post_1]
+
+        response = self._test_post_submit_daklapack_order(
+            "order_addresses_malformed.xlsx")
+        self.assertIn(b'do not match expected column names', response.data)
