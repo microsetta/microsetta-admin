@@ -263,7 +263,7 @@ def email_stats():
         project = None
 
     # de-duplicate
-    emails = list(set(emails))
+    emails = list({e.lower() for e in emails})
 
     status, result = APIRequest.post(
         '/api/admin/account_email_summary',
