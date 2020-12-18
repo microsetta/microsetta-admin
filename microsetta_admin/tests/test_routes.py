@@ -483,7 +483,7 @@ class RouteTests(TestBase):
     def _test_post_submit_daklapack_order(self, addresses_filename=None):
         if addresses_filename is None:
             addresses_filename = "order_addresses_sample.xlsx"
-        addresses_fp = os.path.join(os.getcwd(), "tests", "inputs", addresses_filename)
+        addresses_fp = os.path.join(os.getcwd(), "tests", "data", addresses_filename)
         with open(addresses_fp, "rb") as addresses_file:
             request_form = deepcopy(DUMMY_DAK_ORDER)
             request_form['addresses_file'] = addresses_file
