@@ -713,7 +713,14 @@ def post_submit_daklapack_order():
     fulfillment_hold_msg = request.form.get('fulfillment_hold_msg')
 
     try:
-        addresses_df = pd.read_excel(file)
+        if file.filename.endswith('xls'):
+            addresses_df = pd.read_excel(file)
+        elif file.filename.endswith('xlsx'):
+            addresses_df = pd.read_excel(file, engine='openpyxl')
+        else:
+            raise ValueError(f"Unrecognized extension on putative excel "
+                             f"filename: {file.filename}")
+
         headers = list(addresses_df.columns)
     except Exception as e:  # noqa
         return return_error('Could not parse addresses file')
