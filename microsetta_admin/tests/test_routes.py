@@ -1,17 +1,16 @@
 import json
 from copy import deepcopy
-import os
 
 from microsetta_admin.tests.base import TestBase
 
 DUMMY_DAK_ORDER = {'contact_phone_number': '(858) 555-1212',
-                            'projects': ['1', '32'],
-                            'dak_article_code': '350101',
-                            'description': '',
-                            'fedex_ref_1': '',
-                            'fedex_ref_2': '',
-                            'fedex_ref_3': '',
-                            'addresses_file': None}
+                   'projects': ['1', '32'],
+                   'dak_article_code': '350101',
+                   'description': '',
+                   'fedex_ref_1': '',
+                   'fedex_ref_2': '',
+                   'fedex_ref_3': '',
+                   'addresses_file': None}
 
 
 class DummyResponse(object):
