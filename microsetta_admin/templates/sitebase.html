@@ -12,6 +12,11 @@
         /* bug fix - no overlay */
         display: none;
     }
+
+    .menu {
+        width: 220px;
+        padding-right: 20px;
+    }
 </style>
 
 <!-- jquery must be enabled before bootstrap for collapsible functionality -->
@@ -44,6 +49,7 @@
             <li><a href="/create_kits">Create Kit</a></li>
             <li><a href="/scan">Scan Barcode</a></li>
             <li><a href="/metadata_pulldown">Retrieve Metadata</a></li>
+            <li><a href="/submit_daklapack_order">Submit Daklapack Order</a></li>
             <li><a href="{{authrocket_url}}/logout?redirect_uri={{endpoint}}/logout">Log Out <br> ({{email |e}})</a></li>
             {% else %}
             <li><a href="{{authrocket_url}}/login?redirect_uri={{endpoint}}/authrocket_callback">Log In</a></li>

@@ -23,6 +23,10 @@ setup(
     package_data={'microsetta_admin': [
         'server_config.json',
         'templates/*.*',
+        'tests/*.*',
+        'tests/data/*.*',
+        'tests/js/*.*',
+        'tests/js/test/*.*',
         'static/*',
         'static/css/*',
         'static/img/*',

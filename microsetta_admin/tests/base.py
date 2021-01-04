@@ -1,9 +1,12 @@
 from unittest import TestCase
 from unittest.mock import patch
+import pkg_resources
 from microsetta_admin.server import app
 
 
 class TestBase(TestCase):
+    package = "microsetta_admin.tests"
+
     def setUp(self):
         # mocking derived from
         # https://realpython.com/testing-third-party-apis-with-mocks/
@@ -26,3 +29,8 @@ class TestBase(TestCase):
         self.mock_put_patcher.stop()
         self.mock_post_patcher.stop()
         self.mock_session_patcher.stop()
+
+    def get_data_path(self, filename):
+        # adapted from qiime2.plugin.testing.TestPluginBase
+        return pkg_resources.resource_filename(self.package,
+                                               'data/%s' % filename)
