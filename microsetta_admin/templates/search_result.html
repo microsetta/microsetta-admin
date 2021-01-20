@@ -114,9 +114,17 @@
             </div>
             {% endif %}
 
+            {% if resource == 'samples' or resource == 'kit' %}
             {% if resource == 'samples' %}
+            {% set kit_id = result['barcode_info']['kit_id'] %}
+            {% set sample_list = result['kit']['samples'] %}
+            {% else %}
+            <hr/>
+            {% set kit_id = result['supplied_kit_id'] %}
+            {% set sample_list = result['kit']['samples'] %}
+            {% endif %}
             <div>
-                <br/><p>The following samples are associated with kit: {{ result['barcode_info']['kit_id'] }}</p>
+                <br/><p>The following samples are associated with kit: {{ kit_id }}</p>
                 <table id="search_results_samples" class="display" style="width:100%">
                     <thead>
                         <tr>
@@ -130,7 +138,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                    {% for sample in result['kit']['samples'] %}
+                    {% for sample in sample_list %}
                         <tr>
                             <td>
                             {% if sample['account_id'] is none %}
