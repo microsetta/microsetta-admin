@@ -14,8 +14,6 @@ from microsetta_admin.config_manager import SERVER_CONFIG
 from microsetta_admin._api import APIRequest
 import importlib.resources as pkg_resources
 
-# TEST
-
 TOKEN_KEY_NAME = 'token'
 SEND_EMAIL_CHECKBOX_DEFAULT_NAME = 'send_email'
 
