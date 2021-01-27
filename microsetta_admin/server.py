@@ -22,6 +22,7 @@ PUB_KEY = pkg_resources.read_text(
     "authrocket.pubkey")
 
 DUMMY_SELECT_TEXT = '-------'
+
 RECEIVED_TYPE_DROPDOWN = \
     [DUMMY_SELECT_TEXT, "Blood (skin prick)", "Saliva", "Stool",
      "Sample Type Unclear (Swabs Included)"]
