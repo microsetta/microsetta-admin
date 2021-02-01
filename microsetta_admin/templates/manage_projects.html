@@ -19,6 +19,7 @@
 <script src="/static/vendor/DataTables/DataTables-1.10.21/js/jquery.dataTables.js"></script>
 <script src="/static/vendor/DataTables/Buttons-1.6.2/js/dataTables.buttons.js"></script>
 <script src="/static/vendor/DataTables/Buttons-1.6.2/js/buttons.colVis.js"></script>
+<script src="/static/vendor/DataTables/Buttons-1.6.2/js/buttons.html5.min.js"></script>
 <script class="init">
     var projectFormId = "project_form";
     // set up for DataTable of project info:
@@ -170,6 +171,13 @@
             // modified from https://datatables.net/extensions/buttons/examples/column_visibility/columnGroups.html#:~:text=SearchPanes-,Column%20groups,provides%20this%20ability%20for%20Buttons
             dom: 'Bfrtip',
             buttons: [
+                {
+                    extend: 'csv',
+                    text: 'Download',
+                    exportOptions:{
+                        columns: ':visible'
+                    }
+                },
                 {
                     extend: 'colvisGroup',
                     text: 'Show all',
