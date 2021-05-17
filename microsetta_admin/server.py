@@ -328,6 +328,9 @@ def email_stats():
 
 @app.route('/per_sample_summary', methods=['GET', 'POST'])
 def per_sample_summary():
+    strip_sampleid = request.form.get('strip_sampleid', 'off')
+    strip_sampleid = strip_sampleid.lower() == 'on'
+
     if request.method == 'GET':
         sample_barcode = request.args.get('sample_barcode')
         if sample_barcode is None:
@@ -348,7 +351,8 @@ def per_sample_summary():
                                    search_error=[{'error': upload_err}])
 
     payload = {'sample_barcodes': sample_barcodes}
-    status, result = APIRequest.post('/api/admin/account_barcode_summary',
+    status, result = APIRequest.post('/api/admin/account_barcode_summary?'
+                                     'strip_sampleid=%s' % str(strip_sampleid),
                                      json=payload)
     if status != 200:
         return render_template('per_sample_summary.html',

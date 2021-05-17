@@ -46,9 +46,11 @@
         </script>
     </form>
     <br/>
-    Or upload a file ofbarcodes listed in the column "sample_name" (max: 1000)
+    Or upload a file of barcodes listed in the column "sample_name" (max: 1000)
     <br/>
     <form name="upload_csv" id="search_csv" method="POST" enctype="multipart/form-data" onsubmit="return remove_error_messages()">
+      <input type="checkbox" id="strip_sampleid" name="strip_sampleid">
+      <label for="strip_sampleid"> Check to remove sample IDs from summary</label><br/>
       <input type=file name=file><br/>
       <input type=submit value=Upload>
     </form>
