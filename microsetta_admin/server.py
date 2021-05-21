@@ -326,6 +326,52 @@ def email_stats():
                            projects=projects)
 
 
+@app.route('/per_sample_summary', methods=['GET', 'POST'])
+def per_sample_summary():
+    strip_sampleid = request.form.get('strip_sampleid', 'off')
+    strip_sampleid = strip_sampleid.lower() == 'on'
+
+    if request.method == 'GET':
+        sample_barcode = request.args.get('sample_barcode')
+        if sample_barcode is None:
+            return render_template('per_sample_summary.html',
+                                   resource=None,
+                                   **build_login_variables())
+        sample_barcodes = [sample_barcode, ]
+    elif request.method == 'POST':
+        sample_barcodes, upload_err = upload_util.parse_request_csv_col(
+                                                            request,
+                                                            'file',
+                                                            'sample_name'
+        )
+        if upload_err is not None:
+            return render_template('per_sample_summary.html',
+                                   resource=None,
+                                   **build_login_variables(),
+                                   search_error=[{'error': upload_err}])
+
+    payload = {'sample_barcodes': sample_barcodes}
+    status, result = APIRequest.post('/api/admin/account_barcode_summary?'
+                                     'strip_sampleid=%s' % str(strip_sampleid),
+                                     json=payload)
+    if status != 200:
+        return render_template('per_sample_summary.html',
+                               resource=None,
+                               error_message=result,
+                               **build_login_variables())
+    else:
+        resource = pd.DataFrame(result)
+        order = ['sampleid', 'project', 'account-email', 'source-email',
+                 'source-type', 'site-sampled', 'sample-status',
+                 'sample-received', 'ffq-taken', 'ffq-complete',
+                 'vioscreen_username']
+        order.extend(sorted(set(resource.columns) - set(order)))
+        resource = resource[order]
+        return render_template('per_sample_summary.html',
+                               resource=resource,
+                               **build_login_variables())
+
+
 @app.route('/create_kits', methods=['GET', 'POST'])
 def new_kits():
     _, result = _get_projects(include_stats=False, is_active=True)

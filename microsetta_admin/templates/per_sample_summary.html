@@ -1,0 +1,64 @@
+{% extends "sitebase.html" %}
+{% block head %}
+<link rel="stylesheet" type="text/css" href="/static/vendor/DataTables/DataTables-1.10.21/css/jquery.dataTables.css">
+<script src="/static/vendor/DataTables/DataTables-1.10.21/js/jquery.dataTables.js"></script>
+<script src="/static/vendor/DataTables/Buttons-1.6.2/js/dataTables.buttons.min.js"></script>
+<script src="/static/vendor/DataTables/Buttons-1.6.2/js/buttons.html5.min.js"></script>
+<script>
+    function remove_error_messages () {
+        block = document.getElementById("search_errors");
+        if (block !== null) {
+            block.innerHTML = "";
+        }
+    };
+    $(document).ready(function() {
+        {% if resource is not none %}
+            $('#search_results').DataTable({
+                // more information on "dom" can be found here:
+                // https://datatables.net/reference/option/dom
+                dom: 'Bfrtip',
+                buttons: ['csv']
+                }
+            );
+        {% endif %}
+    } );
+</script>
+{% endblock %}
+{% block content %}
+<h3>Microsetta Per Sample Summary</h3>
+<div style="height: 400px;">
+    {% if error_message %}
+        <p style="color:red">
+            {{ error_message |e }}
+        </p>
+    {% endif %}
+    <form name="search_form" id="search_form" method="GET">
+        <table>
+            <tr>
+                <td><label for="sample_barcode">Barcode: </label></td>
+                <td><input type="text" name="sample_barcode" id="sample_barcode" {% if info %} value="{{info.barcode}}"{% endif %}></td>
+                <td></td>
+                <td><input type="submit" value="Retrieve Summary"></td>
+            </tr>
+        </table>
+        <script>
+           document.search_form.sample_barcode.focus()
+        </script>
+    </form>
+    <br/>
+    Or upload a file of barcodes listed in the column "sample_name" (max: 1000)
+    <br/>
+    <form name="upload_csv" id="search_csv" method="POST" enctype="multipart/form-data" onsubmit="return remove_error_messages()">
+      <input type="checkbox" id="strip_sampleid" name="strip_sampleid">
+      <label for="strip_sampleid"> Check to remove sample IDs from summary</label><br/>
+      <input type=file name=file><br/>
+      <input type=submit value=Upload>
+    </form>
+    {% if resource is not none %}
+    <div class="result_container">
+    {{resource.to_html(table_id="search_results", classes=["display"], render_links=True, escape=False) |safe}}
+    </div>
+</div>
+{% endif %}
+{{blob}}
+{% endblock %}
