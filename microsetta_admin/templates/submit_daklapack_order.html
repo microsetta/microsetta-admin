@@ -62,12 +62,31 @@
 {{ error_message }}
 {% endautoescape %}
 
-{% elif success_message %}
-{% autoescape false %}
-<div class="success">
-    <p>{{ success_message }}</p>
-</div>
-{% endautoescape %}
+{% elif order_submissions %}
+<p>
+The following orders were not successfully submitted to Daklapack.
+Please correct any errors and then re-submit.
+</p>
+<table>
+    <thead>
+        <tr>
+            <th>Address</th>
+            <th>Daklapack Error Code</th>
+            <th>Daklapack Error Message</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for curr_order_submission in order_submissions %}
+        {% if curr_order_submission['order_success'] == False %}
+        <tr>
+            <td>{{ curr_order_submission['order_address'] }}</td>
+            <td>{{ curr_order_submission['daklapack_api_error_code'] }}</td>
+            <td>{{ curr_order_submission['daklapack_api_error_msg'] }}</td>
+        </tr>
+        {% endif %}
+    {% endfor %}
+    </tbody>
+</table>
 
 {% else %}
 
