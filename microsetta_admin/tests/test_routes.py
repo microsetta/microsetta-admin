@@ -496,22 +496,45 @@ class RouteTests(TestBase):
 
     def test_post_submit_daklapack_order_success(self):
         # server side issues one POST to the API
-        api_post_1 = DummyResponse(201, {'order_id': '11211',
-                                         'email_success': None})
+        api_post_1 = DummyResponse(
+            200,
+            {'order_submissions':
+            [{'order_id': '11211',
+              'order_address': {'address1': '123 Main St',
+                                'address2': '',
+                                'city': 'San Diego',
+                                'companyName': 'Dan H',
+                                'country': 'USA',
+                                'countryCode': 'us',
+                                'firstName': 'Jane',
+                                'insertion': 'Apt 2',
+                                'lastName': 'Doe',
+                                'phone': '(858) 555-1212',
+                                'postalCode': '92210',
+                                'state': 'CA'},
+              'order_success': True},
+             {'order_id': '11212',
+              'daklapack_api_error_code': 409,
+              'daklapack_api_error_msg': 'Got 409',
+              'order_address': {'address1': '29 Side St',
+                                'address2': 'Kew Gardens',
+                                'city': 'Gananoque',
+                                'companyName': 'Dan H',
+                                'country': 'Canada',
+                                'countryCode': 'ca',
+                                'firstName': 'Tom',
+                                'insertion': '',
+                                'lastName': 'Thumb',
+                                'phone': '(858) 555-1212',
+                                'postalCode': 'KG7-448',
+                                'state': 'Ontario'},
+              'order_success': False}]}
+            )
         self.mock_post.side_effect = [api_post_1]
 
         response = self._test_post_submit_daklapack_order()
-        self.assertIn(b'Order 11211 submitted.', response.data)
-
-    def test_post_submit_daklapack_order_success_but_email_fail(self):
-        # server side issues one POST to the API
-        api_post_1 = DummyResponse(201, {'order_id': '11211',
-                                         'email_success': False})
-        self.mock_post.side_effect = [api_post_1]
-
-        response = self._test_post_submit_daklapack_order()
-        self.assertIn(b'Order 11211 submitted.', response.data)
-        self.assertIn(b'HOWEVER, fulfillment hold', response.data)
+        self.assertIn(b'Daklapack Error Code', response.data)
+        self.assertIn(b'2 total order(s) were input.', response.data)
 
     def test_post_submit_daklapack_order_fail_api(self):
         # server side issues one POST to the API
