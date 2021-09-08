@@ -36,13 +36,13 @@ jobs:
     - name: Install dependencies
       shell: bash -l {0}
       run: |
-        conda create --name test-microsetta-public python=3.7
-        conda activate test-microsetta-public
+        conda create --name test-microsetta-admin python=3.7
+        conda activate test-microsetta-admin
         conda install --yes --file ci/conda_requirements.txt
         pip install -r ci/pip_requirements.txt
         make install
     - name: Tests
       shell: bash -l {0}
       run: |
-        conda activate test-microsetta-public
+        conda activate test-microsetta-admin
         make test
