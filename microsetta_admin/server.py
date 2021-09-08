@@ -744,7 +744,7 @@ def post_submit_daklapack_order():
                                **build_login_variables(),
                                error_message=msg)
 
-    error_message = success_message = headers = None
+    error_message = order_submissions = headers = None
     expected_headers = ["firstName", "lastName", "address1", "insertion",
                         "address2", "postalCode", "city", "state",
                         "country", "countryCode"]
@@ -780,9 +780,6 @@ def post_submit_daklapack_order():
                             f"not match expected column names"
                             f" {expected_headers}")
 
-    # TODO: discuss: where/how should validation that addresses
-    #  meet FedEx rules happen?
-
     # add (same) contact phone number to every address
     addresses_df['phone'] = phone_number
 
@@ -805,22 +802,15 @@ def post_submit_daklapack_order():
     )
 
     # if the post failed, keep track of the error so it can be displayed
-    if status != 201:
+    if status != 200:
         error_message = post_output
     else:
-        order_id = post_output.get("order_id")
-        success_message = f"Order {order_id } submitted."
-
-        if not post_output.get("email_success"):
-            success_message = f"{success_message}</p>" \
-                              f"<p>HOWEVER, fulfillment hold" \
-                              f" email could NOT be sent. Contact Daklapack" \
-                              f" manually to initiate order hold!"
+        order_submissions = post_output["order_submissions"]
 
     return render_template('submit_daklapack_order.html',
                            **build_login_variables(),
                            error_message=error_message,
-                           success_message=success_message)
+                           order_submissions=order_submissions)
 
 
 @app.route('/authrocket_callback')
