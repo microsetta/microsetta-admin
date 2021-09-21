@@ -534,8 +534,10 @@ class RouteTests(TestBase):
         self.mock_post.side_effect = [api_post_1]
 
         response = self._test_post_submit_daklapack_order()
-        self.assertIn(b'Daklapack Error Code', response.data)
-        self.assertIn(b'2 total order(s) were input.', response.data)
+        self.assertIn(b'The following orders were NOT successfully submitted '
+                      b'to Daklapack.', response.data)
+        self.assertIn(b'The following orders were successfully submitted '
+                      b'to Daklapack', response.data)
 
     def test_post_submit_daklapack_order_fail_api(self):
         # server side issues one POST to the API
