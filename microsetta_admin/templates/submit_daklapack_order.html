@@ -62,15 +62,13 @@
 {{ error_message }}
 {% endautoescape %}
 
-{% elif order_submissions %}
+{% elif success_submissions or failure_submissions %}
+    {%  if failure_submissions|length > 0 %}
 <p>
-{{ order_submissions|length }} total order(s) were input.
-</p>
-<p>
-The following orders were not successfully submitted to Daklapack.
+The following orders were NOT successfully submitted to Daklapack.
 Please correct any errors and then re-submit.
 </p>
-<table>
+<table border="1">
     <thead>
         <tr>
             <th>Address</th>
@@ -79,17 +77,38 @@ Please correct any errors and then re-submit.
         </tr>
     </thead>
     <tbody>
-    {% for curr_order_submission in order_submissions %}
-        {% if curr_order_submission['order_success'] == False %}
+    {% for curr_submission in failure_submissions %}
         <tr>
-            <td>{{ curr_order_submission['order_address'] }}</td>
-            <td>{{ curr_order_submission['daklapack_api_error_code'] }}</td>
-            <td>{{ curr_order_submission['daklapack_api_error_msg'] }}</td>
+            <td>{{ curr_submission['order_address'] }}</td>
+            <td>{{ curr_submission['daklapack_api_error_code'] }}</td>
+            <td>{{ curr_submission['daklapack_api_error_msg'] }}</td>
         </tr>
-        {% endif %}
     {% endfor %}
     </tbody>
 </table>
+    {% endif %}
+
+    {%  if success_submissions|length > 0 %}
+<p>
+The following orders were successfully submitted to Daklapack.
+</p>
+<table border="1">
+    <thead>
+        <tr>
+            <th>Address</th>
+            <th>Order Id</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for curr_submission in success_submissions %}
+        <tr>
+            <td>{{ curr_submission['order_address'] }}</td>
+            <td>{{ curr_submission['order_id'] }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+    {% endif %}
 
 {% else %}
 
