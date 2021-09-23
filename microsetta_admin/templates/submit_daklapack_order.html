@@ -15,8 +15,8 @@
         color: green;
     }
 </style>
-<script src="{{ url_for('/static') }}/vendor/js/jquery.validate.min.js"></script>
-<script src="{{ url_for('/static') }}/vendor/js/additional-methods.min.js"></script>
+<script src="{{ url_for('static') }}/vendor/js/jquery.validate.min.js"></script>
+<script src="{{ url_for('static') }}/vendor/js/additional-methods.min.js"></script>
 <script>
     function onHoldFulfillmentChange(chkbx) {
         $("#fulfillment_hold_msg").prop("disabled", !chkbx.checked);

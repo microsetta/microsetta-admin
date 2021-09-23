@@ -1,9 +1,9 @@
 {% extends "sitebase.html" %}
 
 {% block head %}
-<link rel="stylesheet" type="text/css" href="{{ url_for('/static') }}/vendor/DataTables/DataTables-1.10.21/css/jquery.dataTables.css">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static') }}/vendor/DataTables/DataTables-1.10.21/css/jquery.dataTables.css">
 
-<script src="{{ url_for('/static') }}/vendor/DataTables/DataTables-1.10.21/js/jquery.dataTables.js"></script>
+<script src="{{ url_for('static') }}/vendor/DataTables/DataTables-1.10.21/js/jquery.dataTables.js"></script>
 <script class="init">
     $(document).ready(function() {
         {% if resource == 'samples' or resource == 'kit' %}

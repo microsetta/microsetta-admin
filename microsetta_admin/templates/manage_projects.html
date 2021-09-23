@@ -1,8 +1,8 @@
 {% extends "sitebase.html" %}
 
 {% block head %}
-<link rel="stylesheet" type="text/css" href="{{ url_for('/static') }}/vendor/DataTables/DataTables-1.10.21/css/jquery.dataTables.css">
-<link rel="stylesheet" type="text/css" href="{{ url_for('/static') }}/vendor/DataTables/Buttons-1.6.2/css/buttons.dataTables.css">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static') }}/vendor/DataTables/DataTables-1.10.21/css/jquery.dataTables.css">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static') }}/vendor/DataTables/Buttons-1.6.2/css/buttons.dataTables.css">
 <style>
     th { white-space: normal; }
     div.dataTables_wrapper {
@@ -16,10 +16,10 @@
     }
 </style>
 
-<script src="{{ url_for('/static') }}/vendor/DataTables/DataTables-1.10.21/js/jquery.dataTables.js"></script>
-<script src="{{ url_for('/static') }}/vendor/DataTables/Buttons-1.6.2/js/dataTables.buttons.js"></script>
-<script src="{{ url_for('/static') }}/vendor/DataTables/Buttons-1.6.2/js/buttons.colVis.js"></script>
-<script src="{{ url_for('/static') }}/vendor/DataTables/Buttons-1.6.2/js/buttons.html5.min.js"></script>
+<script src="{{ url_for('static') }}/vendor/DataTables/DataTables-1.10.21/js/jquery.dataTables.js"></script>
+<script src="{{ url_for('static') }}/vendor/DataTables/Buttons-1.6.2/js/dataTables.buttons.js"></script>
+<script src="{{ url_for('static') }}/vendor/DataTables/Buttons-1.6.2/js/buttons.colVis.js"></script>
+<script src="{{ url_for('static') }}/vendor/DataTables/Buttons-1.6.2/js/buttons.html5.min.js"></script>
 <script class="init">
     var projectFormId = "project_form";
     // set up for DataTable of project info:
@@ -115,7 +115,7 @@
     }
 
     function loadByActiveStatus(statusSelect){
-        let manage_projects_url = "{{ url_for('/manage_projects') }}";
+        let manage_projects_url = "{{ url_for('manage_projects') }}";
         let active_status_filter = statusSelect.value;
         if (active_status_filter !== "all"){
             manage_projects_url+= "?is_active="+ active_status_filter;

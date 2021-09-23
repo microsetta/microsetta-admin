@@ -1,5 +1,5 @@
 <div>
-    <form action="{{ url_for('/search/sample') }}" name="form_search_sample" id="form_search_sample" method="post">
+    <form action="{{ url_for('search/sample') }}" name="form_search_sample" id="form_search_sample" method="post">
         <table>
             <tr>
                 <td><input type="text" name="search_samples" id="search_samples"></td>
@@ -10,7 +10,7 @@
            document.form_search_sample.search_samples.focus()
         </script>
     </form>
-    <form action="{{ url_for('/search/email') }}" name="form_search_email" id="form_search_email" method="post">
+    <form action="{{ url_for('search/email') }}" name="form_search_email" id="form_search_email" method="post">
         <table>
             <tr>
                 <td><input type="text" name="search_account" id="search_account"></td>
@@ -21,7 +21,7 @@
            document.form_search_email.search_account.focus()
         </script>
     </form>
-    <form action="{{ url_for('/search/kit') }}" name="form_search_kit" id="form_search_kit" method="post">
+    <form action="{{ url_for('search/kit') }}" name="form_search_kit" id="form_search_kit" method="post">
         <table>
             <tr>
                 <td><input type="text" name="search_kit" id="search_kit"></td>
