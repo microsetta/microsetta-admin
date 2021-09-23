@@ -3,8 +3,8 @@
 <head>
 <title>Microsetta Admin</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<link rel="stylesheet" href="/static/vendor/bootstrap-4.4.1-dist/css/bootstrap.min.css" />
-<link rel="stylesheet" href="/static/css/ma_interface.css" />
+<link rel="stylesheet" href="{{ url_for('/static/vendor/bootstrap-4.4.1-dist/css/bootstrap.min.css') }}" />
+<link rel="stylesheet" href="{{ url_for('/static/css/ma_interface.css') }}" />
 <style>
     /* ignore IDE lies--this style IS used: it modifies a class
     imported from the bootstrap libraries for use with modal windows */
@@ -20,9 +20,9 @@
 </style>
 
 <!-- jquery must be enabled before bootstrap for collapsible functionality -->
-<script src="/static/vendor/jquery-3.5.1.min.js"></script>
-<script src="/static/vendor/js/jquery.validate.min.js"></script>
-<script src="/static/vendor/bootstrap-4.4.1-dist/js/bootstrap.min.js"></script>
+<script src="{{ url_for('/static/vendor/jquery-3.5.1.min.js') }}"></script>
+<script src="{{ url_for('/static/vendor/js/jquery.validate.min.js') }}"></script>
+<script src="{{ url_for('/static/vendor/bootstrap-4.4.1-dist/js/bootstrap.min.js') }}"></script>
 <script>
     function showWait(url_to_load){
         $('#wait').modal('show');
@@ -43,14 +43,14 @@
 
         <ul class="mainmenu">
             {% if email %}
-            <li><a href="/search">Search</a></li>
-            <li><a href="#" onclick="showWait('/manage_projects?is_active=true')">Manage Projects</a></li>
-            <li><a href="/email_stats">Account Summaries</a></li>
-            <li><a href="/create_kits">Create Kit</a></li>
-            <li><a href="/scan">Scan Barcode</a></li>
-            <li><a href="/metadata_pulldown">Retrieve Metadata</a></li>
-            <li><a href="/per_sample_summary">Per sample summary</a></li>
-            <li><a href="/submit_daklapack_order">Submit Daklapack Order</a></li>
+            <li><a href="{{ url_for('/search') }}">Search</a></li>
+            <li><a href="{{ url_for('#') }}" onclick="showWait('/manage_projects?is_active=true')">Manage Projects</a></li>
+            <li><a href="{{ url_for('/email_stats') }}">Account Summaries</a></li>
+            <li><a href="{{ url_for('/create_kits') }}">Create Kit</a></li>
+            <li><a href="{{ url_for('/scan') }}">Scan Barcode</a></li>
+            <li><a href="{{ url_for('/metadata_pulldown') }}">Retrieve Metadata</a></li>
+            <li><a href="{{ url_for('/per_sample_summary') }}">Per sample summary</a></li>
+            <li><a href="{{ url_for('/submit_daklapack_order') }}">Submit Daklapack Order</a></li>
             <li><a href="{{authrocket_url}}/logout?redirect_uri={{endpoint}}/logout">Log Out <br> ({{email |e}})</a></li>
             {% else %}
             <li><a href="{{authrocket_url}}/login?redirect_uri={{endpoint}}/authrocket_callback">Log In</a></li>

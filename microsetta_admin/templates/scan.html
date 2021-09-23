@@ -1,7 +1,7 @@
 {% extends "sitebase.html" %}
 {% block head %}
-<link rel="stylesheet" type="text/css" href="/static/css/table_style.css">
-<script type="text/javascript" language="javascript" src="/static/js/ruleset.js"></script>
+<link rel="stylesheet" type="text/css" href="{{ url_for('/static/css/table_style.css') }}">
+<script type="text/javascript" language="javascript" src="{{ url_for('/static/js/ruleset.js') }}"></script>
 <script>
     // prevent submit with dummy status
     function verify_status() {
