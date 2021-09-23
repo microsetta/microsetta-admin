@@ -3,8 +3,8 @@
 <head>
 <title>Microsetta Admin</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<link rel="stylesheet" href="{{ url_for('/static/vendor/bootstrap-4.4.1-dist/css/bootstrap.min.css') }}" />
-<link rel="stylesheet" href="{{ url_for('/static/css/ma_interface.css') }}" />
+<link rel="stylesheet" href="{{ url_for('/static') }}/vendor/bootstrap-4.4.1-dist/css/bootstrap.min.css'" />
+<link rel="stylesheet" href="{{ url_for('/static') }}/css/ma_interface.css'" />
 <style>
     /* ignore IDE lies--this style IS used: it modifies a class
     imported from the bootstrap libraries for use with modal windows */
@@ -20,9 +20,9 @@
 </style>
 
 <!-- jquery must be enabled before bootstrap for collapsible functionality -->
-<script src="{{ url_for('/static/vendor/jquery-3.5.1.min.js') }}"></script>
-<script src="{{ url_for('/static/vendor/js/jquery.validate.min.js') }}"></script>
-<script src="{{ url_for('/static/vendor/bootstrap-4.4.1-dist/js/bootstrap.min.js') }}"></script>
+<script src="{{ url_for('/static') }}/vendor/jquery-3.5.1.min.js"></script>
+<script src="{{ url_for('/static') }}/vendor/js/jquery.validate.min.js"></script>
+<script src="{{ url_for('/static') }}/vendor/bootstrap-4.4.1-dist/js/bootstrap.min.js"></script>
 <script>
     function showWait(url_to_load){
         $('#wait').modal('show');

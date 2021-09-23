@@ -1,9 +1,9 @@
 {% extends "sitebase.html" %}
 {% block head %}
-<link rel="stylesheet" type="text/css" href="{{ url_for('/static/vendor/DataTables/DataTables-1.10.21/css/jquery.dataTables.css') }}">
-<script src="{{ url_for('/static/vendor/DataTables/DataTables-1.10.21/js/jquery.dataTables.js') }}"></script>
-<script src="{{ url_for('/static/vendor/DataTables/Buttons-1.6.2/js/dataTables.buttons.min.js') }}"></script>
-<script src="{{ url_for('/static/vendor/DataTables/Buttons-1.6.2/js/buttons.html5.min.js') }}"></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('/static') }}/vendor/DataTables/DataTables-1.10.21/css/jquery.dataTables.css">
+<script src="{{ url_for('/static') }}/vendor/DataTables/DataTables-1.10.21/js/jquery.dataTables.js"></script>
+<script src="{{ url_for('/static') }}/vendor/DataTables/Buttons-1.6.2/js/dataTables.buttons.min.js"></script>
+<script src="{{ url_for('/static') }}/vendor/DataTables/Buttons-1.6.2/js/buttons.html5.min.js"></script>
 <script class="init">
     function remove_error_messages () {
         block = document.getElementById("search_errors");
