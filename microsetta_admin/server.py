@@ -744,7 +744,7 @@ def post_submit_daklapack_order():
                                **build_login_variables(),
                                error_message=msg)
 
-    error_message = order_submissions = headers = None
+    error_message = success_submissions = failure_submissions = headers = None
     expected_headers = ["firstName", "lastName", "address1", "insertion",
                         "address2", "postalCode", "city", "state",
                         "country", "countryCode"]
@@ -806,11 +806,16 @@ def post_submit_daklapack_order():
         error_message = post_output
     else:
         order_submissions = post_output["order_submissions"]
+        success_submissions = [x for x in order_submissions if
+                               x["order_success"]]
+        failure_submissions = [x for x in order_submissions if not
+                               x["order_success"]]
 
     return render_template('submit_daklapack_order.html',
                            **build_login_variables(),
                            error_message=error_message,
-                           order_submissions=order_submissions)
+                           success_submissions=success_submissions,
+                           failure_submissions=failure_submissions)
 
 
 @app.route('/authrocket_callback')
