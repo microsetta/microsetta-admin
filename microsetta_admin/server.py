@@ -763,10 +763,12 @@ def post_submit_daklapack_order():
     fulfillment_hold_msg = request.form.get('fulfillment_hold_msg')
 
     try:
+        # NB: import everything as a string so that zip codes beginning with
+        # zero (e.g., 06710) don't get silently cast to numbers
         if file.filename.endswith('xls'):
-            addresses_df = pd.read_excel(file)
+            addresses_df = pd.read_excel(file, dtype=str)
         elif file.filename.endswith('xlsx'):
-            addresses_df = pd.read_excel(file, engine='openpyxl')
+            addresses_df = pd.read_excel(file, engine='openpyxl', dtype=str)
         else:
             raise ValueError(f"Unrecognized extension on putative excel "
                              f"filename: {file.filename}")
