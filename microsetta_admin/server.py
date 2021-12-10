@@ -176,7 +176,7 @@ def _get_projects(include_stats, is_active):
     status, projects_output = APIRequest.get(projects_uri)
 
     if status >= 400:
-        result = {'error_message': "Unable to load project list."}
+        result = {'error_message': f"Unable to load project list: {projects_uri}"}
     else:
         cleaned_projects = [_translate_nones(x, True) for x in
                             projects_output]
@@ -325,9 +325,13 @@ def email_stats():
                            **build_login_variables(),
                            projects=projects)
 
-
 @app.route('/per_sample_summary', methods=['GET', 'POST'])
 def per_sample_summary():
+    _, result = _get_projects(include_stats=False, is_active=True)
+    projects = result.get('projects')
+    projects = [x['project_name'] for x in projects if x['is_microsetta'] is True]
+    print("PROJECTS: %s" % projects)
+
     strip_sampleid = request.form.get('strip_sampleid', 'off')
     strip_sampleid = strip_sampleid.lower() == 'on'
 
@@ -336,6 +340,7 @@ def per_sample_summary():
         if sample_barcode is None:
             return render_template('per_sample_summary.html',
                                    resource=None,
+                                   projects=projects,
                                    **build_login_variables())
         sample_barcodes = [sample_barcode, ]
     elif request.method == 'POST':
@@ -347,6 +352,7 @@ def per_sample_summary():
         if upload_err is not None:
             return render_template('per_sample_summary.html',
                                    resource=None,
+                                   projects=projects,
                                    **build_login_variables(),
                                    search_error=[{'error': upload_err}])
 
@@ -357,6 +363,7 @@ def per_sample_summary():
     if status != 200:
         return render_template('per_sample_summary.html',
                                resource=None,
+                               projects=projects,
                                error_message=result,
                                **build_login_variables())
     else:
@@ -369,6 +376,7 @@ def per_sample_summary():
         resource = resource[order]
         return render_template('per_sample_summary.html',
                                resource=resource,
+                               projects=projects,
                                **build_login_variables())
 
 

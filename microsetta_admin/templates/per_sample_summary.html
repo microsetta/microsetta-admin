@@ -25,39 +25,62 @@
 </script>
 {% endblock %}
 {% block content %}
-<h3>Microsetta Per Sample Summary</h3>
-<div style="height: 400px;">
+<h3>Sample Summaries</h3>
+<hr class="dashed">
+<h5>Retrieve summary for a single sample</h5>
+<div style="height: 400px; width: 400px">
     {% if error_message %}
         <p style="color:red">
             {{ error_message |e }}
         </p>
     {% endif %}
     <form name="search_form" id="search_form" method="GET">
-        <table>
+        <table width=100% border=0>
+        <tr>
+            <td colspan=3 style="text-align:left;padding:4px"> <input type="text" name="sample_barcode" placeholder="Enter barcode here" id="sample_barcode" {% if info %} value="{{info.barcode}}"{% endif %}> </td>
+            <td colspan=1 style="text-align:right;padding:4px"> <input type="submit" value="Retrieve"> </td>
+        </tr>
+        </table>
+        <script> document.search_form.sample_barcode.focus() </script>
+    </form>
+    <hr class="dashed">
+    <h5>Retrieve summaries using a csv file</h5>
+    <form name="upload_csv" id="search_csv" method="POST" enctype="multipart/form-data" onsubmit="return remove_error_messages()">
+        <table width=100% border=0>
             <tr>
-                <td><label for="sample_barcode">Barcode: </label></td>
-                <td><input type="text" name="sample_barcode" id="sample_barcode" {% if info %} value="{{info.barcode}}"{% endif %}></td>
-                <td></td>
-                <td><input type="submit" value="Retrieve Summary"></td>
+                <td colspan=3 style="text-align:left;padding:4px"><input type=file name=file></td>
+                <td colspan=1 style="text-align:right;padding:4px"><input type=submit value=Upload></td>
+            </tr>
+            <tr><td colspan=4></td></tr>
+            <tr><td colspan=4 style="text-align:center;padding:4px"><i>Barcodes must be listed in column "sample_name"<br>(max: 1000)</i> </td></tr>
+            <tr><td colspan=4></td></tr>
+            <tr>
+                <td colspan=3> <label for="strip_sampleid"> Check to remove sample IDs from summary</label> </td>
+                <td colspan=1 style="text-align:center;padding:4px"> <input type="checkbox" id="strip_sampleid" name="strip_sampleid"> </td>
             </tr>
         </table>
-        <script>
-           document.search_form.sample_barcode.focus()
-        </script>
     </form>
-    <br/>
-    Or upload a file of barcodes listed in the column "sample_name" (max: 1000)
-    <br/>
-    <form name="upload_csv" id="search_csv" method="POST" enctype="multipart/form-data" onsubmit="return remove_error_messages()">
-      <input type="checkbox" id="strip_sampleid" name="strip_sampleid">
-      <label for="strip_sampleid"> Check to remove sample IDs from summary</label><br/>
-      <input type=file name=file><br/>
-      <input type=submit value=Upload>
-    </form>
-    {% if resource is not none %}
-    <div class="result_container">
-    {{resource.to_html(table_id="search_results", classes=["display"], render_links=True, escape=False) |safe}}
-    </div>
+    <hr class="dashed">
+    <h5>Retrieve status for all samples in a project</h5>
+    <form name="cc_form" id="cc_form" method="POST">
+    <table width=100% border=0>
+        <tr>
+            <td colspan=3>
+            <select id="project_ids" name="project_ids" class="chosen-select" size=5>
+                {% if projects %}
+                    {% for p in projects %}
+                        <option value='{{p}}'>{{p}}</option>
+                    {% endfor %}
+                {% endif %}
+            </select>
+            </td>
+            <td colspan=1 style="text-align:right;padding:4px"><input type="submit" value="Retrieve"></td>
+        </tr>
+    </table>
+</div>
+{% if resource is not none %}
+<div class="result_container">
+{{resource.to_html(table_id="search_results", classes=["display"], render_links=True, escape=False) |safe}}
 </div>
 {% endif %}
 {{blob}}
