@@ -62,14 +62,29 @@
     </form>
     <hr class="dashed">
     <h5>Retrieve status for all samples in a project</h5>
-    <form name="cc_form" id="cc_form" method="POST">
+    <form name="cc_form" id="cc_form" method="GET">
+    <table width=100% border=0>
+        <tr>
+            <td colspan=3>
+            <select id="project_id" name="project_id">
+                 {% if projects %}
+                    {% for p in projects %}
+                        <option value='{{p['project_id']}}'>{{p['project_name']}}</option>
+                    {% endfor %}
+                 {% endif %}
+            </select>
+            </td>
+            <td colspan=1 style="text-align:right;padding:4px"><input type="submit" value="Retrieve"></td>
+        </tr>
+    </table>
+    <!--
     <table width=100% border=0>
         <tr>
             <td colspan=3>
             <select id="project_ids" name="project_ids" class="chosen-select" size=5>
                 {% if projects %}
                     {% for p in projects %}
-                        <option value='{{p}}'>{{p}}</option>
+                        <option value='{{p['project_id']}}'>{{p['project_name']}}</option>
                     {% endfor %}
                 {% endif %}
             </select>
@@ -77,6 +92,9 @@
             <td colspan=1 style="text-align:right;padding:4px"><input type="submit" value="Retrieve"></td>
         </tr>
     </table>
+    <script> document.cc_form.project_ids.focus() </script>
+    -->
+    </form>
 </div>
 {% if resource is not none %}
 <div class="result_container">
