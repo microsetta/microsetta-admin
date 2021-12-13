@@ -176,7 +176,8 @@ def _get_projects(include_stats, is_active):
     status, projects_output = APIRequest.get(projects_uri)
 
     if status >= 400:
-        result = {'error_message': f"Unable to load project list: {projects_uri}"}
+        result = {'error_message': f"Unable to load project list: "
+                                   f"{projects_uri}"}
     else:
         cleaned_projects = [_translate_nones(x, True) for x in
                             projects_output]
@@ -337,7 +338,8 @@ def per_sample_summary():
 
     # build a list of dictionaries with just the project id and the project
     # name.
-    projects = [{'project_name': x['project_name'], 'project_id': x['project_id']} for x in projects]
+    projects = [{'project_name': x['project_name'],
+                 'project_id': x['project_id']} for x in projects]
 
     # determine if user wants sample ids stripped
     strip_sampleid = request.form.get('strip_sampleid', 'off')
@@ -362,20 +364,37 @@ def per_sample_summary():
         if project_id is not None:
             # user wants to get summaries on all samples in a project.
             payload = {'project_id': project_id}
-            status, result = APIRequest.post('/api/admin/account_barcode_summary?strip_sampleid=False', json=payload)
+            status, result = APIRequest.post('/api/admin/account_barcode_summa'
+                                             'ry?strip_sampleid=False',
+                                             json=payload)
 
             if status == 200:
-                resource = pd.DataFrame(result)
-                order = ['sampleid', 'project', 'account-email','source-email',
-                         'source-type', 'site-sampled', 'sample-status',
-                         'sample-received', 'ffq-taken', 'ffq-complete',
-                         'vioscreen_username']
+                if result['partial_result'] is True:
+                    unprocessed_barcodes = result['unprocessed_barcodes']
+                else:
+                    unprocessed_barcodes = None
+
+                resource = pd.DataFrame(result['samples'])
+                order = ['sampleid', 'project', 'account-email',
+                         'source-email', 'source-type', 'site-sampled',
+                         'sample-status', 'sample-received', 'ffq-taken',
+                         'ffq-complete', 'vioscreen_username']
                 order.extend(sorted(set(resource.columns) - set(order)))
                 resource = resource[order]
-                return render_template('per_sample_summary.html',
-                                       resource=resource,
-                                       projects=projects,
-                                       **build_login_variables())
+                if unprocessed_barcodes:
+                    return render_template('per_sample_summary.html',
+                                           resource=resource,
+                                           projects=projects,
+                                           error_message="Too many barcodes. S"
+                                                         "erver processed only"
+                                                         " the first 1000.",
+                                           **build_login_variables())
+                else:
+                    return render_template('per_sample_summary.html',
+                                           resource=resource,
+                                           projects=projects,
+                                           **build_login_variables())
+
             else:
                 return render_template('per_sample_summary.html',
                                        resource=None,
@@ -390,31 +409,49 @@ def per_sample_summary():
         # assume POST, since there are only two methods defined in route.
         # if we are here, it is because the user is querying using an uploaded
         # file containing sample names.
-        sample_barcodes, upload_err = upload_util.parse_request_csv_col(request, 'file', 'sample_name')
-        if upload_err is not None:
+        sample_barcodes, err = upload_util.parse_request_csv_col(request,
+                                                                 'file',
+                                                                 'sample_name')
+        if err is not None:
             # there was an error. abort early.
             return render_template('per_sample_summary.html',
                                    resource=None,
                                    projects=projects,
                                    **build_login_variables(),
-                                   search_error=[{'error': upload_err}])
+                                   search_error=[{'error': err}])
 
     # perform the main query.
     payload = {'sample_barcodes': sample_barcodes}
-    status, result = APIRequest.post('/api/admin/account_barcode_summary?strip_sampleid=%s' % str(strip_sampleid), json=payload)
+    status, result = APIRequest.post('/api/admin/account_barcode_summary?stri'
+                                     'p_sampleid=%s' % str(strip_sampleid),
+                                     json=payload)
 
     if status == 200:
-        resource = pd.DataFrame(result)
+        if result['partial_result'] is True:
+            unprocessed_barcodes = result['unprocessed_barcodes']
+        else:
+            unprocessed_barcodes = None
+        resource = pd.DataFrame(result['samples'])
         order = ['sampleid', 'project', 'account-email', 'source-email',
                  'source-type', 'site-sampled', 'sample-status',
                  'sample-received', 'ffq-taken', 'ffq-complete',
                  'vioscreen_username']
         order.extend(sorted(set(resource.columns) - set(order)))
         resource = resource[order]
-        return render_template('per_sample_summary.html',
-                               resource=resource,
-                               projects=projects,
-                               **build_login_variables())
+
+        if unprocessed_barcodes:
+            return render_template('per_sample_summary.html',
+                                   resource=resource,
+                                   projects=projects,
+                                   error_message="Too many barcodes. S"
+                                                 "erver processed only"
+                                                 " the first 1000.",
+                                   **build_login_variables())
+        else:
+            return render_template('per_sample_summary.html',
+                                   resource=resource,
+                                   projects=projects,
+                                   **build_login_variables())
     else:
         return render_template('per_sample_summary.html',
                                resource=None,
@@ -429,17 +466,32 @@ def _get_by_sample_barcode(sample_barcodes, strip_sampleid, projects):
                                      'strip_sampleid=%s' % str(strip_sampleid),
                                      json=payload)
     if status == 200:
-        resource = pd.DataFrame(result)
+        if result['partial_result'] is True:
+            unprocessed_barcodes = result['unprocessed_barcodes']
+        else:
+            unprocessed_barcodes = None
+
+        resource = pd.DataFrame(result['samples'])
         order = ['sampleid', 'project', 'account-email', 'source-email',
                  'source-type', 'site-sampled', 'sample-status',
                  'sample-received', 'ffq-taken', 'ffq-complete',
                  'vioscreen_username']
         order.extend(sorted(set(resource.columns) - set(order)))
         resource = resource[order]
-        return render_template('per_sample_summary.html',
-                               resource=resource,
-                               projects=projects,
-                               **build_login_variables())
+
+        if unprocessed_barcodes:
+            return render_template('per_sample_summary.html',
+                                   resource=resource,
+                                   projects=projects,
+                                   error_message="Too many barcodes. S"
+                                                 "erver processed only"
+                                                 " the first 1000.",
+                                   **build_login_variables())
+        else:
+            return render_template('per_sample_summary.html',
+                                   resource=resource,
+                                   projects=projects,
+                                   **build_login_variables())
     else:
         return render_template('per_sample_summary.html',
                                resource=None,
