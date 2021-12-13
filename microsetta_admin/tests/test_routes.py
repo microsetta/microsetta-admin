@@ -363,7 +363,7 @@ class RouteTests(TestBase):
         # the api call failed, but the admin page call succeeds--in returning
         # a page reporting the error :)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Unable to load project list.', response.data)
+        self.assertIn(b'Unable to load project list', response.data)
 
     def test_get_submit_daklapack_order_success(self):
         # server side issues two GETs to the API
@@ -477,7 +477,7 @@ class RouteTests(TestBase):
         response = self.app.get('/submit_daklapack_order',
                                 follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Unable to load project list.', response.data)
+        self.assertIn(b'Unable to load project list', response.data)
 
     def _test_post_submit_daklapack_order(self, addresses_filename=None):
         if addresses_filename is None:
