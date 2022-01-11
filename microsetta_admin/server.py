@@ -881,14 +881,17 @@ def post_submit_daklapack_order():
     phone_number = request.form['contact_phone_number']
     project_ids_list = list(map(int, request.form.getlist('projects')))
     dak_article_code = int(request.form['dak_article_code'])
+    article_quantity = int(request.form['quantity'])
     file = request.files['addresses_file']
 
     # get optional fields or defaults
+    planned_send_str = request.form.get('planned_send_date')
+    planned_send_date = planned_send_str if planned_send_str else None
+
     description = request.form.get('description')
     fedex_ref_1 = request.form.get('fedex_ref_1')
     fedex_ref_2 = request.form.get('fedex_ref_2')
     fedex_ref_3 = request.form.get('fedex_ref_3')
-    fulfillment_hold_msg = request.form.get('fulfillment_hold_msg')
 
     try:
         # NB: import everything as a string so that zip codes beginning with
@@ -922,12 +925,13 @@ def post_submit_daklapack_order():
         json={
             "project_ids": project_ids_list,
             "article_code": dak_article_code,
+            "quantity": article_quantity,
             "addresses": addresses_list,
+            "planned_send_date": planned_send_date,
             "description": description,
             "fedex_ref_1": fedex_ref_1,
             "fedex_ref_2": fedex_ref_2,
-            "fedex_ref_3": fedex_ref_3,
-            "fulfillment_hold_msg": fulfillment_hold_msg
+            "fedex_ref_3": fedex_ref_3
         }
     )
 

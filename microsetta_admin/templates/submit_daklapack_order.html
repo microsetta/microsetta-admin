@@ -18,11 +18,59 @@
 <script src="/static/vendor/js/jquery.validate.min.js"></script>
 <script src="/static/vendor/js/additional-methods.min.js"></script>
 <script>
-    function onHoldFulfillmentChange(chkbx) {
-        $("#fulfillment_hold_msg").prop("disabled", !chkbx.checked);
-    }
+        function verifyQuantity(){
+            let quantity = $("#quantity").val();
+            let verified = true;
+            if (quantity > 1) {
+                let confirmMsg = 'Do you really want to send ' + quantity + ' articles to every address in your list?';
+                verified = window.confirm(confirmMsg);
+            }
+            return verified;
+        }
 
     $(document).ready(function(){
+        // Adapted from https://stackoverflow.com/a/5812341
+        $.validator.addMethod("validYyyyMmDdDate",
+            function isValidDate(value, element) {
+                let chunks = value.split('-');
+                // NB: Javascript counts months from 0-11, hence the -1/+1
+                let d = new Date(chunks[0], chunks[1] - 1 , chunks[2]);
+                // NB: do not let lint make you change == to === here
+                return this.optional(element) || (d && (d.getMonth() + 1) == chunks[1]);
+            },
+            "Please enter a valid date in YYYY-MM-DD format"
+        );
+        $.validator.addMethod("futureDate",
+            function(value, element) {
+                let return_val = true;
+                if (value !== '') {
+                    // Based on https://stackoverflow.com/a/21518178
+                    // Assuming value is the date string.
+                    let date = new Date(value);
+
+                    // Create a new date, stripping the time away.
+                    let today = new Date(new Date().toDateString());
+
+                    // Subtracting one date from another gives you the number
+                    //  of milliseconds between the two. Divide that down to days.
+                    let daysInTheFuture = (date - today) / 1000 / 60 / 60 / 24;
+
+                    return_val = ((daysInTheFuture > 1) && (daysInTheFuture < 366));
+                }
+                return return_val
+            },
+            "Please enter a date more than one day and less than one year in the future (or leave blank)"
+        );
+        $.validator.addMethod("positive",
+            function(value, element) {
+                // this is executed *after* the digit validator, so
+                // no need to verify it really is a number
+                return this.optional(element) || (value > 0);
+            },
+            "Please enter a positive integer"
+        );
+
+
         // Initialize form validation on the registration form.
         // It has the name attribute "registration"
         $("form[name='new_daklapack_order']").validate({
@@ -33,14 +81,23 @@
                 // on the right side
                 projects: "required",
                 dak_article: "required",
+                quantity: {
+                  required: true,
+                  digits: true,
+                  positive: true
+                },
                 addresses_file: "required",
-                fulfillment_hold_msg: "required",
                 //NB: validation is NOT applied to "hidden" inputs.
                 // However, if this is ever changed to user-facing,
                 // this should validate it ;)
                 contact_phone_number: {
                     phoneUS: true,
                     required: true
+                },
+                planned_send_date: {
+                    required: false,
+                    validYyyyMmDdDate: true,
+                    futureDate: true
                 },
                 // Make sure the form is submitted to the destination defined
                 // in the "action" attribute of the form when valid
@@ -113,7 +170,7 @@ The following orders were successfully submitted to Daklapack.
 {% else %}
 
 <div class="extended-width">
-    <form name="new_daklapack_order" class="form-horizontal" method="POST" enctype="multipart/form-data">
+    <form name="new_daklapack_order" class="form-horizontal" method="POST" enctype="multipart/form-data"  onsubmit="return verifyQuantity();">
         <input type="hidden" name="contact_phone_number" id="contact_phone_number" value="{{ contact_phone_number }}" />
         <div class="form-group row">
             <label for="projects" class="control-label col-sm-4">Project(s) </label>
@@ -137,6 +194,12 @@ The following orders were successfully submitted to Daklapack.
             </div>
         </div>
         <div class="form-group row">
+            <label for="quantity" class="control-label col-sm-4">Article Quantity (Per Address)</label>
+            <div class="col-sm-8">
+                <input type="text" name="quantity" id="quantity" value="1"/>
+            </div>
+        </div>
+        <div class="form-group row">
             <label for="addresses_file" class="control-label col-sm-4">Addresses</label>
             <div class="col-sm-8">
                 <input type="file" name="addresses_file" id="addresses_file" />
@@ -146,6 +209,13 @@ The following orders were successfully submitted to Daklapack.
         <p>
             <strong>Optionals:</strong>
         </p>
+        <div class="form-group row">
+            <!--NB: this date is not timezone-aware -->
+            <label for="planned_send_date" class="control-label col-sm-4">Planned Send Date (YYYY-MM-DD)</label>
+            <div class="col-sm-8">
+                <input type="text" name="planned_send_date" id="planned_send_date" />
+            </div>
+        </div>
         <div class="form-group row">
             <label for="description" class="control-label col-sm-4">Description</label>
             <div class="col-sm-8">
@@ -170,15 +240,6 @@ The following orders were successfully submitted to Daklapack.
                 <input type="text" name="fedex_ref_3" id="fedex_ref_3" />
             </div>
         </div>
-        <div class="form-group row">
-            <label for="hold_fulfillment_chkbx" class="control-label col-sm-4"><strong>HOLD FULFILLMENT</strong></label>
-            <div class="col-sm-8">
-                <input type="checkbox" id="hold_fulfillment_chkbx" name="hold_fulfillment_chkbx" value="hold"
-                       onchange="onHoldFulfillmentChange(this);" />
-                <br />
-                <textarea id="fulfillment_hold_msg" name="fulfillment_hold_msg" rows="5" disabled></textarea>
-            </div>
-        </div>    
         <hr />
         <div class="form-group row">
             <div class="col text-center">
