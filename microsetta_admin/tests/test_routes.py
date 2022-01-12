@@ -6,6 +6,8 @@ from microsetta_admin.tests.base import TestBase
 DUMMY_DAK_ORDER = {'contact_phone_number': '(858) 555-1212',
                    'projects': ['1', '32'],
                    'dak_article_code': '350101',
+                   'quantity': '2',
+                   'planned_send_date': '',
                    'description': '',
                    'fedex_ref_1': '',
                    'fedex_ref_2': '',
@@ -412,7 +414,7 @@ class RouteTests(TestBase):
         response = self.app.get('/submit_daklapack_order',
                                 follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'<strong>HOLD FULFILLMENT</strong>', response.data)
+        self.assertIn(b'<strong>Optionals:</strong>', response.data)
 
     def test_get_submit_daklapack_order_fail_articles(self):
         # server side issues two GETs to the API
@@ -563,8 +565,7 @@ class RouteTests(TestBase):
 
     def test_post_submit_daklapack_order_fail_xlsx_format(self):
         # actually code shouldn't make it to private api call, but in case:
-        api_post_1 = DummyResponse(201, {'order_id': '11211',
-                                         'email_success': None})
+        api_post_1 = DummyResponse(201, {'order_id': '11211'})
         self.mock_post.side_effect = [api_post_1]
 
         response = self._test_post_submit_daklapack_order("empty.txt")
@@ -572,8 +573,7 @@ class RouteTests(TestBase):
 
     def test_post_submit_daklapack_order_fail_xlsx_headers(self):
         # actually code shouldn't make it to private api call, but in case:
-        api_post_1 = DummyResponse(201, {'order_id': '11211',
-                                         'email_success': None})
+        api_post_1 = DummyResponse(201, {'order_id': '11211'})
         self.mock_post.side_effect = [api_post_1]
 
         response = self._test_post_submit_daklapack_order(
