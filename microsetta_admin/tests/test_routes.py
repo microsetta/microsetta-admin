@@ -5,7 +5,7 @@ from microsetta_admin.tests.base import TestBase
 
 DUMMY_DAK_ORDER = {'contact_phone_number': '(858) 555-1212',
                    'projects': ['1', '32'],
-                   'dak_article_code': '350101',
+                   'dak_article_code': '3510001E',
                    'quantity': '2',
                    'planned_send_date': '',
                    'description': '',
@@ -369,20 +369,10 @@ class RouteTests(TestBase):
 
     def test_get_submit_daklapack_order_success(self):
         # server side issues two GETs to the API
-        dak_article = {'dak_article_code': 350100,
+        dak_article = {'dak_article_code': '3510000E',
                        'short_description': 'TMI 1 tube',
-                       'num_2point5ml_etoh_tubes': 1,
-                       'num_7ml_etoh_tube': 0,
-                       'num_neoteryx_kit': 0,
-                       'outer_sleeve': 'Microsetta',
-                       'box': 'Microsetta',
-                       'return_label': 'Microsetta',
-                       'compartment_bag': 'Microsetta',
-                       'num_stool_collector': 0,
-                       'instructions': 'Fv1',
-                       'registration_card': 'Microsetta',
-                       'swabs': '1x bag of two',
-                       'rigid_safety_bag': 'yes'}
+                       'detailed_description': 'TMI 1 tube, American English'}
+
         a_project = {'project_name': 'test_proj', 'is_microsetta': True,
                      'bank_samples': False, 'plating_start_date': None,
                      'contact_name': 'Jane Doe',
@@ -456,20 +446,9 @@ class RouteTests(TestBase):
 
     def test_get_submit_daklapack_order_fail_projects(self):
         # server side issues two GETs to the API
-        dak_article = {'dak_article_code': 350100,
+        dak_article = {'dak_article_code': '3510000E',
                        'short_description': 'TMI 1 tube',
-                       'num_2point5ml_etoh_tubes': 1,
-                       'num_7ml_etoh_tube': 0,
-                       'num_neoteryx_kit': 0,
-                       'outer_sleeve': 'Microsetta',
-                       'box': 'Microsetta',
-                       'return_label': 'Microsetta',
-                       'compartment_bag': 'Microsetta',
-                       'num_stool_collector': 0,
-                       'instructions': 'Fv1',
-                       'registration_card': 'Microsetta',
-                       'swabs': '1x bag of two',
-                       'rigid_safety_bag': 'yes'}
+                       'detailed_description': 'TMI 1 tube, American English'}
         a_project = {'error_message': 'no projects for you'}
 
         api_get_1 = DummyResponse(200, [dak_article])
