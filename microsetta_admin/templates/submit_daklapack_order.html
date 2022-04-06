@@ -188,7 +188,7 @@ The following orders were successfully submitted to Daklapack.
                 <select name="dak_article_code" id="dak_article_code">
                     <option value="">{{ dummy_status }}</option>
                     {% for dak_article in dak_articles %}
-                    <option value="{{ dak_article.dak_article_code }}">{{ dak_article.short_description }}</option>
+                    <option value="{{ dak_article.dak_article_code }}">{{ dak_article.detailed_description }}</option>
                     {% endfor %}
                 </select>
             </div>

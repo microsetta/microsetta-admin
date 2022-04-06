@@ -880,7 +880,7 @@ def post_submit_daklapack_order():
     # get required fields; cast where expected by api
     phone_number = request.form['contact_phone_number']
     project_ids_list = list(map(int, request.form.getlist('projects')))
-    dak_article_code = int(request.form['dak_article_code'])
+    dak_article_code = request.form['dak_article_code']
     article_quantity = int(request.form['quantity'])
     file = request.files['addresses_file']
 
