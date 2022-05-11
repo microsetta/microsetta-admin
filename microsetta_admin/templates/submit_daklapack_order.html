@@ -2,6 +2,10 @@
 
 {% block head %}
 
+{% if not dak_shipping %}
+    {% set dak_shipping = {} %}
+{% endif %}
+
 <style type="text/css">
     .extended-width {
         width: 600px;
@@ -18,15 +22,34 @@
 <script src="/static/vendor/js/jquery.validate.min.js"></script>
 <script src="/static/vendor/js/additional-methods.min.js"></script>
 <script>
-        function verifyQuantity(){
-            let quantity = $("#quantity").val();
-            let verified = true;
-            if (quantity > 1) {
-                let confirmMsg = 'Do you really want to send ' + quantity + ' articles to every address in your list?';
-                verified = window.confirm(confirmMsg);
-            }
-            return verified;
+    var DAK_SHIPPING = {{ dak_shipping|tojson }};
+
+    function makeNewOption(val, txt) {
+        return $("<option></option>").attr("value", val).text(txt);
+    }
+
+    function replaceShippingTypeOptions(shippingProvider){
+        let selected_provider = shippingProvider.value;
+        let new_options = DAK_SHIPPING[selected_provider];
+        let dropdown_elm = $("#dak_shipping_type");
+        dropdown_elm.empty();
+
+        dropdown_elm.append(makeNewOption("", '{{ dummy_status }}'));
+
+        $.each(new_options, function(index, value) {
+            dropdown_elm.append(makeNewOption(value, value));
+        });
+    }
+
+    function verifyQuantity(){
+        let quantity = $("#quantity").val();
+        let verified = true;
+        if (quantity > 1) {
+            let confirmMsg = 'Do you really want to send ' + quantity + ' articles to every address in your list?';
+            verified = window.confirm(confirmMsg);
         }
+        return verified;
+    }
 
     $(document).ready(function(){
         // Adapted from https://stackoverflow.com/a/5812341
@@ -80,7 +103,7 @@
                 // of an input field. Validation rules are defined
                 // on the right side
                 projects: "required",
-                dak_article: "required",
+                dak_article_code: "required",
                 quantity: {
                   required: true,
                   digits: true,
@@ -90,6 +113,8 @@
                 //NB: validation is NOT applied to "hidden" inputs.
                 // However, if this is ever changed to user-facing,
                 // this should validate it ;)
+                dak_shipping_provider: "required",
+                dak_shipping_type: "required",
                 contact_phone_number: {
                     phoneUS: true,
                     required: true
@@ -203,6 +228,25 @@ The following orders were successfully submitted to Daklapack.
             <label for="addresses_file" class="control-label col-sm-4">Addresses</label>
             <div class="col-sm-8">
                 <input type="file" name="addresses_file" id="addresses_file" />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="dak_shipping_provider" class="control-label col-sm-4">Shipping Provider</label>
+            <div class="col-sm-8">
+                <select name="dak_shipping_provider" id="dak_shipping_provider" onchange="replaceShippingTypeOptions(this);">
+                    <option value="">{{ dummy_status }}</option>
+                    {% for dak_shipping_provider in dak_shipping %}
+                    <option value="{{ dak_shipping_provider }}">{{ dak_shipping_provider }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="dak_shipping_type" class="control-label col-sm-4">Shipping Type</label>
+            <div class="col-sm-8">
+                <select name="dak_shipping_type" id="dak_shipping_type">
+                    <option value="">{{ dummy_status }}</option>
+                </select>
             </div>
         </div>
         <hr />

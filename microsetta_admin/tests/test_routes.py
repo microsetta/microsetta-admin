@@ -14,6 +14,38 @@ DUMMY_DAK_ORDER = {'contact_phone_number': '(858) 555-1212',
                    'fedex_ref_3': '',
                    'addresses_file': None}
 
+DAK_SHIPPING = {'FedEx': ['Default', 'FEDEX_2_DAY', 'FEDEX_GROUND',
+                          'PRIORITY_OVERNIGHT', 'STANDARD_OVERNIGHT'],
+                'Freight': ['Default'],
+                'TransSmart': ['Default'],
+                'USPS': ['PRIORITY_EXPRESS', 'PRIORITY', 'FIRST_CLASS']}
+DAK_ARTICLE = {'dak_article_code': '3510000E',
+               'short_description': 'TMI 1 tube',
+               'detailed_description': 'TMI 1 tube, American English'}
+A_PROJECT = {'project_name': 'test_proj', 'is_microsetta': True,
+             'bank_samples': False, 'plating_start_date': None,
+             'contact_name': 'Jane Doe',
+             'contact_email': 'jd@test.com',
+             'additional_contact_name': 'John Doe',
+             'deadlines': 'Spring 2021', 'num_subjects': 'Variable',
+             'num_timepoints': '4', 'start_date': 'Fall 2020',
+             'disposition_comments': 'Store', 'collection': 'AGP',
+             'is_fecal': 'X', 'is_saliva': '', 'is_skin': '?',
+             'is_blood': 'X', 'is_other': 'Nares, mouth',
+             'do_16s': '', 'do_shallow_shotgun': 'Subset',
+             'do_shotgun': 'X', 'do_rt_qpcr': '', 'do_serology': '',
+             'do_metatranscriptomics': 'X', 'do_mass_spec': 'X',
+             'mass_spec_comments': 'Dorrestein',
+             'mass_spec_contact_name': 'Ted Doe',
+             'mass_spec_contact_email': 'td@test.com',
+             'do_other': '',
+             'branding_associated_instructions': 'branding_doc.pdf',
+             'branding_status': 'In Review',
+             'subproject_name': 'IBL SIBL',
+             'alias': 'Healthy Sitting', 'sponsor': 'Crowdfunded',
+             'coordination': 'TMI', 'is_active': True,
+             'project_id': 8}
+
 
 class DummyResponse(object):
     def __init__(self, status_code, output_dict):
@@ -368,75 +400,40 @@ class RouteTests(TestBase):
         self.assertIn(b'Unable to load project list', response.data)
 
     def test_get_submit_daklapack_order_success(self):
-        # server side issues two GETs to the API
-        dak_article = {'dak_article_code': '3510000E',
-                       'short_description': 'TMI 1 tube',
-                       'detailed_description': 'TMI 1 tube, American English'}
-
-        a_project = {'project_name': 'test_proj', 'is_microsetta': True,
-                     'bank_samples': False, 'plating_start_date': None,
-                     'contact_name': 'Jane Doe',
-                     'contact_email': 'jd@test.com',
-                     'additional_contact_name': 'John Doe',
-                     'deadlines': 'Spring 2021', 'num_subjects': 'Variable',
-                     'num_timepoints': '4', 'start_date': 'Fall 2020',
-                     'disposition_comments': 'Store', 'collection': 'AGP',
-                     'is_fecal': 'X', 'is_saliva': '', 'is_skin': '?',
-                     'is_blood': 'X', 'is_other': 'Nares, mouth',
-                     'do_16s': '', 'do_shallow_shotgun': 'Subset',
-                     'do_shotgun': 'X', 'do_rt_qpcr': '', 'do_serology': '',
-                     'do_metatranscriptomics': 'X', 'do_mass_spec': 'X',
-                     'mass_spec_comments': 'Dorrestein',
-                     'mass_spec_contact_name': 'Ted Doe',
-                     'mass_spec_contact_email': 'td@test.com',
-                     'do_other': '',
-                     'branding_associated_instructions': 'branding_doc.pdf',
-                     'branding_status': 'In Review',
-                     'subproject_name': 'IBL SIBL',
-                     'alias': 'Healthy Sitting', 'sponsor': 'Crowdfunded',
-                     'coordination': 'TMI', 'is_active': True,
-                     'project_id': 8}
-
-        api_get_1 = DummyResponse(200, [dak_article])
-        api_get_2 = DummyResponse(200, [a_project])
-        self.mock_get.side_effect = [api_get_1, api_get_2]
+        # server side issues three GETs to the API
+        api_get_1 = DummyResponse(200, DAK_SHIPPING)
+        api_get_2 = DummyResponse(200, [DAK_ARTICLE])
+        api_get_3 = DummyResponse(200, [A_PROJECT])
+        self.mock_get.side_effect = [api_get_1, api_get_2, api_get_3]
 
         response = self.app.get('/submit_daklapack_order',
                                 follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'<strong>Optionals:</strong>', response.data)
 
+    def test_get_submit_daklapack_order_fail_shipping(self):
+        dak_shipping = {'error_msg': 'hit a problem'}
+
+        # server side issues three GETs to the API
+        api_get_1 = DummyResponse(400, dak_shipping)
+        api_get_2 = DummyResponse(200, [DAK_ARTICLE])
+        api_get_3 = DummyResponse(200, [A_PROJECT])
+        self.mock_get.side_effect = [api_get_1, api_get_2, api_get_3]
+
+        response = self.app.get('/submit_daklapack_order',
+                                follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Unable to load daklapack shipping information.',
+                      response.data)
+
     def test_get_submit_daklapack_order_fail_articles(self):
-        # server side issues two GETs to the API
         dak_article = {'error_msg': 'hit a problem'}
 
-        a_project = {'project_name': 'test_proj', 'is_microsetta': True,
-                     'bank_samples': False, 'plating_start_date': None,
-                     'contact_name': 'Jane Doe',
-                     'contact_email': 'jd@test.com',
-                     'additional_contact_name': 'John Doe',
-                     'deadlines': 'Spring 2021', 'num_subjects': 'Variable',
-                     'num_timepoints': '4', 'start_date': 'Fall 2020',
-                     'disposition_comments': 'Store', 'collection': 'AGP',
-                     'is_fecal': 'X', 'is_saliva': '', 'is_skin': '?',
-                     'is_blood': 'X', 'is_other': 'Nares, mouth',
-                     'do_16s': '', 'do_shallow_shotgun': 'Subset',
-                     'do_shotgun': 'X', 'do_rt_qpcr': '', 'do_serology': '',
-                     'do_metatranscriptomics': 'X', 'do_mass_spec': 'X',
-                     'mass_spec_comments': 'Dorrestein',
-                     'mass_spec_contact_name': 'Ted Doe',
-                     'mass_spec_contact_email': 'td@test.com',
-                     'do_other': '',
-                     'branding_associated_instructions': 'branding_doc.pdf',
-                     'branding_status': 'In Review',
-                     'subproject_name': 'IBL SIBL',
-                     'alias': 'Healthy Sitting', 'sponsor': 'Crowdfunded',
-                     'coordination': 'TMI', 'is_active': True,
-                     'project_id': 8}
-
-        api_get_1 = DummyResponse(400, [dak_article])
-        api_get_2 = DummyResponse(200, [a_project])
-        self.mock_get.side_effect = [api_get_1, api_get_2]
+        # server side issues three GETs to the API
+        api_get_1 = DummyResponse(200, DAK_SHIPPING)
+        api_get_2 = DummyResponse(400, [dak_article])
+        api_get_3 = DummyResponse(200, [A_PROJECT])
+        self.mock_get.side_effect = [api_get_1, api_get_2, api_get_3]
 
         response = self.app.get('/submit_daklapack_order',
                                 follow_redirects=True)
@@ -445,15 +442,13 @@ class RouteTests(TestBase):
                       response.data)
 
     def test_get_submit_daklapack_order_fail_projects(self):
-        # server side issues two GETs to the API
-        dak_article = {'dak_article_code': '3510000E',
-                       'short_description': 'TMI 1 tube',
-                       'detailed_description': 'TMI 1 tube, American English'}
         a_project = {'error_message': 'no projects for you'}
 
-        api_get_1 = DummyResponse(200, [dak_article])
-        api_get_2 = DummyResponse(400, [a_project])
-        self.mock_get.side_effect = [api_get_1, api_get_2]
+        # server side issues three GETs to the API
+        api_get_1 = DummyResponse(200, DAK_SHIPPING)
+        api_get_2 = DummyResponse(200, [DAK_ARTICLE])
+        api_get_3 = DummyResponse(400, [a_project])
+        self.mock_get.side_effect = [api_get_1, api_get_2, api_get_3]
 
         response = self.app.get('/submit_daklapack_order',
                                 follow_redirects=True)
