@@ -845,6 +845,11 @@ def submit_daklapack_order():
                                **build_login_variables(),
                                error_message=msg)
 
+    status, dak_shipping_type_by_provider = APIRequest.get(
+        '/api/admin/daklapack_shipping')
+    if status >= 400:
+        return return_error("Unable to load daklapack shipping information.")
+
     status, dak_articles_output = APIRequest.get(
         '/api/admin/daklapack_articles')
     if status >= 400:
@@ -860,6 +865,7 @@ def submit_daklapack_order():
                            error_message=None,
                            dummy_status=DUMMY_SELECT_TEXT,
                            dak_articles=dak_articles_output,
+                           dak_shipping=dak_shipping_type_by_provider,
                            contact_phone_number=SERVER_CONFIG[
                                "order_contact_phone"],
                            projects=projects_output['projects'])
@@ -884,10 +890,12 @@ def post_submit_daklapack_order():
     article_quantity = int(request.form['quantity'])
     file = request.files['addresses_file']
 
+    shipping_provider = request.form.get('dak_shipping_provider')
+    shipping_type = request.form.get('dak_shipping_type')
+
     # get optional fields or defaults
     planned_send_str = request.form.get('planned_send_date')
     planned_send_date = planned_send_str if planned_send_str else None
-
     description = request.form.get('description')
     fedex_ref_1 = request.form.get('fedex_ref_1')
     fedex_ref_2 = request.form.get('fedex_ref_2')
@@ -927,6 +935,8 @@ def post_submit_daklapack_order():
             "article_code": dak_article_code,
             "quantity": article_quantity,
             "addresses": addresses_list,
+            "shipping_provider": shipping_provider,
+            "shipping_type": shipping_type,
             "planned_send_date": planned_send_date,
             "description": description,
             "fedex_ref_1": fedex_ref_1,
