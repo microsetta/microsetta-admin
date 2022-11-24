@@ -2,7 +2,28 @@
 {% block head %}
 <link rel="stylesheet" type="text/css" href="/static/css/table_style.css">
 <script type="text/javascript" language="javascript" src="/static/js/ruleset.js"></script>
+<!--<link rel="stylesheet" type="text/css" href="/static/vendor/DataTables/DataTables-1.10.21/css/jquery.dataTables.css">-->
+<script src="/static/vendor/DataTables/DataTables-1.10.21/js/jquery.dataTables.js"></script>
+<script src="/static/vendor/DataTables/Buttons-1.6.2/js/dataTables.buttons.min.js"></script>
+<script src="/static/vendor/DataTables/Buttons-1.6.2/js/buttons.html5.min.js"></script>
 <script>
+    function remove_error_messages () {
+        block = document.getElementById("search_errors");
+        if (block !== null) {
+            block.innerHTML = "";
+        }
+    };
+        $(document).ready(function() {
+        {% if resource is not none %}
+            $('#search_results').DataTable({
+                // more information on "dom" can be found here:
+                // https://datatables.net/reference/option/dom
+                dom: 'Bfrtip',
+                buttons: ['csv']
+                }
+            );
+        {% endif %}
+    } );
     // prevent submit with dummy status
     function verify_status() {
         let result = true;
@@ -149,17 +170,23 @@ table
 </style>
 {% endblock %}
 {% block content %}
-<h3>Microsetta Scan</h3>
+<h3>Microsetta Scan - Bulk</h3>
 <div>
-    <form name="search_form" id="search_form" method="GET">
+    <form name="upload_csv" id="search_csv" method="POST" enctype="multipart/form-data" onsubmit="return remove_error_messages()">
         <table>
             <tr>
-                <td><label for="sample_barcode">Barcode: </label></td>
-                <td><input type="text" name="sample_barcode" id="sample_barcode"></td>
+                <td><label for="import_csv">import .csv: </label></td>
+                <td><input type="text" name="upload_csv" id="upload_csv"></td>
+                <td><input type="file"
+                           style="color:transparent;"
+                           onchange="document.getElementById('upload_csv').value = this.value.split('\\').pop().split('/').pop()"></td>
+
+<!--                <td><input type="text" name="upload_csv" id="upload_csv"></td>-->
             </tr>
             <tr>
                 <td></td>
-                <td><input type="submit" value="Find Sample"></td>
+                <td><input type=submit value=Upload CSV></td>
+
             </tr>
         </table>
         {% if search_error %}
@@ -189,7 +216,7 @@ table
                 </p>
             </div>
         {% endif %}
-        <form action="/scan" name="update_form" id="update_form" onsubmit="return verify_status();" method="post">
+<!--        <form action="/scan" name="update_form" id="update_form" onsubmit="return verify_status();" method="post">-->
         <input type="hidden" name="sample_barcode" value="{{barcode_info.barcode}}"/>
         <table>
             <tr>
