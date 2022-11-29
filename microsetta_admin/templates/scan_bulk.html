@@ -172,20 +172,21 @@ table
 {% block content %}
 <h3>Microsetta Scan - Bulk</h3>
 <div>
-    <form name="upload_csv" id="search_csv" method="POST" enctype="multipart/form-data" onsubmit="return remove_error_messages()">
+    <form action="/scan_bulk" name="upload_bulk_csv" id="upload_bulk_csv" method="POST" enctype="multipart/form-data" onsubmit="return remove_error_messages()">
         <table>
             <tr>
                 <td><label for="import_csv">import .csv: </label></td>
-                <td><input type="text" name="upload_csv" id="upload_csv"></td>
+                <td><input type="text" name="upload_csv_textfield" id="upload_csv_textfield"></td>
                 <td><input type="file"
+                           name="bulk_csv_file"
                            style="color:transparent;"
-                           onchange="document.getElementById('upload_csv').value = this.value.split('\\').pop().split('/').pop()"></td>
+                           onchange="document.getElementById('upload_csv_textfield').value = this.value.split('\\').pop().split('/').pop()"></td>
 
 <!--                <td><input type="text" name="upload_csv" id="upload_csv"></td>-->
             </tr>
             <tr>
                 <td></td>
-                <td><input type=submit value=Upload CSV></td>
+                <td><input type=submit value=Notes></td>
 
             </tr>
         </table>
@@ -196,188 +197,7 @@ table
         {% endif %}
     </form>
 
-    <br>
-    <hr>
-    <h4>Barcode Info</h4>
-    {% if update_error %}
-        <p style="color:red">
-        {{update_error |e}}
-        </p>
-    {% endif %}
+{{ tables|safe }}
 
-    {% if barcode_info %}
-        {% if status_warning %}
-            <div id="sample-status" class="sample-status" style="background-color:orange;">
-                <p>
-                    <br />
-                    Status Warning: {{status_warning}}
-                    <br/>
-                    <br/>
-                </p>
-            </div>
-        {% endif %}
-<!--        <form action="/scan" name="update_form" id="update_form" onsubmit="return verify_status();" method="post">-->
-        <input type="hidden" name="sample_barcode" value="{{barcode_info.barcode}}"/>
-        <table>
-            <tr>
-                <td>Barcode: </td>
-                <td>{{barcode_info.barcode}}</td>
-            </tr>
-            <tr>
-                <td>Projects: </td>
-            </tr>
-            <tr>
-                <td></td>
-                <td>
-                    <ul>
-                    {% for proj_info in projects_info %}
-                        <li>
-                            {{proj_info.project}}
-                            {%  if proj_info.bank_samples %}
-                                (banked{%  if proj_info.plating_start_date %} until {{ proj_info.plating_start_date }}{% endif %})
-                            {%  endif %}
-                        </li>
-                    {% endfor %}
-                    </ul>
-                </td>
-            </tr>
-            {% if source is not none %}
-            <tr>
-                <td>Source Type: </td>
-                <td>{{source.source_type}}</td>
-            </tr>
-            <tr>
-                <td>Source Name: </td>
-                <td>{{source.name}}</td>
-            </tr>
-            <tr>
-                <td>Source Description: </td>
-                <td>{{source.source_data.description}}</td>
-            </tr>
-            {% endif %}
-            <tr>
-                <td>Sample Site: </td>
-                <td>{{sample_info.site}}</td>
-            </tr>
-            <tr>
-                <td>Collection date: </td>
-                <td>{{ format_timestamp(sample_info.datetime_collected) }}</td>
-            </tr>
-            <tr>
-                <td colspan="100%">
-                    {% if scans_info|length > 0 %}
-                    <hr>
-                    <h4>Scan History</h4>
-                    <table class="bordered" id="barcode_scans" class="display" style="width:100%;margin: 12px">
-                        <thead>
-                            <tr>
-                                <th class="bordered">Scan Timestamp</th>
-                                <th class="bordered">Sample Status</th>
-                                <th class="bordered">Technician Notes</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for scan in scans_info %}
-                            <tr>
-                                <td class="bordered">{{ format_timestamp(scan['scan_timestamp']) }}</td>
-                                <td class="bordered">{{ scan['sample_status'] }}</td>
-                                <td class="bordered">{{ scan['technician_notes'] }}</td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                    {% else %}
-                        No previous scans
-                    {% endif %}
-                </td>
-            </tr>
-            <tr>
-              <td colspan="100%"><hr></td>
-            </tr>
-            <tr>
-              <td colspan="100%"><h4>Edit Sample/Add Notes</h4></td>
-            </tr>
-            <tr>
-                <td>Sample Status: </td>
-                <td>
-                <select id="sample_status" name="sample_status">
-                {% for status in status_options %}
-                    <option value="{{status}}" {% if latest_status == status %}selected{% endif %}>{{status}}</option>
-                {% endfor %}
-                </select>
-                </td>
-            </tr>
-            <tr>
-                <td>Send Email Upon Status Update:</td>
-                <td><input type="checkbox" id="send_email" name="send_email" {% if send_email %}checked{% endif %}/><label for="send_email"><small> <b><i><span id="send_email_label_text"></span></i></b></small></label></td>
-            </tr>
-            <!-- Begin collapsible email template fields -->
-            <input type="hidden" id="issue_type" name="issue_type" value="sample"/>
-            <input type="hidden" name="recorded_type" value="{{sample_info.site}}"/>
-            <input type="hidden" id="action_input" name="action" value="send_email"/>
-            <tr id="email_template_row" class="collapse">
-                <td>Issue Type:</td>
-                <td>
-                    <select class="send_email_disables" id="email_template" name="template">
-                    </select>
-                </td>
-            <tr id="received_type_row" class="collapse">
-                <td>Apparent Sample Site:</td>
-                <td>
-                    <select class="send_email_disables" id="received_type" name="received_type">
-                        {% for received_type in received_type_dropdown %}
-                        <option value="{{received_type |e}}">{{received_type |e}}</option>
-                        {% endfor %}
-                    </select>
-                </td>
-            </tr>
-            <!-- End collapsible email template fields -->
-            <tr>
-                <td>Technician Notes: </td>
-                <td>
-                    <textarea name="technician_notes" rows="10" cols="50"></textarea>
-                </td>
-            </tr>
-            <tr>
-                <td/>
-                <td><input type="submit" id="scan_button" value="Add Scan"></td>
-            </tr>
-        </table>
-        </form>
-
-        <br>
-        <hr>
-        <h4>Event Log</h4>
-        <table class="bordered">
-            <thead>
-                <tr>
-                    <th class="bordered">Event Timestamp</th>
-                    <th class="bordered">Email Address</th>
-                    <th class="bordered">Email Template</th>
-                    <th class="bordered">Apparent Site</th>
-                    <th class="bordered">User Recorded Site</th>
-                </tr>
-            </thead>
-            {% for event in events %}
-            <tr>
-                <td class="bordered">{{ format_timestamp(event["event_time"]) }}</td>
-                <td class="bordered">{{event["event_state"]["email"] |e}}</td>
-                <td class="bordered">{{event["event_state"]["template"] |e}}</td>
-                <td class="bordered">
-                    {% if "template_args" in event["event_state"] and
-                       "received_type" in event["event_state"]["template_args"] %}
-                    {{event["event_state"]["template_args"]["received_type"] |e}}
-                    {% endif %}
-                </td>
-                <td class="bordered">
-                    {% if "template_args" in event["event_state"] and
-                       "recorded_type" in event["event_state"]["template_args"] %}
-                    {{event["event_state"]["template_args"]["recorded_type"] |e}}
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-    {% endif %}
 </div>
 {% endblock %}

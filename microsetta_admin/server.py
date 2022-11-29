@@ -773,6 +773,41 @@ def scan():
                                       received_type,
                                       recorded_type)
 
+@app.route('/scan_bulk', methods=['GET', 'POST'])
+def scan_bulk():
+    if request.method == 'GET':
+
+        return render_template("scan_bulk.html",
+                               **build_login_variables())
+                                   # resource=None,
+                                   # search_error=None,
+                                   # projects=projects)
+    elif request.method == 'POST':
+
+        processed_output = _bulk_scan_post(request)
+        if processed_output.get('records') is not None:
+            df = pd.DataFrame.from_records(processed_output['records'])
+            table = df.to_html(classes='data', index=None)
+            return render_template('scan_bulk.html',
+                                   **build_login_variables(),
+                                   tables = table)
+    else:
+        raise BadRequest()
+
+
+def _bulk_scan_post(request):
+    # Read uploaded csv and post it to private api    
+    if 'bulk_csv_file' in request.files:
+        request_file = request.files['bulk_csv_file']
+        records = pd.read_csv(request_file, dtype=str).to_dict(orient='records')
+        if records:
+            status, result = APIRequest.post(
+                '/api/admin/bulk_scan', json=records)
+            print(result)
+            return result
+    else:
+        raise BadRequest()        
+
 
 @app.route('/metadata_pulldown', methods=['GET', 'POST'])
 def metadata_pulldown():
