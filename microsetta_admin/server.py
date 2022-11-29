@@ -800,7 +800,6 @@ def _bulk_scan_post(request):
         if records:
             status, result = APIRequest.post(
                 '/api/admin/bulk_scan', json=records)
-            print(result)
             return result
     else:
         raise BadRequest()        
