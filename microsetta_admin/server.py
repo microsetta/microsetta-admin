@@ -779,9 +779,6 @@ def scan_bulk():
 
         return render_template("scan_bulk.html",
                                **build_login_variables())
-                                   # resource=None,
-                                   # search_error=None,
-                                   # projects=projects)
     elif request.method == 'POST':
 
         processed_output = _bulk_scan_post(request)
