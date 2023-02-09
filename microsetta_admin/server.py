@@ -553,7 +553,7 @@ def new_kits():
         fname = f'kits-{stamp}.csv'
 
         return send_file(payload, as_attachment=True,
-                         attachment_filename=fname,
+                         download_name=fname,
                          mimetype='text/csv')
 
 
@@ -1010,9 +1010,9 @@ def metadata_pulldown():
         return send_file(bytestream,
                          mimetype="text/tab-separated-values",
                          as_attachment=True,
-                         attachment_filename="metadata_pulldown.tsv",
-                         add_etags=False,
-                         cache_timeout=None,
+                         download_name="metadata_pulldown.tsv",
+                         etag=False,
+                         max_age=None,
                          conditional=False,
                          last_modified=None,
                          )
