@@ -778,32 +778,40 @@ def scan():
 def get_legends(criteria):
 
     dict = {}
+    hex = 'ABCDEF0123456789'
     if criteria not in session:
         status, fields = APIRequest.get(
             '/api/admin/barcode_query_fields')
-            
+
         if status == 200:
             for obj in fields:
                 if criteria == "Type" and obj["label"] == "Sample Site":
                     for val in obj["values"]:
-                        color_code = ['#' + ''.join([random.choice('ABCDEF0123456789') for i in range(6)])]
+                        code = [random.choice(hex) for i in range(6)]
+                        color_code = ['#' + ''.join(code)]
                         while color_code[0] in dict:
-                            color_code = ['#' + ''.join([random.choice('ABCDEF0123456789') for i in range(6)])]
+                            code = [random.choice(hex) for i in range(6)]
+                            color_code = ['#' + ''.join(code)]
                         dict[obj["values"][val]] = color_code[0]
 
                 if criteria == "Status" and obj["label"] == "Sample Status":
                     for val in obj["values"]:
-                        color_code = ['#' + ''.join([random.choice('ABCDEF0123456789') for i in range(6)])]
+                        code = [random.choice(hex) for i in range(6)]
+                        color_code = ['#' + ''.join(code)]
                         while color_code[0] in dict:
-                            color_code = ['#' + ''.join([random.choice('ABCDEF0123456789') for i in range(6)])]
-                        dict[obj["values"][val].replace(' ', '-').lower()] = color_code[0]
+                            code = [random.choice(hex) for i in range(6)]
+                            color_code = ['#' + ''.join(code)]
+                        tmp = obj["values"][val].replace(' ', '-').lower()
+                        dict[tmp] = color_code[0]
 
                 if criteria == "Project" and obj["label"] == "Project":
                     for val in obj["values"]:
-                        if not '-' in obj["values"][val]:
-                            color_code = ['#' + ''.join([random.choice('ABCDEF0123456789') for i in range(6)])]
+                        if not ('-' in obj["values"][val]):
+                            code = [random.choice(hex) for i in range(6)]
+                            color_code = ['#' + ''.join(code)]
                             while color_code[0] in dict:
-                                color_code = ['#' + ''.join([random.choice('ABCDEF0123456789') for i in range(6)])]
+                                code = [random.choice(hex) for i in range(6)]
+                                color_code = ['#' + ''.join(code)]
                             dict[obj["values"][val]] = color_code[0]
 
             if len(dict) > 0:
@@ -829,8 +837,8 @@ def _compose_table(legends, type):
         val = ""
         proj = data["sample"]["sample_projects"][0]
         status = data["sample"]["_latest_scan_status"]
-        source = data["sample"]["site"]
-        
+        src = data["sample"]["site"]
+
         if type == "Type":
             val = data["sample"]["site"]
         elif type == "Status":
@@ -840,24 +848,27 @@ def _compose_table(legends, type):
 
         if current_row == "":
             current_row = rec[4]
-            if val == None or val == "":
-                current_cols.append([rec[5], legends['None'], proj, status, source])
+            if val is None or val == "":
+                tmp = legends['None']
+                current_cols.append([rec[5], tmp, proj, status, src])
             else:
-                current_cols.append([rec[5], legends[val], proj, status, source])
+                current_cols.append([rec[5], legends[val], proj, status, src])
         elif current_row == rec[4]:
-            if val == None:
-                current_cols.append([rec[5], legends['None'], proj, status, source])
+            if val is None:
+                tmp = legends['None']
+                current_cols.append([rec[5], tmp, proj, status, src])
             else:
-                current_cols.append([rec[5], legends[val], proj, status, source])
+                current_cols.append([rec[5], legends[val], proj, status, src])
         else:
             output_dict[current_row] = current_cols
             current_cols = []
             current_row = rec[4]
-            if val == None:
-                current_cols.append([rec[5], legends['None'], proj, status, source])
+            if val is None:
+                tmp = legends['None']
+                current_cols.append([rec[5], tmp, proj, status, src])
             else:
-                current_cols.append([rec[5], legends[val], proj, status, source])
-    
+                current_cols.append([rec[5], legends[val], proj, status, src])
+
     output_dict[current_row] = current_cols
     return output_dict
 
@@ -870,19 +881,19 @@ def post_bulk_scan():
 
         if objFile is not None:
             filename = objFile.filename
-            fileData = pd.read_csv(objFile, dtype={'TubeCode': str}).values.tolist()
+            ds = pd.read_csv(objFile, dtype={'TubeCode': str})
+            fileData = ds.values.tolist()
             session['scan_data'] = fileData
             session['scan_file'] = filename
             return render_template('bulk_scan.html',
-                                **build_login_variables(),
-                                stage = "Visualization",
-                                filename = filename,
-                                data = "",
-                                legends = {},
-                                table = {},
-                                status_options = {}
-                               )
-
+                                   **build_login_variables(),
+                                   stage="Visualization",
+                                   filename=filename,
+                                   data="",
+                                   legends={},
+                                   table={},
+                                   status_options={}
+                                   )
 
     elif stage == "Visualization":
         filename = session.get('scan_file', "")
@@ -891,13 +902,13 @@ def post_bulk_scan():
         legends = get_legends(criteria)
 
         return render_template('bulk_scan.html',
-                                **build_login_variables(),
-                                stage = "Visualization",
-                                filename = filename,
-                                data = criteria,
-                                legends = legends,
-                                table = _compose_table(legends, criteria),
-                                status_options = STATUS_OPTIONS
+                               **build_login_variables(),
+                               stage="Visualization",
+                               filename=filename,
+                               data=criteria,
+                               legends=legends,
+                               table=_compose_table(legends, criteria),
+                               status_options=STATUS_OPTIONS
                                )
 
     elif stage == "Sample_Scan":
@@ -908,17 +919,6 @@ def post_bulk_scan():
         sample_barcode = request.form['sample_barcode']
         technician_notes = request.form['technician_notes']
         sample_status = request.form['sample_status']
-
-        # action = None
-        # if send_email:
-        #     action = "send_email"
-        # else:
-        #     action = "scan_only"
-        
-        # issue_type = 'sample'
-        # template = sample_status
-        # received_type = None
-        # recorded_type = request.form.get('recorded_type')
 
         # Do the actual update
         status, response = APIRequest.post(
@@ -933,29 +933,27 @@ def post_bulk_scan():
         criteria = session.get('recent_criteria', "Project")
         legends = get_legends(criteria)
         return render_template('bulk_scan.html',
-                                **build_login_variables(),
-                                stage = "Visualization",
-                                filename = filename,
-                                data = criteria,
-                                legends = legends,
-                                table = _compose_table(legends, criteria),
-                                status_options = STATUS_OPTIONS
+                               **build_login_variables(),
+                               stage="Visualization",
+                               filename=filename,
+                               data=criteria,
+                               legends=legends,
+                               table=_compose_table(legends, criteria),
+                               status_options=STATUS_OPTIONS
                                )
-            
-
 
 
 @app.route('/scan-bulk', methods=['GET', 'POST'])
 def bulk_scan():
     if request.method == 'GET':
         return render_template('bulk_scan.html',
-                                **build_login_variables(),
-                                stage = "Scanning",
-                                filename = "",
-                                data = "",
-                                legends = {},
-                                table = {},
-                                status_options = {}
+                               **build_login_variables(),
+                               stage="Scanning",
+                               filename="",
+                               data="",
+                               legends={},
+                               table={},
+                               status_options={}
                                )
 
     if request.method == 'POST':
