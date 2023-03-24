@@ -780,6 +780,7 @@ def _get_color_code():
     code = ["#"+''.join([random.choice(val) for i in range(6)])]
     return code[0]
 
+
 def _get_legends(criteria):
 
     dict = {}
@@ -878,14 +879,14 @@ def _visualize_scans():
     legends = _get_legends(criteria)
 
     return render_template('bulk_scan.html',
-                            **build_login_variables(),
-                            stage="Visualization",
-                            filename=filename,
-                            data=criteria,
-                            legends=legends,
-                            table=_compose_table(legends, criteria),
-                            status_options=STATUS_OPTIONS
-                            )
+                           **build_login_variables(),
+                           stage="Visualization",
+                           filename=filename,
+                           data=criteria,
+                           legends=legends,
+                           table=_compose_table(legends, criteria),
+                           status_options=STATUS_OPTIONS
+                           )
 
 
 def _get_barcode_rack(barcode):
@@ -931,14 +932,14 @@ def _post_bulk_scan_add():
     criteria = session.get('recent_criteria', "Project")
     legends = _get_legends(criteria)
     return render_template('bulk_scan.html',
-                            **build_login_variables(),
-                            stage="Visualization",
-                            filename=filename,
-                            data=criteria,
-                            legends=legends,
-                            table=_compose_table(legends, criteria),
-                            status_options=STATUS_OPTIONS
-                            )
+                           **build_login_variables(),
+                           stage="Visualization",
+                           filename=filename,
+                           data=criteria,
+                           legends=legends,
+                           table=_compose_table(legends, criteria),
+                           status_options=STATUS_OPTIONS
+                           )
 
 
 def _post_bulk_scan():
@@ -951,14 +952,14 @@ def _post_bulk_scan():
         session['scan_data'] = file_data
         session['scan_file'] = filename
         return render_template('bulk_scan.html',
-                                **build_login_variables(),
-                                stage="Visualization",
-                                filename=filename,
-                                data="",
-                                legends={},
-                                table={},
-                                status_options={}
-                                )
+                               **build_login_variables(),
+                               stage="Visualization",
+                               filename=filename,
+                               data="",
+                               legends={},
+                               table={},
+                               status_options={}
+                               )
 
 
 @app.route('/scan-bulk', methods=['GET', 'POST'])
