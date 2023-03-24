@@ -888,6 +888,20 @@ def _visualize_scans():
                             )
 
 
+def _get_barcode_rack(barcode):
+    data = session.get('scan_data')
+    obj = {}
+
+    for rec in data:
+        if rec[5] == barcode:
+            obj["rack_id"] = rec[6]
+            obj["location_col"] = str(int(rec[3]))
+            obj["location_row"] = rec[4]
+            return obj
+
+    return obj
+
+
 def _post_bulk_scan_add():
     send_email = request.form.get('send_email', False)
     session[SEND_EMAIL_CHECKBOX_DEFAULT_NAME] = send_email
@@ -904,6 +918,14 @@ def _post_bulk_scan_add():
             "technician_notes": technician_notes
         }
     )
+
+    if status == 201:
+        data = _get_barcode_rack(sample_barcode)
+        if bool(data):
+            status, response = APIRequest.post(
+                '/api/admin/rack/%s/add' % sample_barcode,
+                json=data
+            )
 
     filename = session.get('scan_file', "")
     criteria = session.get('recent_criteria', "Project")
@@ -941,6 +963,7 @@ def _post_bulk_scan():
 
 @app.route('/scan-bulk', methods=['GET', 'POST'])
 def bulk_scan():
+
     if request.method == 'GET':
         return render_template('bulk_scan.html',
                                **build_login_variables(),
