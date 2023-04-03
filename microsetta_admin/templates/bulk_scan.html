@@ -73,10 +73,6 @@
 
 </script>
 <style>
-    input[type=file]{
-        display: none;
-    }
-
     .legends{
         border: 2px solid black;
         border-collapse: collapse;
@@ -129,12 +125,10 @@
 <div>
     <form method="POST" action="/scan-bulk" enctype="multipart/form-data">
         <table>
-            <tr></tr>
-                <td><label for="txtfilePath">Import .csv: </label></td>
-                <td><input type="text" id="txtfilePath"></td>
+            <tr>
+                <td><label for="txtfilePath">Import .csv:     </label></td>
+                <td><input type="file" name="file_picker" id="file_picker" onchange="update_file()" accept=".csv" required></td>
                 <td>
-                    <input type="button" name="upload_btn" id="upload_btn" value="Browse Files" onclick="call_dialog()">
-                    <input type="file" name="file_picker" id="file_picker" onchange="update_file()" accept=".csv" required>
                     <input type="hidden" name="stage" value="Scanning">
                 </td>
             </tr>
@@ -159,8 +153,8 @@
                     <b>Sort By: </b>
                     <select name="sort_criteria">
                         <option value="Project">Sample Project</option>
-                        <option value="Status">Sample Status</option>
-                        <option value="Type">Sample Type</option>
+                        <option value="Sample Status">Sample Status</option>
+                        <option value="Sample Site">Sample Type</option>
                     </select>
                     <input type="hidden" name="stage" value="Visualization">
                     <input type="submit" name="submit" id="submit" value="View">

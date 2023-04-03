@@ -776,9 +776,15 @@ def scan():
 
 
 def _get_color_code():
-    val = '0123456789ABCDEF'
-    code = ["#"+''.join([random.choice(val) for i in range(6)])]
-    return code[0]
+    # val = '0123456789ABCDEF'
+    # code = ["#"+''.join([random.choice(val) for i in range(6)])]
+    codes = ["#C0C0C0", "#808080", "#800000", "#FF0000", "#800080", "#FF00FF",
+             "#008000", "#00FF00", "#FFd700", "#000080", "#0000FF", "#00FFFF",
+             "#FFE4C4", "#7FFFD4", "#DEB887", "#FF7F50", "#6495ED", "#FF8C00",
+             "#FF1493", "#00BFFF", "#1E90FF", "#DAA520", "#4B0082", "#F0E68C",
+             "#90EE90", "#778899", "#FFA500", "#BC8F8F", "#D8BFD8", "#DCDCDC"]    
+
+    return codes[random.randrange(0, len(codes)-1)]
 
 
 def _get_legends(criteria):
@@ -790,28 +796,23 @@ def _get_legends(criteria):
 
         if status == 200:
             for obj in fields:
-                if criteria == "Type" and obj["label"] == "Sample Site":
+                if obj["label"] == criteria:
                     for val in obj["values"]:
-                        color_code = _get_color_code()
-                        while color_code in dict:
+                        color_code = None
+                        if criteria == "Project" and not ('-' in obj["values"][val]):
                             color_code = _get_color_code()
-                        dict[obj["values"][val]] = color_code
+                        elif criteria == "Sample Status" or criteria == "Sample Site":
+                            color_code = _get_color_code()
 
-                if criteria == "Status" and obj["label"] == "Sample Status":
-                    for val in obj["values"]:
-                        color_code = _get_color_code()
-                        while color_code in dict:
-                            color_code = _get_color_code()
-                        tmp = obj["values"][val].replace(' ', '-').lower()
-                        dict[tmp] = color_code
-
-                if criteria == "Project" and obj["label"] == "Project":
-                    for val in obj["values"]:
-                        if not ('-' in obj["values"][val]):
-                            color_code = _get_color_code()
-                            while color_code in dict:
+                        if color_code is not None:
+                            while color_code in dict.values():
                                 color_code = _get_color_code()
-                            dict[obj["values"][val]] = color_code
+
+                            if criteria == "Sample Status":
+                                tmp = obj["values"][val].replace(' ', '-').lower()
+                                dict[tmp] = color_code
+                            else:
+                                dict[obj["values"][val]] = color_code
 
             if len(dict) > 0:
                 dict['None'] = "#000000"
@@ -838,9 +839,9 @@ def _compose_table(legends, type):
         status = data["sample"]["_latest_scan_status"]
         src = data["sample"]["site"]
 
-        if type == "Type":
+        if type == "Sample Site":
             val = data["sample"]["site"]
-        elif type == "Status":
+        elif type == "Sample Status":
             val = data["sample"]["_latest_scan_status"]
         elif type == "Project":
             val = data["sample"]["sample_projects"][0]
