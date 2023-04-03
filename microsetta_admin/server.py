@@ -782,7 +782,7 @@ def _get_color_code():
              "#008000", "#00FF00", "#FFd700", "#000080", "#0000FF", "#00FFFF",
              "#FFE4C4", "#7FFFD4", "#DEB887", "#FF7F50", "#6495ED", "#FF8C00",
              "#FF1493", "#00BFFF", "#1E90FF", "#DAA520", "#4B0082", "#F0E68C",
-             "#90EE90", "#778899", "#FFA500", "#BC8F8F", "#D8BFD8", "#DCDCDC"]    
+             "#90EE90", "#778899", "#FFA500", "#BC8F8F", "#D8BFD8", "#DCDCDC"]
 
     return codes[random.randrange(0, len(codes)-1)]
 
@@ -799,9 +799,10 @@ def _get_legends(criteria):
                 if obj["label"] == criteria:
                     for val in obj["values"]:
                         color_code = None
-                        if criteria == "Project" and not ('-' in obj["values"][val]):
-                            color_code = _get_color_code()
-                        elif criteria == "Sample Status" or criteria == "Sample Site":
+                        if criteria == "Project":
+                            if not ('-' in obj["values"][val]):
+                                color_code = _get_color_code()
+                        elif "Sample" in criteria:
                             color_code = _get_color_code()
 
                         if color_code is not None:
@@ -809,7 +810,8 @@ def _get_legends(criteria):
                                 color_code = _get_color_code()
 
                             if criteria == "Sample Status":
-                                tmp = obj["values"][val].replace(' ', '-').lower()
+                                tmp = obj["values"][val].replace(' ', '-')
+                                tmp = tmp.lower()
                                 dict[tmp] = color_code
                             else:
                                 dict[obj["values"][val]] = color_code
