@@ -803,7 +803,7 @@ def _get_legends(criteria):
         if status == 200:
             for obj in fields:
                 if obj["label"] == criteria:
-                    cnt = 0
+                    cnt = 1
                     for val in obj["values"]:
                         color_code = None
                         if criteria == "Project":
@@ -822,7 +822,7 @@ def _get_legends(criteria):
                                 dict[tmp] = color_code
                             else:
                                 dict[obj["values"][val]] = color_code
-                        cnt += 1
+                        cnt = cnt + 1
 
             dict['None'] = "#000000"
             session[criteria] = dict
