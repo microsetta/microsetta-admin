@@ -9,12 +9,6 @@
         document.getElementById('file_picker').click();
     }
 
-    function update_file()
-    {
-        var field = document.getElementById('txtfilePath');
-        field.value = document.getElementById('file_picker').value;
-    }
-
     function showSummary(event)
     {
         if(!clicked)
@@ -126,8 +120,8 @@
     <form method="POST" action="/scan-bulk" enctype="multipart/form-data">
         <table>
             <tr>
-                <td><label for="txtfilePath">Import .csv:     </label></td>
-                <td><input type="file" name="file_picker" id="file_picker" onchange="update_file()" accept=".csv" required></td>
+                <td><label for="file_picker">Import .csv:     </label></td>
+                <td><input type="file" name="file_picker" id="file_picker" accept=".csv" required></td>
                 <td>
                     <input type="hidden" name="stage" value="Scanning">
                 </td>

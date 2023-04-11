@@ -775,14 +775,18 @@ def scan():
                                       recorded_type)
 
 
-def _get_color_code():
-    # val = '0123456789ABCDEF'
-    # code = ["#"+''.join([random.choice(val) for i in range(6)])]
+def _get_color_code(cnt):
     codes = ["#C0C0C0", "#808080", "#800000", "#FF0000", "#800080", "#FF00FF",
              "#008000", "#00FF00", "#FFd700", "#000080", "#0000FF", "#00FFFF",
              "#FFE4C4", "#7FFFD4", "#DEB887", "#FF7F50", "#6495ED", "#FF8C00",
              "#FF1493", "#00BFFF", "#1E90FF", "#DAA520", "#4B0082", "#F0E68C",
              "#90EE90", "#778899", "#FFA500", "#BC8F8F", "#D8BFD8", "#DCDCDC"]
+
+    if cnt >= len(codes):
+        val = '0123456789ABCDEF'
+        code = [random.choice(val) for i in range(6)]
+        color_code = ['#' + ''.join(code)]
+        return color_code[0]
 
     return codes[random.randrange(0, len(codes)-1)]
 
@@ -790,24 +794,27 @@ def _get_color_code():
 def _get_legends(criteria):
 
     dict = {}
-    if criteria not in session:
+    curr_dict = session.get(criteria, None)
+
+    if curr_dict is None or len(curr_dict) == 1:
         status, fields = APIRequest.get(
             '/api/admin/barcode_query_fields')
 
         if status == 200:
             for obj in fields:
                 if obj["label"] == criteria:
+                    cnt = 0
                     for val in obj["values"]:
                         color_code = None
                         if criteria == "Project":
                             if not ('-' in obj["values"][val]):
-                                color_code = _get_color_code()
+                                color_code = _get_color_code(cnt)
                         elif "Sample" in criteria:
-                            color_code = _get_color_code()
+                            color_code = _get_color_code(cnt)
 
                         if color_code is not None:
                             while color_code in dict.values():
-                                color_code = _get_color_code()
+                                color_code = _get_color_code(cnt)
 
                             if criteria == "Sample Status":
                                 tmp = obj["values"][val].replace(' ', '-')
@@ -815,10 +822,10 @@ def _get_legends(criteria):
                                 dict[tmp] = color_code
                             else:
                                 dict[obj["values"][val]] = color_code
+                        cnt += 1
 
-            if len(dict) > 0:
-                dict['None'] = "#000000"
-                session[criteria] = dict
+            dict['None'] = "#000000"
+            session[criteria] = dict
     else:
         dict = session.get(criteria)
 
