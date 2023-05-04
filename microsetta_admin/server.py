@@ -3,7 +3,7 @@ from flask import render_template, Flask, request, session, send_file
 import secrets
 from datetime import datetime
 import io
-import random
+import random, math
 
 from jwt import PyJWTError
 from werkzeug.exceptions import BadRequest
@@ -839,51 +839,57 @@ def _compose_table(legends, type):
     current_cols = []
 
     for rec in scanned_data:
-        status, data = APIRequest.get(
-            '/api/admin/search/samples/%s' % rec[5]
+        
+        status, response = APIRequest.get(
+            '/api/admin/rack/sample/%s' % rec
         )
 
-        val = ""
-        proj = data["sample"]["sample_projects"][0]
-        status = data["sample"]["_latest_scan_status"]
-        src = data["sample"]["site"]
+        if status == 201:
+            status, data = APIRequest.get(
+                '/api/admin/search/samples/%s' % response['barcode']
+            )
 
-        if type == "Sample Site":
-            val = data["sample"]["site"]
-        elif type == "Sample Status":
-            val = data["sample"]["_latest_scan_status"]
-        elif type == "Project":
-            val = data["sample"]["sample_projects"][0]
+            val = ""
+            proj = data["sample"]["sample_projects"][0]
+            status = data["sample"]["_latest_scan_status"]
+            src = data["sample"]["site"]
 
-        if current_row == "":
-            current_row = rec[4]
-            if val is None or val == "":
-                tmp = legends['None']
-                current_cols.append([rec[5], tmp, proj, status, src])
+            if type == "Sample Site":
+                val = data["sample"]["site"]
+            elif type == "Sample Status":
+                val = data["sample"]["_latest_scan_status"]
+            elif type == "Project":
+                val = data["sample"]["sample_projects"][0]
+
+            if current_row == "":
+                current_row = response['location_row']
+                if val is None or val == "":
+                    tmp = legends['None']
+                    current_cols.append([response['barcode'], tmp, proj, status, src])
+                else:
+                    current_cols.append([response['barcode'], legends[val], proj, status, src])
+            elif current_row == response['location_row']:
+                if val is None:
+                    tmp = legends['None']
+                    current_cols.append([response['barcode'], tmp, proj, status, src])
+                else:
+                    current_cols.append([response['barcode'], legends[val], proj, status, src])
             else:
-                current_cols.append([rec[5], legends[val], proj, status, src])
-        elif current_row == rec[4]:
-            if val is None:
-                tmp = legends['None']
-                current_cols.append([rec[5], tmp, proj, status, src])
-            else:
-                current_cols.append([rec[5], legends[val], proj, status, src])
-        else:
-            output_dict[current_row] = current_cols
-            current_cols = []
-            current_row = rec[4]
-            if val is None:
-                tmp = legends['None']
-                current_cols.append([rec[5], tmp, proj, status, src])
-            else:
-                current_cols.append([rec[5], legends[val], proj, status, src])
+                output_dict[current_row] = current_cols
+                current_cols = []
+                current_row = response['location_row']
+                if val is None:
+                    tmp = legends['None']
+                    current_cols.append([response['barcode'], tmp, proj, status, src])
+                else:
+                    current_cols.append([response['barcode'], legends[val], proj, status, src])
 
     output_dict[current_row] = current_cols
     return output_dict
 
 
 def _visualize_scans():
-    filename = session.get('scan_file', "")
+    filename = request.form['scanned_file']
     criteria = request.form['sort_criteria']
     session['recent_criteria'] = criteria
     legends = _get_legends(criteria)
@@ -895,22 +901,9 @@ def _visualize_scans():
                            data=criteria,
                            legends=legends,
                            table=_compose_table(legends, criteria),
-                           status_options=STATUS_OPTIONS
+                           status_options=STATUS_OPTIONS,
+                           message=""
                            )
-
-
-def _get_barcode_rack(barcode):
-    data = session.get('scan_data')
-    obj = {}
-
-    for rec in data:
-        if rec[5] == barcode:
-            obj["rack_id"] = rec[6]
-            obj["location_col"] = str(int(rec[3]))
-            obj["location_row"] = rec[4]
-            return obj
-
-    return obj
 
 
 def _post_bulk_scan_add():
@@ -930,13 +923,11 @@ def _post_bulk_scan_add():
         }
     )
 
+    message = ""
     if status == 201:
-        data = _get_barcode_rack(sample_barcode)
-        if bool(data):
-            status, response = APIRequest.post(
-                '/api/admin/rack/%s/add' % sample_barcode,
-                json=data
-            )
+        message="Success: Sample scanned successfully!"
+    else:
+        message="Error: Unable to scan sample!"
 
     filename = session.get('scan_file', "")
     criteria = session.get('recent_criteria', "Project")
@@ -948,28 +939,56 @@ def _post_bulk_scan_add():
                            data=criteria,
                            legends=legends,
                            table=_compose_table(legends, criteria),
-                           status_options=STATUS_OPTIONS
+                           status_options=STATUS_OPTIONS,
+                           message=message
                            )
 
 
 def _post_bulk_scan():
     obj_file = request.files['file_picker']
+    sort_criteria = request.form['sort_criteria']
 
     if obj_file is not None:
         filename = obj_file.filename
-        ds = pd.read_csv(obj_file, dtype={'TubeCode': str})
+        ds = pd.read_csv(obj_file, dtype={'TubeCode': str, 'RackID': str})
         file_data = ds.values.tolist()
-        session['scan_data'] = file_data
-        session['scan_file'] = filename
+
+        scanned_samples = []
+        for rec in file_data:
+            status, response = APIRequest.get(
+                '/api/admin/rack/sample/%s' % rec[6],)
+            
+            if status == 404:
+                obj = {}
+                obj["rack_id"] = rec[6]
+                if math.isnan(rec[3]):
+                    obj['location_col'] = 'None'
+                else:
+                    obj["location_col"] = str(int(rec[3]))
+                if math.isnan(rec[4]):
+                    obj['location_row'] = 'None'
+                else:
+                    obj["location_row"] = rec[4]
+                sample_barcode = rec[5]
+                status, response = APIRequest.post(
+                    '/api/admin/rack/%s/add' % sample_barcode,
+                    json=obj
+                )
+            scanned_samples.append(rec[6])
+
+        legends = _get_legends(sort_criteria)
+        session['scan_data'] = scanned_samples
+
         return render_template('bulk_scan.html',
-                               **build_login_variables(),
-                               stage="Visualization",
-                               filename=filename,
-                               data="",
-                               legends={},
-                               table={},
-                               status_options={}
-                               )
+                           **build_login_variables(),
+                           stage="Visualization",
+                           filename=filename,
+                           data=sort_criteria,
+                           legends=legends,
+                           table=_compose_table(legends, sort_criteria),
+                           status_options=STATUS_OPTIONS,
+                           message=""
+                           )
 
 
 @app.route('/scan-bulk', methods=['GET', 'POST'])
@@ -983,7 +1002,8 @@ def bulk_scan():
                                data="",
                                legends={},
                                table={},
-                               status_options={}
+                               status_options={},
+                               message=""
                                )
 
     if request.method == 'POST':

@@ -110,6 +110,15 @@
         display: none;
     }
 
+    .statusBar{
+        text-align: center;
+    }
+
+    .statusBar > p{
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+
 </style>
 {% endblock %}
 {% block content %}
@@ -124,6 +133,16 @@
                 <td><input type="file" name="file_picker" id="file_picker" accept=".csv" required></td>
                 <td>
                     <input type="hidden" name="stage" value="Scanning">
+                </td>
+            </tr>
+            <tr>
+                <td><label for="sort_criteria">Sort By: </label></td>
+                <td>
+                    <select name="sort_criteria">
+                        <option value="Project">Sample Project</option>
+                        <option value="Sample Status">Sample Status</option>
+                        <option value="Sample Site">Sample Type</option>
+                    </select>
                 </td>
             </tr>
             <tr>
@@ -151,6 +170,7 @@
                         <option value="Sample Site">Sample Type</option>
                     </select>
                     <input type="hidden" name="stage" value="Visualization">
+                    <input type="hidden" name="scanned_file" value="{{filename}}">
                     <input type="submit" name="submit" id="submit" value="View">
                 </td>
             </tr>
@@ -193,7 +213,15 @@
             </tr>
         {% endfor %}
     </table>
-    
+    <br>
+    <div class="statusBar">
+        {% if 'Success' in message %}
+            <p style="color:green">{{ message }}</p>
+        {% endif %}
+        {% if 'Error' in message %}
+            <p style="color:red">{{ message }}</p>
+        {% endif %}
+    </div>
     
 </div>
 {% endif %}
