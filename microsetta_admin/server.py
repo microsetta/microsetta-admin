@@ -3,7 +3,8 @@ from flask import render_template, Flask, request, session, send_file
 import secrets
 from datetime import datetime
 import io
-import random, math
+import random
+import math
 
 from jwt import PyJWTError
 from werkzeug.exceptions import BadRequest
@@ -835,18 +836,19 @@ def _get_legends(criteria):
 def _compose_table(legends, type):
     output_dict = {}
     scanned_data = session.get('scan_data')
-    current_row = ""
-    current_cols = []
+    curr_row = ""
+    curr_cols = []
 
     for rec in scanned_data:
-        
+
         status, response = APIRequest.get(
             '/api/admin/rack/sample/%s' % rec
         )
+        code = response['barcode']
 
         if status == 201:
             status, data = APIRequest.get(
-                '/api/admin/search/samples/%s' % response['barcode']
+                '/api/admin/search/samples/%s' % code
             )
 
             val = ""
@@ -861,30 +863,30 @@ def _compose_table(legends, type):
             elif type == "Project":
                 val = data["sample"]["sample_projects"][0]
 
-            if current_row == "":
-                current_row = response['location_row']
+            if curr_row == "":
+                curr_row = response['location_row']
                 if val is None or val == "":
                     tmp = legends['None']
-                    current_cols.append([response['barcode'], tmp, proj, status, src])
+                    curr_cols.append([code, tmp, proj, status, src])
                 else:
-                    current_cols.append([response['barcode'], legends[val], proj, status, src])
-            elif current_row == response['location_row']:
+                    curr_cols.append([code, legends[val], proj, status, src])
+            elif curr_row == response['location_row']:
                 if val is None:
                     tmp = legends['None']
-                    current_cols.append([response['barcode'], tmp, proj, status, src])
+                    curr_cols.append([code, tmp, proj, status, src])
                 else:
-                    current_cols.append([response['barcode'], legends[val], proj, status, src])
+                    curr_cols.append([code, legends[val], proj, status, src])
             else:
-                output_dict[current_row] = current_cols
-                current_cols = []
-                current_row = response['location_row']
+                output_dict[curr_row] = curr_cols
+                curr_cols = []
+                curr_row = response['location_row']
                 if val is None:
                     tmp = legends['None']
-                    current_cols.append([response['barcode'], tmp, proj, status, src])
+                    curr_cols.append([code, tmp, proj, status, src])
                 else:
-                    current_cols.append([response['barcode'], legends[val], proj, status, src])
+                    curr_cols.append([code, legends[val], proj, status, src])
 
-    output_dict[current_row] = current_cols
+    output_dict[curr_row] = curr_cols
     return output_dict
 
 
@@ -925,9 +927,9 @@ def _post_bulk_scan_add():
 
     message = ""
     if status == 201:
-        message="Success: Sample scanned successfully!"
+        message = "Success: Sample scanned successfully!"
     else:
-        message="Error: Unable to scan sample!"
+        message = "Error: Unable to scan sample!"
 
     filename = session.get('scan_file', "")
     criteria = session.get('recent_criteria', "Project")
@@ -957,7 +959,7 @@ def _post_bulk_scan():
         for rec in file_data:
             status, response = APIRequest.get(
                 '/api/admin/rack/sample/%s' % rec[6],)
-            
+
             if status == 404:
                 obj = {}
                 obj["rack_id"] = rec[6]
@@ -980,15 +982,15 @@ def _post_bulk_scan():
         session['scan_data'] = scanned_samples
 
         return render_template('bulk_scan.html',
-                           **build_login_variables(),
-                           stage="Visualization",
-                           filename=filename,
-                           data=sort_criteria,
-                           legends=legends,
-                           table=_compose_table(legends, sort_criteria),
-                           status_options=STATUS_OPTIONS,
-                           message=""
-                           )
+                               **build_login_variables(),
+                               stage="Visualization",
+                               filename=filename,
+                               data=sort_criteria,
+                               legends=legends,
+                               table=_compose_table(legends, sort_criteria),
+                               status_options=STATUS_OPTIONS,
+                               message=""
+                               )
 
 
 @app.route('/scan-bulk', methods=['GET', 'POST'])
