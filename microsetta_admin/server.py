@@ -949,6 +949,7 @@ def _post_bulk_scan_add():
 def _post_bulk_scan():
     obj_file = request.files['file_picker']
     sort_criteria = request.form['sort_criteria']
+    error_msg = ""
 
     if obj_file is not None:
         filename = obj_file.filename
@@ -956,6 +957,7 @@ def _post_bulk_scan():
         file_data = ds.values.tolist()
 
         scanned_samples = []
+        rowCnt = 1
         for rec in file_data:
             status, response = APIRequest.get(
                 '/api/admin/rack/sample/%s' % rec[6],)
@@ -964,11 +966,13 @@ def _post_bulk_scan():
                 obj = {}
                 obj["rack_id"] = rec[6]
                 if math.isnan(rec[3]):
-                    obj['location_col'] = 'None'
+                    error_msg = "Error: Empty column in row number" + rowCnt
+                    break
                 else:
                     obj["location_col"] = str(int(rec[3]))
                 if math.isnan(rec[4]):
-                    obj['location_row'] = 'None'
+                    error_msg = "Error: Empty row in row number " + rowCnt
+                    break
                 else:
                     obj["location_row"] = rec[4]
                 sample_barcode = rec[5]
@@ -977,6 +981,7 @@ def _post_bulk_scan():
                     json=obj
                 )
             scanned_samples.append(rec[6])
+            rowCnt += 1
 
         legends = _get_legends(sort_criteria)
         session['scan_data'] = scanned_samples
@@ -989,7 +994,7 @@ def _post_bulk_scan():
                                legends=legends,
                                table=_compose_table(legends, sort_criteria),
                                status_options=STATUS_OPTIONS,
-                               message=""
+                               message=error_msg
                                )
 
 
