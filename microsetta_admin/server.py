@@ -956,7 +956,7 @@ def _post_bulk_scan():
         ds = pd.read_csv(obj_file, dtype={'TubeCode': str, 'RackID': str})
         ds['LocationRow'] = ds['LocationRow'].fillna('')
         file_data = ds.values.tolist()
-        print(str(file_data))
+
         scanned_samples = []
         rowCnt = 1
         for rec in file_data:
@@ -967,14 +967,12 @@ def _post_bulk_scan():
                 obj = {}
                 obj["rack_id"] = rec[6]
                 if math.isnan(rec[3]):
-                    error_msg = "Error: Empty column in row number" + str(rowCnt)
+                    error_msg = "Error: Empty column in row number "
+                    error_msg += str(rowCnt)
                     break
                 else:
                     obj["location_col"] = str(int(rec[3]))
 
-                #Since pandas is being used to read the entire csv file,
-                #missing value for row will be replaced with NaN.
-                #Check if value if missing for any rows 
                 if len(rec[4]) == 0:
                     error_msg = "Error: Empty row in row number " + str(rowCnt)
                     break
