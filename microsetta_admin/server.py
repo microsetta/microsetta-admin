@@ -950,7 +950,7 @@ def _post_bulk_scan_add():
 
 def _sample_exists_in_rack(sample_id, rack_samples):
     result = False
-    
+
     for sample in rack_samples:
         if sample_id == sample["barcode"]:
             result = True
@@ -975,7 +975,11 @@ def _post_bulk_scan():
             status, response = APIRequest.get(
                 '/api/admin/rack/sample/%s' % rec[6],)
 
-            if status == 404 or _sample_exists_in_rack(rec[5], response['result']) == False:
+            res = False
+            if status is not 404:
+                res = _sample_exists_in_rack(rec[5], response['result'])
+
+            if status == 404 or res is False:
                 obj = {}
                 obj["rack_id"] = rec[6]
                 if math.isnan(rec[3]):
@@ -995,7 +999,7 @@ def _post_bulk_scan():
                     '/api/admin/rack/%s/add' % sample_barcode,
                     json=obj
                 )
-            
+
             if rec[6] not in scanned_samples:
                 scanned_samples.append(rec[6])
             rowCnt += 1
