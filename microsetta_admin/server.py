@@ -976,7 +976,7 @@ def _post_bulk_scan():
                 '/api/admin/rack/sample/%s' % rec[6],)
 
             res = False
-            if status is not 404:
+            if status != 404:
                 res = _sample_exists_in_rack(rec[5], response['result'])
 
             if status == 404 or res is False:
