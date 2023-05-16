@@ -844,9 +844,11 @@ def _compose_table(legends, type):
         status, response = APIRequest.get(
             '/api/admin/rack/sample/%s' % rec
         )
-        code = response['barcode']
+        samples = response['result']
 
-        if status == 201:
+        for obj in samples:
+            code = obj['barcode']
+
             status, data = APIRequest.get(
                 '/api/admin/search/samples/%s' % code
             )
@@ -864,13 +866,13 @@ def _compose_table(legends, type):
                 val = data["sample"]["sample_projects"][0]
 
             if curr_row == "":
-                curr_row = response['location_row']
+                curr_row = obj['location_row']
                 if val is None or val == "":
                     tmp = legends['None']
                     curr_cols.append([code, tmp, proj, status, src])
                 else:
                     curr_cols.append([code, legends[val], proj, status, src])
-            elif curr_row == response['location_row']:
+            elif curr_row == obj['location_row']:
                 if val is None:
                     tmp = legends['None']
                     curr_cols.append([code, tmp, proj, status, src])
@@ -879,7 +881,7 @@ def _compose_table(legends, type):
             else:
                 output_dict[curr_row] = curr_cols
                 curr_cols = []
-                curr_row = response['location_row']
+                curr_row = obj['location_row']
                 if val is None:
                     tmp = legends['None']
                     curr_cols.append([code, tmp, proj, status, src])
@@ -946,6 +948,16 @@ def _post_bulk_scan_add():
                            )
 
 
+def _sample_exists_in_rack(sample_id, rack_samples):
+    result = False
+    
+    for sample in rack_samples:
+        if sample_id == sample["barcode"]:
+            result = True
+            break
+    return result
+
+
 def _post_bulk_scan():
     obj_file = request.files['file_picker']
     sort_criteria = request.form['sort_criteria']
@@ -963,7 +975,7 @@ def _post_bulk_scan():
             status, response = APIRequest.get(
                 '/api/admin/rack/sample/%s' % rec[6],)
 
-            if status == 404:
+            if status == 404 or _sample_exists_in_rack(rec[5], response['result']) == False:
                 obj = {}
                 obj["rack_id"] = rec[6]
                 if math.isnan(rec[3]):
@@ -983,7 +995,9 @@ def _post_bulk_scan():
                     '/api/admin/rack/%s/add' % sample_barcode,
                     json=obj
                 )
-            scanned_samples.append(rec[6])
+            
+            if rec[6] not in scanned_samples:
+                scanned_samples.append(rec[6])
             rowCnt += 1
 
         legends = _get_legends(sort_criteria)
