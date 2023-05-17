@@ -808,8 +808,7 @@ def _get_legends(criteria):
                     for val in obj["values"]:
                         color_code = None
                         if criteria == "Project":
-                            if not ('-' in obj["values"][val]):
-                                color_code = _get_color_code(cnt)
+                            color_code = _get_color_code(cnt)
                         elif "Sample" in criteria:
                             color_code = _get_color_code(cnt)
 
