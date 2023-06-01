@@ -5,6 +5,7 @@ from datetime import datetime
 import io
 import random
 import math
+import uuid
 
 from jwt import PyJWTError
 from werkzeug.exceptions import BadRequest
@@ -835,13 +836,14 @@ def _get_legends(criteria):
 def _compose_table(legends, type):
     output_dict = {}
     scanned_data = session.get('scan_data')
+    bulk_scan_id = session.get('bulk_scan_id', '')
     curr_row = ""
     curr_cols = []
 
     for rec in scanned_data:
 
         status, response = APIRequest.get(
-            '/api/admin/rack/sample/%s' % rec
+            '/api/admin/rack/%s/sample/%s' % (bulk_scan_id, rec)
         )
         samples = response['result']
 
@@ -947,20 +949,13 @@ def _post_bulk_scan_add():
                            )
 
 
-def _sample_exists_in_rack(sample_id, rack_samples):
-    result = False
-
-    for sample in rack_samples:
-        if sample_id == sample["barcode"]:
-            result = True
-            break
-    return result
-
-
 def _post_bulk_scan():
     obj_file = request.files['file_picker']
     sort_criteria = request.form['sort_criteria']
     error_msg = ""
+    scanned_samples = []
+    legends = _get_legends(sort_criteria)
+    bulk_scan_id = str(uuid.uuid4())
 
     if obj_file is not None:
         filename = obj_file.filename
@@ -968,47 +963,50 @@ def _post_bulk_scan():
         ds['LocationRow'] = ds['LocationRow'].fillna('')
         file_data = ds.values.tolist()
 
-        scanned_samples = []
-        rowCnt = 1
+        row_cnt = 1
         for rec in file_data:
-            status, response = APIRequest.get(
-                '/api/admin/rack/sample/%s' % rec[6],)
+            obj = {}
+            obj["rack_id"] = rec[6]
+            if math.isnan(rec[3]):
+                error_msg = "Error: Empty column in row number "
+                error_msg += str(row_cnt)
+                break
+            else:
+                obj["location_col"] = str(int(rec[3]))
 
-            res = False
-            if status != 404:
-                res = _sample_exists_in_rack(rec[5], response['result'])
-
-            if status == 404 or res is False:
-                obj = {}
-                obj["rack_id"] = rec[6]
-                if math.isnan(rec[3]):
-                    error_msg = "Error: Empty column in row number "
-                    error_msg += str(rowCnt)
-                    break
-                else:
-                    obj["location_col"] = str(int(rec[3]))
-
-                if len(rec[4]) == 0:
-                    error_msg = "Error: Empty row in row number " + str(rowCnt)
-                    break
-                else:
-                    obj["location_row"] = rec[4]
-                sample_barcode = rec[5]
-                status, response = APIRequest.post(
-                    '/api/admin/rack/%s/add' % sample_barcode,
-                    json=obj
-                )
+            if len(rec[4]) == 0:
+                error_msg = "Error: Empty row in row number " + str(row_cnt)
+                break
+            else:
+                obj["location_row"] = rec[4]
+            sample_barcode = rec[5]
+            obj['bulk_scan_id'] = bulk_scan_id
+            status, response = APIRequest.post(
+                '/api/admin/rack/%s/add' % sample_barcode,
+                json=obj
+            )
 
             if rec[6] not in scanned_samples:
                 scanned_samples.append(rec[6])
-            rowCnt += 1
+            row_cnt += 1
 
-        legends = _get_legends(sort_criteria)
         session['scan_data'] = scanned_samples
-
+        session['bulk_scan_id'] = bulk_scan_id
         return render_template('bulk_scan.html',
                                **build_login_variables(),
                                stage="Visualization",
+                               filename=filename,
+                               data=sort_criteria,
+                               legends=legends,
+                               table=_compose_table(legends, sort_criteria),
+                               status_options=STATUS_OPTIONS,
+                               message=error_msg
+                               )
+    else:
+        error_msg = "Invalid file type! Please check the file and try again."
+        return render_template('bulk_scan.html',
+                               **build_login_variables(),
+                               stage="Scanning",
                                filename=filename,
                                data=sort_criteria,
                                legends=legends,
