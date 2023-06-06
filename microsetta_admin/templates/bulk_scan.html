@@ -171,6 +171,7 @@
                     </select>
                     <input type="hidden" name="stage" value="Visualization">
                     <input type="hidden" name="scanned_file" value="{{filename}}">
+                    <input type="hidden" name="scanned_samples" value="{{samples}}">
                     <input type="submit" name="submit" id="submit" value="View">
                 </td>
             </tr>
@@ -233,6 +234,7 @@
         <input type="text" value="" hidden="hidden" name="sample_barcode" id="barcode_fld"><br>
         <input type="hidden" name="stage" value="Sample_Scan">
         <input type="hidden" name="recorded_type" id="recorded_type" value="'">
+        <input type="hidden" name="scanned_samples" value="{{samples}}">
         <input type="button" value="Notes" onclick="showNotesField()" id="btnNotes"><br>
         <textarea name="technician_notes" rows="3" cols="15" id="notesBox"></textarea><br>
         <input type="button" value="Add" id="btnAddNotes" onclick="hideNotesField()">

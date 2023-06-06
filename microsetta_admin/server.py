@@ -6,6 +6,7 @@ import io
 import random
 import math
 import uuid
+import json
 
 from jwt import PyJWTError
 from werkzeug.exceptions import BadRequest
@@ -833,9 +834,8 @@ def _get_legends(criteria):
     return dict
 
 
-def _compose_table(legends, type):
+def _compose_table(legends, type, scanned_data):
     output_dict = {}
-    scanned_data = session.get('scan_data')
     bulk_scan_id = session.get('bulk_scan_id', '')
     curr_row = ""
     curr_cols = []
@@ -896,6 +896,7 @@ def _compose_table(legends, type):
 def _visualize_scans():
     filename = request.form['scanned_file']
     criteria = request.form['sort_criteria']
+    samples = json.loads(request.form['scanned_samples'])
     session['recent_criteria'] = criteria
     legends = _get_legends(criteria)
 
@@ -905,9 +906,10 @@ def _visualize_scans():
                            filename=filename,
                            data=criteria,
                            legends=legends,
-                           table=_compose_table(legends, criteria),
+                           table=_compose_table(legends, criteria, samples),
                            status_options=STATUS_OPTIONS,
-                           message=""
+                           message="",
+                           samples=json.dumps(samples)
                            )
 
 
@@ -918,6 +920,7 @@ def _post_bulk_scan_add():
     sample_barcode = request.form['sample_barcode']
     technician_notes = request.form['technician_notes']
     sample_status = request.form['sample_status']
+    samples = json.loads(request.form['scanned_samples'])
 
     # Do the actual update
     status, response = APIRequest.post(
@@ -936,6 +939,7 @@ def _post_bulk_scan_add():
 
     filename = session.get('scan_file', "")
     criteria = session.get('recent_criteria', "Project")
+    sample_json = json.dumps(samples)
     legends = _get_legends(criteria)
     return render_template('bulk_scan.html',
                            **build_login_variables(),
@@ -943,9 +947,10 @@ def _post_bulk_scan_add():
                            filename=filename,
                            data=criteria,
                            legends=legends,
-                           table=_compose_table(legends, criteria),
+                           table=_compose_table(legends, criteria, samples),
                            status_options=STATUS_OPTIONS,
-                           message=message
+                           message=message,
+                           samples=sample_json
                            )
 
 
@@ -953,7 +958,7 @@ def _post_bulk_scan():
     obj_file = request.files['file_picker']
     sort_criteria = request.form['sort_criteria']
     error_msg = ""
-    scanned_samples = []
+    samples = []
     legends = _get_legends(sort_criteria)
     bulk_scan_id = str(uuid.uuid4())
 
@@ -986,11 +991,11 @@ def _post_bulk_scan():
                 json=obj
             )
 
-            if rec[6] not in scanned_samples:
-                scanned_samples.append(rec[6])
+            if rec[6] not in samples:
+                samples.append(rec[6])
             row_cnt += 1
 
-        session['scan_data'] = scanned_samples
+        samples_json = json.dumps(samples)
         session['bulk_scan_id'] = bulk_scan_id
         return render_template('bulk_scan.html',
                                **build_login_variables(),
@@ -998,9 +1003,10 @@ def _post_bulk_scan():
                                filename=filename,
                                data=sort_criteria,
                                legends=legends,
-                               table=_compose_table(legends, sort_criteria),
+                               table=_compose_table(legends, sort_criteria, samples),
                                status_options=STATUS_OPTIONS,
-                               message=error_msg
+                               message=error_msg,
+                               samples=samples_json
                                )
     else:
         error_msg = "Invalid file type! Please check the file and try again."
@@ -1012,7 +1018,8 @@ def _post_bulk_scan():
                                legends=legends,
                                table=_compose_table(legends, sort_criteria),
                                status_options=STATUS_OPTIONS,
-                               message=error_msg
+                               message=error_msg,
+                               samples=""
                                )
 
 
@@ -1028,7 +1035,8 @@ def bulk_scan():
                                legends={},
                                table={},
                                status_options={},
-                               message=""
+                               message="",
+                               samples=""
                                )
 
     if request.method == 'POST':
