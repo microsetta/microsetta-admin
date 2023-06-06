@@ -956,10 +956,10 @@ def _post_bulk_scan_add():
 
 def _post_bulk_scan():
     obj_file = request.files['file_picker']
-    sort_criteria = request.form['sort_criteria']
+    s_type = request.form['sort_criteria']
     error_msg = ""
     samples = []
-    legends = _get_legends(sort_criteria)
+    legends = _get_legends(s_type)
     bulk_scan_id = str(uuid.uuid4())
 
     if obj_file is not None:
@@ -1001,9 +1001,9 @@ def _post_bulk_scan():
                                **build_login_variables(),
                                stage="Visualization",
                                filename=filename,
-                               data=sort_criteria,
+                               data=s_type,
                                legends=legends,
-                               table=_compose_table(legends, sort_criteria, samples),
+                               table=_compose_table(legends, s_type, samples),
                                status_options=STATUS_OPTIONS,
                                message=error_msg,
                                samples=samples_json
@@ -1014,9 +1014,9 @@ def _post_bulk_scan():
                                **build_login_variables(),
                                stage="Scanning",
                                filename=filename,
-                               data=sort_criteria,
+                               data=s_type,
                                legends=legends,
-                               table=_compose_table(legends, sort_criteria),
+                               table=_compose_table(legends, s_type, samples),
                                status_options=STATUS_OPTIONS,
                                message=error_msg,
                                samples=""
