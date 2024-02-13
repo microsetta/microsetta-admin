@@ -376,9 +376,9 @@ def per_sample_summary():
 
                 resource = pd.DataFrame(result['samples'])
                 order = ['sampleid', 'project', 'account-email',
-                         'source-type', 'site-sampled',
-                         'sample-status', 'sample-received', 'ffq-taken',
-                         'ffq-complete', 'vioscreen_username']
+                         'source-type', 'site-sampled', 'sample-date',
+                         'sample-time', 'sample-status', 'sample-received',
+                         'ffq-taken', 'ffq-complete', 'vioscreen_username']
                 order.extend(sorted(set(resource.columns) - set(order)))
                 resource = resource[order]
                 if unprocessed_barcodes:
