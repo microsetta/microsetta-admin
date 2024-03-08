@@ -378,9 +378,9 @@ def per_sample_summary():
 
                 resource = pd.DataFrame(result['samples'])
                 order = ['sampleid', 'project', 'account-email',
-                         'source-email', 'source-type', 'site-sampled',
-                         'sample-status', 'sample-received', 'ffq-taken',
-                         'ffq-complete', 'vioscreen_username']
+                         'source-type', 'site-sampled', 'sample-date',
+                         'sample-time', 'sample-status', 'sample-received',
+                         'ffq-taken', 'ffq-complete', 'vioscreen_username']
                 order.extend(sorted(set(resource.columns) - set(order)))
                 resource = resource[order]
                 if unprocessed_barcodes:
@@ -434,10 +434,10 @@ def per_sample_summary():
         else:
             unprocessed_barcodes = None
         resource = pd.DataFrame(result['samples'])
-        order = ['sampleid', 'project', 'account-email', 'source-email',
-                 'source-type', 'site-sampled', 'sample-status',
-                 'sample-received', 'ffq-taken', 'ffq-complete',
-                 'vioscreen_username']
+        order = ['sampleid', 'project', 'account-email',
+                 'source-type', 'site-sampled', 'sample-date',
+                 'sample-time', 'sample-status', 'sample-received',
+                 'ffq-taken', 'ffq-complete', 'vioscreen_username']
         order.extend(sorted(set(resource.columns) - set(order)))
         resource = resource[order]
 
@@ -474,7 +474,7 @@ def _get_by_sample_barcode(sample_barcodes, strip_sampleid, projects):
             unprocessed_barcodes = None
 
         resource = pd.DataFrame(result['samples'])
-        order = ['sampleid', 'project', 'account-email', 'source-email',
+        order = ['sampleid', 'project', 'account-email',
                  'source-type', 'site-sampled', 'sample-status',
                  'sample-received', 'ffq-taken', 'ffq-complete',
                  'vioscreen_username']
