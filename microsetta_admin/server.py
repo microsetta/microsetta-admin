@@ -518,11 +518,31 @@ def new_kits():
         num_samples = int(request.form['num_samples'])
         prefix = request.form['prefix']
         selected_project_ids = request.form.getlist('project_ids')
+
+        barcodes = []
+
+        barcode_file = request.files.get('upload_csv')
+
+        if barcode_file:
+            barcode_file = barcode_file.read().decode('utf-8')
+            barcodes = [line.split(',')[0].strip('\ufeff\r')
+                        for line in barcode_file.split('\n')
+                        if line.strip()]
+        else:
+            # Process text input
+            for i in range(1, num_samples + 1):
+                barcode = request.form.get(f'barcode_{i}')
+                if barcode:
+                    barcodes.append(barcode)
+
         payload = {'number_of_kits': num_kits,
                    'number_of_samples': num_samples,
                    'project_ids': selected_project_ids}
+
         if prefix:
             payload['kit_id_prefix'] = prefix
+        if barcodes:
+            payload['user_barcodes'] = barcodes
 
         status, result = APIRequest.post(
                 '/api/admin/create/kits',
