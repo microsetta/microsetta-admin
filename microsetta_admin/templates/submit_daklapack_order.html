@@ -144,7 +144,29 @@
 {{ error_message }}
 {% endautoescape %}
 
-{% elif success_submissions or failure_submissions %}
+{% elif success_submissions or failure_submissions or hold_submission_addresses %}
+    {%  if hold_submission_addresses|length > 0 %}
+<p>
+The following addresses are incomplete and NOT submitted to Daklapack.
+Please fill in all fields except for `insertion` and `address2`, then re-submit.
+</p>
+<table border="1">
+    <thead>
+        <tr>
+            <th>Address</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for curr_address in hold_submission_addresses %}
+        <tr>
+            <td>{{ curr_address }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<br>
+    {% endif %}
+
     {%  if failure_submissions|length > 0 %}
 <p>
 The following orders were NOT successfully submitted to Daklapack.
@@ -168,6 +190,7 @@ Please correct any errors and then re-submit.
     {% endfor %}
     </tbody>
 </table>
+<br>
     {% endif %}
 
     {%  if success_submissions|length > 0 %}

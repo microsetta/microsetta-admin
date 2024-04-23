@@ -921,12 +921,27 @@ def post_submit_daklapack_order():
                             f"not match expected column names"
                             f" {expected_headers}")
 
+    # disregard empty rows
+    addresses_df = addresses_df.dropna(how='all').copy()  
+
     # add (same) contact phone number to every address
     addresses_df['phone'] = phone_number
 
-    addresses_df = addresses_df.fillna("")
-    temp_dict = addresses_df.to_dict(orient='index')
-    addresses_list = [temp_dict[n] for n in range(len(temp_dict))]
+    # validate spreadsheet rows
+    empty_field_criteria = (
+        addresses_df
+        .drop(columns=['insertion', 'address2'])
+        .isna()
+        .any(axis=1)
+    )
+    hold_submission_addresses = (
+        addresses_df[empty_field_criteria]
+        .to_dict(orient='records')
+    )
+
+    # prepare addresses for submission
+    addresses_df = addresses_df[~empty_field_criteria].fillna("")
+    addresses_list = addresses_df.to_dict(orient='records')
 
     status, post_output = APIRequest.post(
         '/api/admin/daklapack_orders',
@@ -959,7 +974,8 @@ def post_submit_daklapack_order():
                            **build_login_variables(),
                            error_message=error_message,
                            success_submissions=success_submissions,
-                           failure_submissions=failure_submissions)
+                           failure_submissions=failure_submissions,
+                           hold_submission_addresses=hold_submission_addresses)
 
 
 @app.route('/authrocket_callback')
