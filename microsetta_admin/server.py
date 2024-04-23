@@ -922,7 +922,7 @@ def post_submit_daklapack_order():
                             f" {expected_headers}")
 
     # disregard empty rows
-    addresses_df = addresses_df.dropna(how='all').copy()  
+    addresses_df = addresses_df.dropna(how='all').copy()
 
     # add (same) contact phone number to every address
     addresses_df['phone'] = phone_number
