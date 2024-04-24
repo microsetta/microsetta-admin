@@ -144,22 +144,25 @@
 {{ error_message }}
 {% endautoescape %}
 
-{% elif success_submissions or failure_submissions or hold_submission_addresses %}
-    {%  if hold_submission_addresses|length > 0 %}
+{% elif success_submissions or failure_submissions or hold_submissions_list %}
+    {%  if hold_submissions_list|length > 0 %}
 <p>
 The following addresses are incomplete and NOT submitted to Daklapack.
+The required fields missing are displayed below.
 Please fill in all fields except for `insertion` and `address2`, then re-submit.
 </p>
 <table border="1">
     <thead>
         <tr>
+            <th>Required Field(s) Missing</th>
             <th>Address</th>
         </tr>
     </thead>
     <tbody>
-    {% for curr_address in hold_submission_addresses %}
+    {% for hold_submission in hold_submissions_list %}
         <tr>
-            <td>{{ curr_address }}</td>
+            <td>{{ hold_submission['missing_columns'] }}</td>
+            <td>{{ hold_submission['address_dict'] }}</td>
         </tr>
     {% endfor %}
     </tbody>
