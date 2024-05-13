@@ -629,7 +629,8 @@ def _scan_get(sample_barcode, update_error):
             update_error=update_error,
             received_type_dropdown=RECEIVED_TYPE_DROPDOWN,
             source=result['source'],
-            events=events
+            events=events,
+            observations=result['observations']
         )
     elif status == 401:
         # If we fail due to unauthorized, need the user to log in again
@@ -655,7 +656,8 @@ def _scan_post_update_info(sample_barcode,
                            issue_type,
                            template,
                            received_type,
-                           recorded_type):
+                           recorded_type,
+                           observations):
 
     ###
     # Bugfix Part 1 for duplicate emails being sent.  Theory is that client is
@@ -673,13 +675,13 @@ def _scan_post_update_info(sample_barcode,
     if result['latest_scan']:
         latest_status = result['latest_scan']['sample_status']
     ###
-
     # Do the actual update
     status, response = APIRequest.post(
         '/api/admin/scan/%s' % sample_barcode,
         json={
             "sample_status": sample_status,
-            "technician_notes": technician_notes
+            "technician_notes": technician_notes,
+            "observations": observations
         }
     )
 
@@ -763,6 +765,7 @@ def scan():
         template = request.form.get('template')
         received_type = request.form.get('received_type')
         recorded_type = request.form.get('recorded_type')
+        observations = request.form.getlist('observations')
 
         return _scan_post_update_info(sample_barcode,
                                       technician_notes,
@@ -771,7 +774,8 @@ def scan():
                                       issue_type,
                                       template,
                                       received_type,
-                                      recorded_type)
+                                      recorded_type,
+                                      observations)
 
 
 @app.route('/metadata_pulldown', methods=['GET', 'POST'])

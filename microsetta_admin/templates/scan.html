@@ -247,6 +247,7 @@ table
                                 <th class="bordered">Scan Timestamp</th>
                                 <th class="bordered">Sample Status</th>
                                 <th class="bordered">Technician Notes</th>
+                                <th class="bordered">Observations</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -255,6 +256,7 @@ table
                                 <td class="bordered">{{ format_timestamp(scan['scan_timestamp']) }}</td>
                                 <td class="bordered">{{ scan['sample_status'] }}</td>
                                 <td class="bordered">{{ scan['technician_notes'] }}</td>
+                                <td class="bordered">{{ scan['observations'] }}</td>
                             </tr>
                         {% endfor %}
                         </tbody>
@@ -305,6 +307,39 @@ table
                 </td>
             </tr>
             <!-- End collapsible email template fields -->
+            <tr>
+                <td>Sample Observations:</td>
+            <td>
+                <b>Tube </b>
+                <br>
+                {% for observation in observations %}
+                    {% if observation.category == 'Tube' %}
+                        <input type="checkbox" id="{{ observation.error }}" name="observations" value="{{ observation.error }}">
+                        <label for="{{ observation.error }}">{{ observation.error }}</label><br>
+                    {% endif %}
+                {% endfor %}
+                
+                <b>Swab </b>
+                <br>
+                {% for observation in observations %}
+                    {% if observation.category == 'Swab' %}
+                        <input type="checkbox" id="{{ observation.error }}" name="observations" value="{{ observation.error }}">
+                        <label for="{{ observation.error }}">{{ observation.error }}</label><br>
+                    {% endif %}
+                {% endfor %}
+                
+                <b>Sample </b>
+                <br>
+                {% for observation in observations %}
+                    {% if observation.category == 'Sample' %}
+                        <input type="checkbox" id="{{ observation.error }}" name="observations" value="{{ observation.error }}">
+                        <label for="{{ observation.error }}">{{ observation.error }}</label><br>
+                    {% endif %}
+                {% endfor %}
+            </td>
+
+            </tr>
+            
             <tr>
                 <td>Technician Notes: </td>
                 <td>
