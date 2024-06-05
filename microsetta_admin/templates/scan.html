@@ -251,14 +251,18 @@ table
                             </tr>
                         </thead>
                         <tbody>
-                        {% for scan in scans_info %}
-                            <tr>
-                                <td class="bordered">{{ format_timestamp(scan['scan_timestamp']) }}</td>
-                                <td class="bordered">{{ scan['sample_status'] }}</td>
-                                <td class="bordered">{{ scan['technician_notes'] }}</td>
-                                <td class="bordered">{{ scan['observations'] }}</td>
-                            </tr>
-                        {% endfor %}
+                            {% for scan in scans_info %}
+                                <tr>
+                                    <td class="bordered">{{ format_timestamp(scan['scan_timestamp']) }}</td>
+                                    <td class="bordered">{{ scan['sample_status'] }}</td>
+                                    <td class="bordered">{{ scan['technician_notes'] }}</td>
+                                    <td class="bordered">
+                                        {% for observation in scan['observations'] %}
+                                            {{ observation }}{% if not loop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                     {% else %}
@@ -307,39 +311,23 @@ table
                 </td>
             </tr>
             <!-- End collapsible email template fields -->
-            <tr>
-                <td>Sample Observations:</td>
-            <td>
-                <b>Tube </b>
-                <br>
-                {% for observation in observations %}
-                    {% if observation.category == 'Tube' %}
-                        <input type="checkbox" id="{{ observation.error }}" name="observations" value="{{ observation.error }}">
-                        <label for="{{ observation.error }}">{{ observation.error }}</label><br>
-                    {% endif %}
-                {% endfor %}
-                
-                <b>Swab </b>
-                <br>
-                {% for observation in observations %}
-                    {% if observation.category == 'Swab' %}
-                        <input type="checkbox" id="{{ observation.error }}" name="observations" value="{{ observation.error }}">
-                        <label for="{{ observation.error }}">{{ observation.error }}</label><br>
-                    {% endif %}
-                {% endfor %}
-                
-                <b>Sample </b>
-                <br>
-                {% for observation in observations %}
-                    {% if observation.category == 'Sample' %}
-                        <input type="checkbox" id="{{ observation.error }}" name="observations" value="{{ observation.error }}">
-                        <label for="{{ observation.error }}">{{ observation.error }}</label><br>
-                    {% endif %}
-                {% endfor %}
-            </td>
+            {% for proj_info in projects_info %}
+                <tr>
+                    <td>Sample Observations:</td>
+                    <td>
+                        {% set unique_categories = observations | selectattr('project_id', 'equalto', proj_info.project_id) | map(attribute='category') | unique %}
+                        {% for category in unique_categories %}
+                            <b>{{ category }}</b><br>
+                            {% for observation in observations if observation.project_id == proj_info.project_id and observation.category == category %}
+                                <input type="checkbox" id="{{ observation.observation }}" name="observations" value="{{ observation.observation }}">
+                                <label for="{{ observation.observation }}">{{ observation.observation }}</label><br>
+                            {% endfor %}
+                            <br>
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endfor %}
 
-            </tr>
-            
             <tr>
                 <td>Technician Notes: </td>
                 <td>
