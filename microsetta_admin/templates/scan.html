@@ -256,11 +256,7 @@ table
                                     <td class="bordered">{{ format_timestamp(scan['scan_timestamp']) }}</td>
                                     <td class="bordered">{{ scan['sample_status'] }}</td>
                                     <td class="bordered">{{ scan['technician_notes'] }}</td>
-                                    <td class="bordered">
-                                        {% for observation in scan['observations'] %}
-                                            {{ observation }}{% if not loop.last %}, {% endif %}
-                                        {% endfor %}
-                                    </td>
+                                    <td class="bordered">{{ scan['observations'] }}</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -311,22 +307,22 @@ table
                 </td>
             </tr>
             <!-- End collapsible email template fields -->
-            {% for proj_info in projects_info %}
+            {% if observations %}
                 <tr>
-                    <td>Sample Observations:</td>
+                    <td>Observations:</td>
                     <td>
-                        {% set unique_categories = observations | selectattr('project_id', 'equalto', proj_info.project_id) | map(attribute='category') | unique %}
+                        {% set unique_categories = observations.observation | map(attribute='category') | unique %}
                         {% for category in unique_categories %}
                             <b>{{ category }}</b><br>
-                            {% for observation in observations if observation.project_id == proj_info.project_id and observation.category == category %}
-                                <input type="checkbox" id="{{ observation.observation }}" name="observations" value="{{ observation.observation }}">
-                                <label for="{{ observation.observation }}">{{ observation.observation }}</label><br>
+                            {% for observation in observations.observation if observation.category == category %}
+                                <input type="checkbox" id="{{ observation.observation_id }}" name="observation_id" value="{{ observation.observation_id }}">
+                                <label for="{{ observation.observation_id }}">{{ observation.observation }}</label><br>
                             {% endfor %}
                             <br>
                         {% endfor %}
                     </td>
                 </tr>
-            {% endfor %}
+            {% endif %}
 
             <tr>
                 <td>Technician Notes: </td>
