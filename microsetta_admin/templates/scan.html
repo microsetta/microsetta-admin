@@ -256,7 +256,11 @@ table
                                     <td class="bordered">{{ format_timestamp(scan['scan_timestamp']) }}</td>
                                     <td class="bordered">{{ scan['sample_status'] }}</td>
                                     <td class="bordered">{{ scan['technician_notes'] }}</td>
-                                    <td class="bordered">{{ scan['observations'] }}</td>
+                                    <td class="bordered"> 
+                                        {% for observation in scan['observations'] %}
+                                            {{ observation }}{% if not loop.last %},{% endif %}
+                                        {% endfor %}
+
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -306,19 +310,16 @@ table
                     </select>
                 </td>
             </tr>
+            {{observations}}
             <!-- End collapsible email template fields -->
             {% if observations %}
                 <tr>
                     <td>Observations:</td>
                     <td>
-                        {% set unique_categories = observations.observation | map(attribute='category') | unique %}
-                        {% for category in unique_categories %}
-                            <b>{{ category }}</b><br>
-                            {% for observation in observations.observation if observation.category == category %}
-                                <input type="checkbox" id="{{ observation.observation_id }}" name="observation_id" value="{{ observation.observation_id }}">
-                                <label for="{{ observation.observation_id }}">{{ observation.observation }}</label><br>
-                            {% endfor %}
-                            <br>
+                        {% for observation in observations %}
+                            <b>{{ observation['category'] }}</b><br>
+                            <input type="checkbox" id="{{ observation['observation_id'] }}" name="observation_id" value="{{ observation['observation_id'] }}">
+                            <label for="{{ observation['observation_id'] }}">{{ observation['observation'] }}</label><br>
                         {% endfor %}
                     </td>
                 </tr>

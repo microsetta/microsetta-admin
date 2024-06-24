@@ -578,6 +578,21 @@ def _check_sample_status(extended_barcode_info):
     return warning
 
 
+def group_observations(scans_info):
+    grouped_scans = {}
+    for scan in scans_info:
+        scan_id = scan['barcode_scan_id']
+        if scan_id not in grouped_scans:
+            grouped_scans[scan_id] = {
+                'scan_timestamp': scan['scan_timestamp'],
+                'sample_status': scan['sample_status'],
+                'technician_notes': scan['technician_notes'],
+                'observations': []
+            }
+        grouped_scans[scan_id]['observations'].append(scan['observations'])
+    return list(grouped_scans.values())
+
+
 # Set up handlers for the cases,
 #   GET to view the page,
 #   POST to update info for a barcode -AND (possibly)-
@@ -613,12 +628,14 @@ def _scan_get(sample_barcode, update_error, observations):
 
             events = event_result
 
+        scans_info = group_observations(result['scans_info'])
+
         return render_template(
             'scan.html',
             **build_login_variables(),
             barcode_info=result["barcode_info"],
             projects_info=result['projects_info'],
-            scans_info=result['scans_info'],
+            scans_info=scans_info,
             latest_status=latest_status,
             dummy_status=DUMMY_SELECT_TEXT,
             status_options=STATUS_OPTIONS,
@@ -753,8 +770,9 @@ def scan():
     # form parameters
     if request.method == 'GET':
         sample_barcode = request.args.get('sample_barcode')
-        observations = get_observations(sample_barcode)
-        update_error = None
+        if sample_barcode is not None:
+            observations = get_observations(sample_barcode)
+            update_error = None
 
         return _scan_get(sample_barcode, update_error, observations)
 
