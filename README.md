@@ -10,4 +10,4 @@ conda activate test-microsetta-admin
 before make test, add:
 conda install -c conda-forge nodejs
 
-make test
+make test 
