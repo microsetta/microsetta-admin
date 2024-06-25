@@ -770,9 +770,12 @@ def scan():
     # form parameters
     if request.method == 'GET':
         sample_barcode = request.args.get('sample_barcode')
+        update_error = None
+
         if sample_barcode is not None:
             observations = get_observations(sample_barcode)
-            update_error = None
+        else:
+            observations = None
 
         return _scan_get(sample_barcode, update_error, observations)
 
