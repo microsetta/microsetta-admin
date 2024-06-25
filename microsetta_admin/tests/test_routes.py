@@ -360,14 +360,13 @@ class RouteTests(TestBase):
         self.mock_post.return_value = DummyResponse(201, {})
 
         response = self.app.post('/add_barcode_to_kit',
-                                 data={'project_id': '1',
-                                       'num_kits': '1',
-                                       'kit_id': 'FBGBs',
-                                       'num_samples': '1',
-                                       'user_barcode': 'X11204416'},
+                                 data={'kit_ids': 'FBGBs',
+                                       'user_barcode': 'X64406585',
+                                       'generate_barcode_single': 'off',
+                                       'add_single_barcode': 'Add Barcode'},
                                  follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'You added X11204416 to Kit ID FBGBs', response.data)
+        self.assertIn(b'You added X64406585 to Kit ID FBGBs', response.data)
 
     def test_create_insert_barcode_from_csv(self):
         self.mock_post.return_value = DummyResponse(201, {})
@@ -378,10 +377,7 @@ class RouteTests(TestBase):
 
         with open(temp_file.name, 'rb') as f:
             response = self.app.post('/add_barcode_to_kit',
-                                     data={'project_id': '1',
-                                           'num_kits': '1',
-                                           'kit_id': 'FBGBs',
-                                           'num_samples': '3',
+                                     data={'kit_id': 'FBGBs',
                                            'user_barcode': 'X11204416',
                                            'upload_csv': (f, 'test.csv')},
                                      follow_redirects=True)
