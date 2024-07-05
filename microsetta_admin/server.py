@@ -589,7 +589,10 @@ def group_observations(scans_info):
                 'technician_notes': scan['technician_notes'],
                 'observations': []
             }
-        grouped_scans[scan_id]['observations'].append(scan['observations'])
+        grouped_scans[scan_id]['observations'].append({
+            'category': scan['category'],
+            'observation': scan['observations']
+        })
     return list(grouped_scans.values())
 
 

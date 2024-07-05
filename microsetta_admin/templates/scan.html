@@ -258,9 +258,12 @@ table
                                     <td class="bordered">{{ scan['technician_notes'] }}</td>
                                     <td class="bordered"> 
                                         {% for observation in scan['observations'] %}
-                                            {{ observation }}{% if not loop.last %},{% endif %}
+                                            {% if observation['category'] %}
+                                                {{ observation['category'] }}: {{ observation['observation'] }}{% if not loop.last %}, {% endif %}
+                                            {% else %}
+                                                {{ observation['observation'] }}
+                                            {% endif %}
                                         {% endfor %}
-
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -315,10 +318,13 @@ table
                 <tr>
                     <td>Observations:</td>
                     <td>
-                        {% for observation in observations %}
-                            <b>{{ observation['category'] }}</b><br>
-                            <input type="checkbox" id="{{ observation['observation_id'] }}" name="observation_id" value="{{ observation['observation_id'] }}">
-                            <label for="{{ observation['observation_id'] }}">{{ observation['observation'] }}</label><br>
+                        {% set categories = observations|map(attribute='category')|unique %}
+                        {% for category in categories %}
+                            <b>{{ category }}</b><br>
+                            {% for observation in observations if observation['category'] == category %}
+                                <input type="checkbox" id="{{ observation['observation_id'] }}" name="observation_id" value="{{ observation['observation_id'] }}">
+                                <label for="{{ observation['observation_id'] }}">{{ observation['observation'] }}</label><br>
+                            {% endfor %}
                         {% endfor %}
                     </td>
                 </tr>
