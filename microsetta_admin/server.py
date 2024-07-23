@@ -587,12 +587,8 @@ def group_observations(scans_info):
                 'scan_timestamp': scan['scan_timestamp'],
                 'sample_status': scan['sample_status'],
                 'technician_notes': scan['technician_notes'],
-                'observations': []
+                'observations': scan['observations']
             }
-        grouped_scans[scan_id]['observations'].append({
-            'category': scan['category'],
-            'observation': scan['observations']
-        })
     return list(grouped_scans.values())
 
 
