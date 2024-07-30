@@ -1,5 +1,5 @@
 import jwt
-from flask import render_template, Flask, request, session, send_file
+from flask import render_template, Flask, request, session, send_file, url_for
 import secrets
 from datetime import datetime
 import io
@@ -582,10 +582,10 @@ def _check_sample_status(extended_barcode_info):
 #   GET to view the page,
 #   POST to update info for a barcode -AND (possibly)-
 #        email end user about the change in sample status,
-def _scan_get(sample_barcode, update_error):
+def _scan_get(sample_barcode, update_error, observations):
     # If there is no sample_barcode in the GET
     # they still need to enter one in the box, so show empty page
-    if sample_barcode is None:
+    if sample_barcode is None and observations is None:
         return render_template('scan.html', **build_login_variables())
 
     # Assuming there is a sample barcode, grab that sample's information
@@ -629,7 +629,8 @@ def _scan_get(sample_barcode, update_error):
             update_error=update_error,
             received_type_dropdown=RECEIVED_TYPE_DROPDOWN,
             source=result['source'],
-            events=events
+            events=events,
+            observations=observations
         )
     elif status == 401:
         # If we fail due to unauthorized, need the user to log in again
@@ -655,7 +656,8 @@ def _scan_post_update_info(sample_barcode,
                            issue_type,
                            template,
                            received_type,
-                           recorded_type):
+                           recorded_type,
+                           observations):
 
     ###
     # Bugfix Part 1 for duplicate emails being sent.  Theory is that client is
@@ -673,26 +675,26 @@ def _scan_post_update_info(sample_barcode,
     if result['latest_scan']:
         latest_status = result['latest_scan']['sample_status']
     ###
-
     # Do the actual update
     status, response = APIRequest.post(
         '/api/admin/scan/%s' % sample_barcode,
         json={
             "sample_status": sample_status,
-            "technician_notes": technician_notes
+            "technician_notes": technician_notes,
+            "observations": observations
         }
     )
 
     # if the update failed, keep track of the error so it can be displayed
     if status != 201:
         update_error = response
-        return _scan_get(sample_barcode, update_error)
+        return _scan_get(sample_barcode, update_error, observations)
     else:
         update_error = None
 
     # If we're not supposed to send an email, go back to GET
     if action != "send_email":
-        return _scan_get(sample_barcode, update_error)
+        return _scan_get(sample_barcode, update_error, observations)
 
     ###
     # Bugfix Part 2 for duplicate emails being sent.
@@ -702,7 +704,7 @@ def _scan_post_update_info(sample_barcode,
         update_error = "Ignoring Send Email, sample_status would " \
                        "not have been updated (Displayed page was out of " \
                        "sync)"
-        return _scan_get(sample_barcode, update_error)
+        return _scan_get(sample_barcode, update_error, observations)
     ###
 
     # This is what we'll hit if there are no email templates to send for
@@ -710,7 +712,7 @@ def _scan_post_update_info(sample_barcode,
     if template is None:
         update_error = "Cannot Send Email: No Issue Type Specified " \
                        "(or no issue types available)"
-        return _scan_get(sample_barcode, update_error)
+        return _scan_get(sample_barcode, update_error, observations)
 
     # Otherwise, send out an email to the end user
     status, response = APIRequest.post(
@@ -733,7 +735,13 @@ def _scan_post_update_info(sample_barcode,
     else:
         update_error = None
 
-    return _scan_get(sample_barcode, update_error)
+    return _scan_get(sample_barcode, update_error, observations)
+
+
+def get_observations(sample_barcode):
+    status, result = APIRequest.get('/api/admin/scan/observations/%s'
+                                    % sample_barcode)
+    return result
 
 
 @app.route('/scan', methods=['GET', 'POST'])
@@ -745,7 +753,14 @@ def scan():
     # form parameters
     if request.method == 'GET':
         sample_barcode = request.args.get('sample_barcode')
-        return _scan_get(sample_barcode, None)
+        update_error = None
+
+        if sample_barcode is not None:
+            observations = get_observations(sample_barcode)
+        else:
+            observations = None
+
+        return _scan_get(sample_barcode, update_error, observations)
 
     # If its a post, make the changes, then refresh the page
     if request.method == 'POST':
@@ -763,15 +778,18 @@ def scan():
         template = request.form.get('template')
         received_type = request.form.get('received_type')
         recorded_type = request.form.get('recorded_type')
+        observations = request.form.getlist('observation_id')
 
-        return _scan_post_update_info(sample_barcode,
-                                      technician_notes,
-                                      sample_status,
-                                      action,
-                                      issue_type,
-                                      template,
-                                      received_type,
-                                      recorded_type)
+        _scan_post_update_info(sample_barcode,
+                               technician_notes,
+                               sample_status,
+                               action,
+                               issue_type,
+                               template,
+                               received_type,
+                               recorded_type,
+                               observations)
+        return redirect(url_for('scan', sample_barcode=sample_barcode))
 
 
 @app.route('/metadata_pulldown', methods=['GET', 'POST'])
