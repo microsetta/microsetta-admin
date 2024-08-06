@@ -516,6 +516,9 @@ def new_kits():
     elif request.method == 'POST':
         prefix = request.form['prefix']
         selected_project_ids = request.form.getlist('project_ids')
+        num_kits = request.form['num_kits']
+        num_samples = request.form['num_samples']
+        generate_barcodes = request.form.get('generate_barcodes_1')
 
         barcodes = []
 
@@ -529,7 +532,10 @@ def new_kits():
 
         payload = {
             'action': 'create' if not barcodes else 'insert',
-            'project_ids': selected_project_ids
+            'project_ids': selected_project_ids,
+            'num_kits': int(num_kits),
+            'num_samples': int(num_samples),
+            'generate_barcodes': generate_barcodes
         }
 
         if prefix:
@@ -537,7 +543,7 @@ def new_kits():
         if barcodes:
             payload['barcodes'] = barcodes
 
-        status, result = APIRequest.post('/api/admin/barcodes', json=payload)
+        status, result = APIRequest.post('/api/admin/add_barcodes', json=payload)
 
         if status != 201:
             return render_template('create_kits.html',
@@ -618,7 +624,7 @@ def new_barcode_kit():
                     'generate_barcode_single': generate_barcode_single
                 }
 
-                status, result = APIRequest.post('/api/admin/barcodes',
+                status, result = APIRequest.post('/api/admin/add_barcodes',
                                                  json=generate_barcode_payload)
                 if status == 500:
                     title = result[5:result.index('\n\n\n')].strip()
@@ -631,7 +637,7 @@ def new_barcode_kit():
                 "barcodes": [result[0]],
                 "kit_ids": kit_ids
             }
-            status, results = APIRequest.post('/api/admin/barcodes',
+            status, results = APIRequest.post('/api/admin/add_barcodes',
                                               json=user_barcode_payload)
             if status == 500:
                 title = results[5:results.index('\n\n\n')].strip()
@@ -648,7 +654,7 @@ def new_barcode_kit():
                 'kit_ids': kit_ids,
                 'generate_barcodes_multiple': generate_barcodes_multiple
             }
-            status, result = APIRequest.post('/api/admin/barcodes',
+            status, result = APIRequest.post('/api/admin/add_barcodes',
                                              json=generate_barcode_payload)
             if status == 500:
                 title = result[5:result.index('\n\n\n')].strip()
@@ -669,7 +675,7 @@ def new_barcode_kit():
             "kit_ids": kit_ids
         }
 
-        status, results = APIRequest.post('/api/admin/barcodes',
+        status, results = APIRequest.post('/api/admin/add_barcodes',
                                           json=csv_payload)
         if status == 500:
             title = results[5:results.index('\n\n\n')].strip()
