@@ -543,7 +543,8 @@ def new_kits():
         if barcodes:
             payload['barcodes'] = barcodes
 
-        status, result = APIRequest.post('/api/admin/add_barcodes', json=payload)
+        status, result = APIRequest.post('/api/admin/add_barcodes',
+                                         json=payload)
 
         if status != 201:
             return render_template('create_kits.html',
