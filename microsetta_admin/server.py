@@ -516,8 +516,8 @@ def new_kits():
     elif request.method == 'POST':
         prefix = request.form['prefix']
         selected_project_ids = request.form.getlist('project_ids')
-        num_kits = request.form['num_kits']
-        num_samples = request.form['num_samples']
+        num_kits = request.form['number_of_kits']
+        num_samples = request.form['number_of_samples']
         generate_barcodes = request.form.get('generate_barcodes_1')
 
         barcodes = []
@@ -533,8 +533,8 @@ def new_kits():
         payload = {
             'action': 'create' if not barcodes else 'insert',
             'project_ids': selected_project_ids,
-            'num_kits': int(num_kits),
-            'num_samples': int(num_samples),
+            'number_of_kits': int(num_kits),
+            'number_of_samples': int(num_samples),
             'generate_barcodes': generate_barcodes
         }
 
@@ -543,7 +543,7 @@ def new_kits():
         if barcodes:
             payload['barcodes'] = barcodes
 
-        status, result = APIRequest.post('/api/admin/add_barcodes',
+        status, result = APIRequest.post('/api/admin/create/kits',
                                          json=payload)
 
         if status != 201:
@@ -556,9 +556,13 @@ def new_kits():
         payload = io.BytesIO()
 
         kits = pd.DataFrame(result['created'])
-        for i in range(len(kits.columns) - 1):
-            kits['barcode_%d' % (i+1)] = [r['sample_barcodes'][i]
-                                          for _, r in kits.iterrows()]
+
+        for kit_index, row in kits.iterrows():
+            sample_barcodes = row['sample_barcodes']
+            for sample_index in range(len(sample_barcodes)):
+                kits.at[kit_index, f'barcode_{sample_index + 1}'] = \
+                        sample_barcodes[sample_index]
+
         kits.drop(columns='sample_barcodes', inplace=True)
 
         kits.to_csv(buf, sep=',', index=False, header=True)
