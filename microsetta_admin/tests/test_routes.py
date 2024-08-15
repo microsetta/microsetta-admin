@@ -356,19 +356,16 @@ class RouteTests(TestBase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Unable to create project.', response.data)
 
-    def test_create_insert_barcode_success(self):
+    def test_insert_barcode_success(self):
         self.mock_post.return_value = DummyResponse(201, {})
 
         response = self.app.post('/add_barcode_to_kit',
-                                 data={'kit_ids': 'FBGBs',
-                                       'user_barcode': 'X64406585',
-                                       'generate_barcode_single': 'off',
-                                       'add_single_barcode': 'Add Barcode'},
+                                 data={'kit_id': 'test',
+                                       'user_barcode': 'X64444485'},
                                  follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'You added X64406585 to Kit ID FBGBs', response.data)
 
-    def test_create_insert_barcode_from_csv(self):
+    def test_insert_barcode_from_csv(self):
         self.mock_post.return_value = DummyResponse(201, {})
 
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:

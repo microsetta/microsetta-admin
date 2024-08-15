@@ -14,22 +14,53 @@
             }
         });
 
+        function adjustContainerHeight() {
+            var numSamples = $("#number_of_samples").val();
+            var containerHeight = 400 + (numSamples * 150);
+            $("#kit_container").css("height", containerHeight + "px");
+        }
+
+        function toggleDisableOptions() {
+            $(".sample-section").each(function() {
+                var $uploadCsvInput = $(this).find("input[type='file']");
+                var $generateBarcodesCheckbox = $(this).find("input[type='checkbox']");
+                
+                $uploadCsvInput.on("change", function() {
+                    if ($(this).val()) {
+                        $generateBarcodesCheckbox.prop("disabled", true);
+                    } else {
+                        $generateBarcodesCheckbox.prop("disabled", false);
+                    }
+                });
+
+                $generateBarcodesCheckbox.on("change", function() {
+                    if ($(this).is(":checked")) {
+                        $uploadCsvInput.prop("disabled", true);
+                    } else {
+                        $uploadCsvInput.prop("disabled", false);
+                    }
+                });
+            });
+        }
+
         $("#number_of_samples, #number_of_kits").on("change", function() {
             var numSamples = $("#number_of_samples").val();
             var numKits = $("#number_of_kits").val();
-            var totalSamples = numSamples * numKits;
             var newSections = "";
-            for (var i = 1; i <= totalSamples; i++) {
+            for (var j = 1; j <= numSamples; j++) {
                 newSections += `<div class="sample-section">
-                                    <p>Sample ${i}</p>
-                                    <label for="upload_csv_${i}">Upload CSV file of Barcodes:</label>
-                                    <input type="file" name="upload_csv_${i}" id="upload_csv_${i}">
+                                    <h4>Sample ${j}</h4>
+                                    <p>Upload CSV with ${numKits} row(s) of barcode(s) for this sample:</p>
+                                    <label for="upload_csv_${j}">Upload CSV file:</label>
+                                    <input type="file" name="upload_csv_${j}" id="upload_csv_${j}">
                                     <br>
-                                    <label for="generate_barcodes_${i}">Generate Barcodes</label>
-                                    <input type="checkbox" name="generate_barcodes_${i}" id="generate_barcodes_${i}">
+                                    <label for="generate_barcodes_sample_${j}">Generate Barcodes</label>
+                                    <input type="checkbox" name="generate_barcodes_sample_${j}" id="generate_barcodes_sample_${j}">
                                 </div>`;
             }
             $("#sample_sections").html(newSections);
+            adjustContainerHeight();
+            toggleDisableOptions();
         });
 
         $("#number_of_samples").val(1).trigger('change'); // Default value to 1 on page load
@@ -40,6 +71,11 @@
         width: 250px;
         margin: 10px;
     }
+    .kit-section {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin: 20px 0;
+    }
     .sample-section {
         border: 1px solid #ccc;
         padding: 10px;
@@ -49,7 +85,7 @@
 {% endblock %}
 {% block content %}
 <h3>Microsetta Create Kits</h3>
-<div style="height: 600px;">
+<div id="kit_container" style="height: 600px;">
     {% if error_message %}
         <p style="color:red">
             {{ error_message |e }}

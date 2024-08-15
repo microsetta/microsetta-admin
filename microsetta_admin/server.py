@@ -516,39 +516,87 @@ def new_kits():
     elif request.method == 'POST':
         prefix = request.form['prefix']
         selected_project_ids = request.form.getlist('project_ids')
-        num_kits = request.form['number_of_kits']
-        num_samples = request.form['number_of_samples']
-        generate_barcodes = request.form.get('generate_barcodes_1')
+        num_kits = int(request.form['number_of_kits'])
+        num_samples = int(request.form['number_of_samples'])
+
+        generate_barcodes = []
+        i = 1
+        while True:
+            barcode = request.form.get(f'generate_barcodes_sample_{i}')
+            if barcode:
+                generate_barcodes.append(barcode)
+            i += 1
+            if not request.form.get(f'generate_barcodes_sample_{i}') \
+               and i > len(generate_barcodes):
+                break
 
         barcodes = []
+        total_provided_samples = 0
 
-        barcode_file = request.files.get('upload_csv')
+        for i in range(0, 25):
+            barcode_file = request.files.get(f'upload_csv_{i}')
+            if barcode_file:
+                barcode_file = barcode_file.read().decode('utf-8')
+                new_barcodes = [line.split(',')[0].strip('\ufeff\r')
+                                for line in barcode_file.split('\n')
+                                if line.strip()]
+                barcodes.extend(new_barcodes)
+                total_provided_samples += len(new_barcodes)
 
-        if barcode_file:
-            barcode_file = barcode_file.read().decode('utf-8')
-            barcodes = [line.split(',')[0].strip('\ufeff\r')
-                        for line in barcode_file.split('\n')
-                        if line.strip()]
+        # Calculate remaining samples to be generated
+        total_needed_samples = num_kits * num_samples
+        remaining_samples_to_generate = total_needed_samples - \
+            total_provided_samples
+
+        if remaining_samples_to_generate < 0:
+            error_message = (f'Too many samples provided '
+                             f'({total_provided_samples}) '
+                             f'for the specified number of kits and samples '
+                             f'({total_needed_samples}).')
+            return render_template('create_kits.html',
+                                   error_message=error_message,
+                                   projects=projects,
+                                   **build_login_variables())
 
         payload = {
             'action': 'create' if not barcodes else 'insert',
             'project_ids': selected_project_ids,
-            'number_of_kits': int(num_kits),
-            'number_of_samples': int(num_samples),
-            'generate_barcodes': generate_barcodes
+            'number_of_kits': num_kits,
+            'number_of_samples': num_samples,
+            'generate_barcodes': generate_barcodes,
+            'remaining_samples_to_generate': remaining_samples_to_generate
         }
 
         if prefix:
             payload['kit_id_prefix'] = prefix
         if barcodes:
-            payload['barcodes'] = barcodes
+            payload['user_barcodes'] = barcodes
+            if total_needed_samples != len(barcodes) + \
+               remaining_samples_to_generate:
+                error_message = (f'The total number of kit IDs '
+                                 f'({total_needed_samples}) '
+                                 f'does not match the sum of '
+                                 f'provided barcodes ({len(barcodes)}) '
+                                 f'and remaining samples to generate '
+                                 f'({remaining_samples_to_generate}).')
+                return render_template('create_kits.html',
+                                       error_message=error_message,
+                                       projects=projects,
+                                       **build_login_variables())
 
         status, result = APIRequest.post('/api/admin/create/kits',
                                          json=payload)
 
         if status != 201:
+            start_index = result.find("Key")
+            if start_index != -1:
+                error_message = result[start_index:]
+                error_message = error_message[:44]
+            else:
+                error_message = "Error message not found in the results."
+
             return render_template('create_kits.html',
-                                   error_message='Failed to create kits',
+                                   error_message=error_message,
                                    projects=projects,
                                    **build_login_variables())
 
@@ -612,7 +660,8 @@ def new_barcode_kit():
             kit_ids_content = kit_ids_file.read().decode('utf-8-sig')
             kit_ids = [row[0] for row in csv.reader(io.StringIO
                                                     (kit_ids_content),
-                                                    skipinitialspace=True)]
+                                                    skipinitialspace=True)
+                       if row]
 
         if 'barcodes_file' in request.files:
             barcodes_file = request.files['barcodes_file']
@@ -631,22 +680,28 @@ def new_barcode_kit():
 
                 status, result = APIRequest.post('/api/admin/add_barcodes',
                                                  json=generate_barcode_payload)
-                if status == 500:
-                    title = result[5:result.index('\n\n\n')].strip()
-                    raise Exception(f"500 error: {title}")
+                if status != 200:
+                    return render_template('add_barcode_to_kit.html',
+                                           error_message="Kit ID not found",
+                                           **build_login_variables())
             else:
                 result = barcodes
 
             user_barcode_payload = {
                 "action": "insert",
-                "barcodes": [result[0]],
+                "barcodes": result,
                 "kit_ids": kit_ids
             }
             status, results = APIRequest.post('/api/admin/add_barcodes',
                                               json=user_barcode_payload)
-            if status == 500:
-                title = results[5:results.index('\n\n\n')].strip()
-                raise Exception(f"500 error: {title}")
+
+            error_message = "Unable to insert barcode(s), " \
+                            "barcode already exists"
+
+            if status != 204:
+                return render_template('add_barcode_to_kit.html',
+                                       error_message=error_message,
+                                       **build_login_variables())
 
             return render_template('add_barcode_to_kit.html',
                                    barcodes=result,
@@ -661,41 +716,90 @@ def new_barcode_kit():
             }
             status, result = APIRequest.post('/api/admin/add_barcodes',
                                              json=generate_barcode_payload)
-            if status == 500:
-                title = result[5:result.index('\n\n\n')].strip()
-                raise Exception(f"500 error: {title}")
+            if status == 404:
+                return render_template('add_barcode_to_kit.html',
+                                       error_message="Kit ID not found",
+                                       **build_login_variables())
 
             barcodes = result
-        if len(kit_ids) != len(barcodes):
-            error_message = (f'The number of kit IDs ({len(kit_ids)}) '
-                             f'does not match the number of barcodes '
-                             f'({len(barcodes)}).')
-            return render_template('add_barcode_to_kit.html',
-                                   error_message=error_message,
-                                   **build_login_variables())
 
-        csv_payload = {
-            "action": "insert",
-            "barcodes": barcodes,
-            "kit_ids": kit_ids
-        }
+            if len(kit_ids) != len(barcodes):
+                error_message = (f'The number of kit IDs ({len(kit_ids)}) '
+                                 f'does not match the number of barcodes '
+                                 f'({len(barcodes)}).')
+                return render_template('add_barcode_to_kit.html',
+                                       error_message=error_message,
+                                       **build_login_variables())
+            csv_payload = {
+                "action": "insert",
+                "barcodes": barcodes,
+                "kit_ids": kit_ids
+            }
 
-        status, results = APIRequest.post('/api/admin/add_barcodes',
-                                          json=csv_payload)
-        if status == 500:
-            title = results[5:results.index('\n\n\n')].strip()
-            raise Exception(f"500 error: {title}")
+            status, results = APIRequest.post('/api/admin/add_barcodes',
+                                              json=csv_payload)
+            if status == 404:
+                return render_template('add_barcode_to_kit.html',
+                                       error_message="Kit ID not found",
+                                       **build_login_variables())
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False,
-                                         newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(['Kit IDs', 'Barcode'])
-            writer.writerows(zip(kit_ids, barcodes))
-            filename = file.name
+            with tempfile.NamedTemporaryFile(mode='w', delete=False,
+                                             newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(['Kit IDs', 'Barcode'])
+                writer.writerows(zip(kit_ids, barcodes))
+                filename = file.name
 
-        return send_file(filename,
-                         as_attachment=True,
-                         download_name='barcodes.csv')
+            stamp = datetime.now().strftime('%d%b%Y-%H%M')
+            fname = f'kits-{stamp}.csv'
+
+            return send_file(filename,
+                             as_attachment=True,
+                             download_name=fname)
+
+        if kit_ids and barcodes:
+            if len(kit_ids) != len(barcodes):
+                error_message = (f'The number of kit IDs ({len(kit_ids)}) '
+                                 f'does not match the number of barcodes '
+                                 f'({len(barcodes)}).')
+                return render_template('add_barcode_to_kit.html',
+                                       error_message=error_message,
+                                       **build_login_variables())
+
+            csv_payload = {
+                "action": "insert",
+                "barcodes": barcodes,
+                "kit_ids": kit_ids
+            }
+
+            status, results = APIRequest.post('/api/admin/add_barcodes',
+                                              json=csv_payload)
+
+            if status != 204:
+                start_index = results.find("Key")
+                if start_index != -1:
+                    error_message = results[start_index:]
+                    error_message = error_message[:44]
+                else:
+                    error_message = "Error message not found in the results."
+
+                return render_template('add_barcode_to_kit.html',
+                                       error_message=error_message,
+                                       **build_login_variables())
+
+            with tempfile.NamedTemporaryFile(mode='w', delete=False,
+                                             newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(['Kit IDs', 'Barcode'])
+                writer.writerows(zip(kit_ids, barcodes))
+                filename = file.name
+
+            stamp = datetime.now().strftime('%d%b%Y-%H%M')
+            fname = f'kits-{stamp}.csv'
+
+            return send_file(filename,
+                             as_attachment=True,
+                             download_name=fname)
 
 
 def _check_sample_status(extended_barcode_info):

@@ -43,7 +43,38 @@
             $('#single_kit_form').hide();
         });
 
-        // Track which button was clicked
+        $("#generate_barcode_single").on("change", function() {
+            if ($(this).is(":checked")) {
+                $("#user_barcode").prop("disabled", true);
+            } else {
+                $("#user_barcode").prop("disabled", false);
+            }
+        });
+
+        $("#user_barcode").on("input", function() {
+            if ($(this).val().length > 0) {
+                $("#generate_barcode_single").prop("disabled", true);
+            } else {
+                $("#generate_barcode_single").prop("disabled", false);
+            }
+        });
+
+        $("#generate_barcodes_multiple").on("change", function() {
+            if ($(this).is(":checked")) {
+                $("#barcodes_file").prop("disabled", true);
+            } else {
+                $("#barcodes_file").prop("disabled", false);
+            }
+        });
+
+        $("#barcodes_file").on("change", function() {
+            if ($(this).val()) {
+                $("#generate_barcodes_multiple").prop("disabled", true);
+            } else {
+                $("#generate_barcodes_multiple").prop("disabled", false);
+            }
+        });
+
         $("input[type='submit']").click(function() {
             $("input[type='submit']", $(this).parents("form")).removeAttr("clicked");
             $(this).attr("clicked", "true");
@@ -109,6 +140,9 @@
     {% endif %}
     <form name="multiple_kits_form" id="multiple_kits_form" method="POST" enctype="multipart/form-data" style="display:none;">
         <table>
+            <br>
+            Upload comma-separated value file(s) (CSV)
+            <br><br>
             <tr>
                 <td><label for="kit_ids">Upload Kit IDs: </label></td>
                 <td><input type="file" name="kit_ids" id="kit_ids" required></td>
