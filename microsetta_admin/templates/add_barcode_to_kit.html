@@ -4,7 +4,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.form/4.3.0/jquery.form.min.js"></script>
 <script>
     $(document).ready(function(){
-        // Initialize form validation on the registration form.
+        // Initialize form validation on the form.
         $("form[name='single_kit_form']").validate({
             rules: {
                 kit_id: "required",
@@ -33,14 +33,21 @@
             }
         });
 
+        function clearMessages() {
+            $('#error_message').text("");
+            $('#success_message').empty();
+        }
+
         // Toggle form visibility
         $('#single_kit_button').click(function() {
             $('#single_kit_form').show();
             $('#multiple_kits_form').hide();
+            clearMessages();
         });
         $('#multiple_kits_button').click(function() {
             $('#multiple_kits_form').show();
             $('#single_kit_form').hide();
+            clearMessages();
         });
 
         $("#generate_barcode_single").on("change", function() {
@@ -103,7 +110,7 @@
 </style>
 <div style="height: 335px;">
     {% if error_message %}
-        <p style="color:red">
+        <p id="error_message" style="color:red">
             {{ error_message |e }}
         </p>
     {% endif %}
@@ -132,7 +139,7 @@
         </table>
     </form>
     {% if barcodes %}
-        <ul>
+        <ul id="success_message">
             {% for barcode in barcodes %}
                 <span>You added {{ barcode }} to Kit ID {{ kit_id }}</span><br>
             {% endfor %}

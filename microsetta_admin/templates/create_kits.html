@@ -6,10 +6,18 @@
         $("form[name='kit_form']").validate({
             rules: {
                 number_of_kits: "required",
-                number_of_samples: "required",
+                number_of_samples: {
+                    required: true,
+                    max: 25
+                },
                 project_ids: "required",
                 submitHandler: function (form) {
                     form.submit();
+                }
+            },
+            messages: {
+                number_of_samples: {
+                    max: "You cannot add more than 25 samples per kit."
                 }
             }
         });
@@ -63,7 +71,8 @@
             toggleDisableOptions();
         });
 
-        $("#number_of_samples").val(1).trigger('change'); // Default value to 1 on page load
+        $("#number_of_samples").val(1).trigger('change');
+        $("#number_of_kits").val(1).trigger('change');
     });
 </script>
 <style>
