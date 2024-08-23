@@ -521,16 +521,15 @@ def new_kits():
 
         generate_barcodes = []
         i = 1
-        while True:
+        while i <= num_samples:
             barcode = request.form.get(f'generate_barcodes_sample_{i}')
             if barcode:
-                generate_barcodes.append(barcode)
+                generate_barcodes.append([barcode] * num_kits)
+            else:
+                generate_barcodes.append([])
             i += 1
-            if not request.form.get(f'generate_barcodes_sample_{i}') \
-               and i > len(generate_barcodes):
-                break
 
-        barcodes = []
+        user_barcodes = []
         total_provided_samples = 0
 
         for i in range(0, 25):
@@ -552,7 +551,7 @@ def new_kits():
                                            projects=projects,
                                            **build_login_variables())
 
-                barcodes.extend(new_barcodes)
+                user_barcodes.append(new_barcodes)
                 total_provided_samples += len(new_barcodes)
 
         # Calculate remaining samples to be generated
@@ -571,25 +570,28 @@ def new_kits():
                                    **build_login_variables())
 
         payload = {
-            'action': 'create' if not barcodes else 'insert',
+            'action': 'create' if not user_barcodes else 'insert',
             'project_ids': selected_project_ids,
             'number_of_kits': num_kits,
             'number_of_samples': num_samples,
             'generate_barcodes': generate_barcodes,
-            'remaining_samples_to_generate': remaining_samples_to_generate
+            'user_barcodes': user_barcodes
         }
 
         if prefix:
             payload['kit_id_prefix'] = prefix
-        if barcodes:
-            payload['user_barcodes'] = barcodes
-            if total_needed_samples != len(barcodes) + \
-               remaining_samples_to_generate:
+        if user_barcodes:
+            total_user_barcodes = sum(len(slot) for slot in user_barcodes)
+
+            if total_needed_samples != sum(len(slot) for slot in
+                                           user_barcodes) \
+                    + remaining_samples_to_generate:
                 error_message = (f'The total number of kit IDs '
                                  f'({total_needed_samples}) '
                                  f'does not match the sum of '
-                                 f'provided barcodes ({len(barcodes)}) '
-                                 f'and remaining samples to generate '
+                                 f'provided barcodes '
+                                 f'({total_user_barcodes})'
+                                 f' and remaining samples to generate '
                                  f'({remaining_samples_to_generate}).')
                 return render_template('create_kits.html',
                                        error_message=error_message,
