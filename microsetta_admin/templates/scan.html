@@ -256,14 +256,16 @@ table
                                     <td class="bordered">{{ format_timestamp(scan['scan_timestamp']) }}</td>
                                     <td class="bordered">{{ scan['sample_status'] }}</td>
                                     <td class="bordered">{{ scan['technician_notes'] }}</td>
-                                    <td class="bordered"> 
+                                    <td class="bordered">
+                                        {% set unique_observations = [] %}
                                         {% for observation in scan['observations'] %}
-                                            {% if observation['category'] %}
-                                                {{ observation['category'] }}: {{ observation['observation'] }}{% if not loop.last %}, {% endif %}
-                                            {% else %}
-                                                {{ observation['observation'] }}
+                                            {% set observation_text = observation['category'] + ': ' + observation['observation'] if observation['category'] else observation['observation'] %}
+                                            {% if observation_text not in unique_observations %}
+                                                {% set _ = unique_observations.append(observation_text) %}
                                             {% endif %}
                                         {% endfor %}
+                                        {{ unique_observations | join(', ') }}
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
