@@ -580,23 +580,6 @@ def new_kits():
 
         if prefix:
             payload['kit_id_prefix'] = prefix
-        if user_barcodes:
-            total_user_barcodes = sum(len(slot) for slot in user_barcodes)
-
-            if total_needed_samples != sum(len(slot) for slot in
-                                           user_barcodes) \
-                    + remaining_samples_to_generate:
-                error_message = (f'The total number of kit IDs '
-                                 f'({total_needed_samples}) '
-                                 f'does not match the sum of '
-                                 f'provided barcodes '
-                                 f'({total_user_barcodes})'
-                                 f' and remaining samples to generate '
-                                 f'({remaining_samples_to_generate}).')
-                return render_template('create_kits.html',
-                                       error_message=error_message,
-                                       projects=projects,
-                                       **build_login_variables())
 
         status, result = APIRequest.post('/api/admin/create/kits',
                                          json=payload)
@@ -640,14 +623,14 @@ def new_kits():
                          mimetype='text/csv')
 
 
-def read_csv_file(file):
+def _read_csv_file(file):
     content = file.read().decode('utf-8-sig')
     return [row[0] for row in csv.reader(io.StringIO(content),
                                          skipinitialspace=True)
             if row]
 
 
-def handle_api_request(payload):
+def _handle_add_barcodes_api_request(payload):
     status, result = APIRequest.post('/api/admin/add_barcodes',
                                      json=payload)
     if status != 200 and status != 204:
@@ -657,7 +640,7 @@ def handle_api_request(payload):
     return result
 
 
-def save_and_send_csv(kit_ids, barcodes):
+def _save_and_send_csv(kit_ids, barcodes):
     with tempfile.NamedTemporaryFile(mode='w',
                                      delete=False,
                                      newline='') as file:
@@ -698,11 +681,11 @@ def new_barcode_kit():
 
     if 'kit_ids' in request.files:
         kit_ids_file = request.files['kit_ids']
-        kit_ids = read_csv_file(kit_ids_file)
+        kit_ids = _read_csv_file(kit_ids_file)
 
     if 'barcodes_file' in request.files:
         barcodes_file = request.files['barcodes_file']
-        barcodes = read_csv_file(barcodes_file)
+        barcodes = _read_csv_file(barcodes_file)
 
     if generate_barcode_single or user_barcode:
         if not user_barcode:
@@ -711,7 +694,7 @@ def new_barcode_kit():
                 'kit_ids': kit_ids,
                 'generate_barcode_single': generate_barcode_single
             }
-            barcodes = handle_api_request(payload)
+            barcodes = _handle_add_barcodes_api_request(payload)
             if isinstance(barcodes, tuple):
                 return barcodes
 
@@ -720,7 +703,7 @@ def new_barcode_kit():
             "barcodes": barcodes,
             "kit_ids": kit_ids
         }
-        result = handle_api_request(payload)
+        result = _handle_add_barcodes_api_request(payload)
         if isinstance(result, tuple):
             return result
 
@@ -735,7 +718,7 @@ def new_barcode_kit():
             'kit_ids': kit_ids,
             'generate_barcodes_multiple': generate_barcodes_multiple
         }
-        barcodes = handle_api_request(payload)
+        barcodes = _handle_add_barcodes_api_request(payload)
         if isinstance(barcodes, tuple):
             return barcodes
 
@@ -752,11 +735,11 @@ def new_barcode_kit():
         "barcodes": barcodes,
         "kit_ids": kit_ids
     }
-    result = handle_api_request(payload)
+    result = _handle_add_barcodes_api_request(payload)
     if isinstance(result, tuple):
         return result
 
-    return save_and_send_csv(kit_ids, barcodes)
+    return _save_and_send_csv(kit_ids, barcodes)
 
 
 def _check_sample_status(extended_barcode_info):
