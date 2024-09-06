@@ -258,6 +258,7 @@
                             <th>Flight Sub-Project Name</th>
                             <th>Alias</th>
                             <th>Is Microsetta</th>
+                            <th>Qiita Study ID</th>
                             <th>Sponsor</th>
                             <th>Coordination</th>
                             <th>POC</th>
@@ -323,6 +324,7 @@
                             <td id="td_subproject_name_{{ curr_id }}">{{ project['subproject_name'] }}</td>
                             <td id="td_alias_{{ curr_id }}">{{ project['alias'] }}</td>
                             <td id="td_is_microsetta_{{ curr_id }}" class="create_only">{{ project['is_microsetta'] }}</td>
+                            <td id="td_qiita_study_id_{{ curr_id }}">{{ project['qiita_study_id'] }}</td>
                             <td id="td_sponsor_{{ curr_id }}">{{ project['sponsor'] }}</td>
                             <td id="td_coordination_{{ curr_id }}">{{ project['coordination'] }}</td>
                             <td id="td_contact_name_{{ curr_id }}">{{ project['contact_name'] }}</td>
@@ -419,6 +421,10 @@
                                     <tr>
                                         <td><label for="is_microsetta">Microsetta Project: </label></td>
                                         <td><input type="checkbox" name="is_microsetta" id="is_microsetta" value='true' /></td>
+                                    </tr>
+                                    <tr>
+                                        <td><label for="qiita_study_id">Qiita Study ID: </label></td>
+                                        <td><input type="text" name="qiita_study_id" id="qiita_study_id" /></td>
                                     </tr>
                                     <tr>
                                         <td><label for="sponsor">Sponsor: </label></td>
