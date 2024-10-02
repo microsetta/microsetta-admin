@@ -1,6 +1,7 @@
 flake8
-flask
+flask < 3.0.0
 requests
 pandas
 xlrd
 openpyxl
+werkzeug < 3.0.0
