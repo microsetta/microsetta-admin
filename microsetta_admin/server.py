@@ -401,10 +401,6 @@ def per_sample_summary():
                                        projects=projects,
                                        error_message=result,
                                        **build_login_variables())
-
-        # if we are here then the user is querying using barcodes and we
-        # simply need to set up the query below to perform.
-        sample_barcodes = [sample_barcode, ]
     else:
         search_field = request.form.get('search_field')
         search_value = request.form.get('text_input')
