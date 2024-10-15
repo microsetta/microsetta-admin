@@ -1,5 +1,7 @@
+import csv
 import json
 from copy import deepcopy
+import tempfile
 
 from microsetta_admin.tests.base import TestBase
 
@@ -398,6 +400,53 @@ class RouteTests(TestBase):
         # a page reporting the error :)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Unable to create project.', response.data)
+
+    def test_insert_barcode_success(self):
+        self.mock_post.return_value = DummyResponse(201, {})
+
+        response = self.app.post('/add_barcode_to_kit',
+                                 data={'kit_id': 'test',
+                                       'user_barcode': 'X64444485'},
+                                 follow_redirects=True)
+        self.assertEqual(response.status_code, 201)
+
+    def test_insert_barcode_from_csv(self):
+        self.mock_post.return_value = DummyResponse(201, {})
+
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+            csv_writer = csv.writer(temp_file)
+            csv_writer.writerow(['X11204416'])
+
+        with open(temp_file.name, 'rb') as f:
+            response = self.app.post('/add_barcode_to_kit',
+                                     data={'kit_ids': 'test',
+                                           'barcodes_file': (f, 'test.csv')},
+                                     follow_redirects=True)
+        self.assertEqual(response.status_code, 400)
+
+    def test_insert_barcode_fail_kit_id(self):
+        self.mock_post.return_value = DummyResponse(404, {})
+
+        response = self.app.post('/add_barcode_to_kit',
+                                 data={'kit_ids': 'alpha9',
+                                       'generate_barcode_single': 'on'},
+                                 follow_redirects=True)
+        self.assertEqual(response.status_code, 404)
+
+    def test_insert_barcode_fail_csv_mismatch(self):
+        self.mock_post.return_value = DummyResponse(201, {})
+
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+            csv_writer = csv.writer(temp_file)
+            csv_writer.writerow(['X11204415'])
+            csv_writer.writerow(['X11204416'])
+
+        with open(temp_file.name, 'rb') as f:
+            response = self.app.post('/add_barcode_to_kit',
+                                     data={'kit_ids': 'test',
+                                           'barcodes_file': (f, 'test.csv')},
+                                     follow_redirects=True)
+        self.assertEqual(response.status_code, 400)
 
     def test_update_project_success(self):
         self.mock_put.return_value = DummyResponse(204, {})
