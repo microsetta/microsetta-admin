@@ -1,3 +1,4 @@
+import csv
 import jwt
 from flask import render_template, Flask, request, session, send_file, url_for
 import secrets
@@ -406,18 +407,15 @@ def per_sample_summary():
         search_value = request.form.get('text_input')
         uploaded_file = request.files.get('file')
 
+        search_values = []
+
         if uploaded_file:
-            search_values, err = \
-                upload_util.parse_request_csv_col(request,
-                                                  'file',
-                                                  search_field)
-            if err is not None:
-                # there was an error. abort early.
-                return render_template('per_sample_summary.html',
-                                       resource=None,
-                                       projects=projects,
-                                       **build_login_variables(),
-                                       search_error=[{'error': err}])
+            file_content = io.TextIOWrapper(uploaded_file,
+                                            encoding='utf-8-sig')
+            csv_reader = csv.reader(file_content)
+
+            for row in csv_reader:
+                search_values.extend(row)
         else:
             search_values = [search_value] if search_value else []
 
@@ -445,12 +443,19 @@ def per_sample_summary():
             else:
                 unprocessed_barcodes = None
             resource = pd.DataFrame(result['samples'])
-            order = ['sampleid', 'project', 'account-email',
-                     'source-type', 'site-sampled', 'sample-date',
-                     'sample-time', 'sample-status', 'sample-received',
-                     'ffq-taken', 'ffq-complete', 'vioscreen_username']
-            order.extend(sorted(set(resource.columns) - set(order)))
-            resource = resource[order]
+            if not resource.empty:
+                order = ['sampleid', 'project', 'account-email',
+                         'source-type', 'site-sampled', 'sample-date',
+                         'sample-time', 'sample-status', 'sample-received',
+                         'ffq-taken', 'ffq-complete', 'vioscreen_username']
+                order.extend(sorted(set(resource.columns) - set(order)))
+                resource = resource[order]
+            else:
+                return render_template('per_sample_summary.html',
+                                       resource=resource,
+                                       projects=projects,
+                                       error_message="No sample found",
+                                       **build_login_variables())
 
             if unprocessed_barcodes:
                 return render_template('per_sample_summary.html',

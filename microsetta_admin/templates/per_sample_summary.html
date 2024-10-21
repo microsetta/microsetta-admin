@@ -11,6 +11,21 @@
             block.innerHTML = "";
         }
     };
+
+    function handleFormSubmit(event) {
+        var fileInput = document.getElementById('file');
+        var textInput = document.getElementById('text_input');
+
+        if (fileInput.files.length > 0 || textInput.value.trim() !== "") {
+            remove_error_messages();
+            return true;
+        } else {
+            alert('Please provide either a file or text input.');
+            event.preventDefault();
+            return false;
+        }
+    }
+
     $(document).ready(function() {
         {% if resource is not none %}
             $('#search_results').DataTable({
@@ -34,12 +49,12 @@
 {% endif %}
 <div style="height: 400px; width: 400px">
     <h5>Retrieve summary for a sample</h5>
-    <form name="search_form" id="search_form" method="POST" enctype="multipart/form-data" onsubmit="return remove_error_messages()">
+    <form name="search_form" id="search_form" method="POST" enctype="multipart/form-data" onsubmit="return handleFormSubmit(event)">
         <table width=100% border=0>
             <tr>
                 <td colspan=3 style="text-align:left;padding:4px">
                     <label for="search_field">Select search field:</label>
-                    <select id="search_field" name="search_field" onchange="toggleInputType()">
+                    <select id="search_field" name="search_field">
                         <option value="sample_barcode">Barcode</option>
                         <option value="kit_id">Kit ID</option>
                         <option value="email">Email</option>
@@ -48,20 +63,19 @@
                     </select>
                 </td>
             </tr>
-            <tr id="text_input_row" style="display: table-row;">
+            <tr>
                 <td colspan=3 style="text-align:left;padding:4px">
                     <input type="text" name="text_input" placeholder="Enter value here" id="text_input">
                 </td>
-                <td colspan=1 style="text-align:right;padding:4px">
-                    <input type="submit" value="Retrieve">
-                </td>
             </tr>
-            <tr id="csv_upload_row" style="display: none;">
+            <tr>
                 <td colspan=3 style="text-align:left;padding:4px">
                     <input type="file" name="file" id="file">
                 </td>
-                <td colspan=1 style="text-align:right;padding:4px">
-                    <input type="submit" value="Upload">
+            </tr>
+            <tr>
+                <td colspan=3 style="text-align:right;padding:4px">
+                    <input type="submit" value="Retrieve">
                 </td>
             </tr>
             <tr><td colspan=4></td></tr>
