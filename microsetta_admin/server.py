@@ -404,8 +404,8 @@ def per_sample_summary():
                                        **build_login_variables())
     else:
         search_field = request.form.get('search_field')
-        search_value = request.form.get('text_input')
-        uploaded_file = request.files.get('file')
+        search_value = request.form.get('single_search')
+        uploaded_file = request.files.get('upload_list')
 
         search_values = []
 
@@ -420,16 +420,7 @@ def per_sample_summary():
             search_values = [search_value] if search_value else []
 
         payload = {}
-        if search_field == 'sample_barcode':
-            payload['sample_barcodes'] = search_values
-        elif search_field == 'kit_id':
-            payload['kit_ids'] = search_values
-        elif search_field == 'email':
-            payload['emails'] = search_values
-        elif search_field == 'outbound_tracking':
-            payload['outbound_tracking_numbers'] = search_values
-        elif search_field == 'inbound_tracking':
-            payload['inbound_tracking_numbers'] = search_values
+        payload[search_field] = search_values
 
         # perform the main query.
         status, result = APIRequest.post('/api/admin/account_barcode_summary?'
@@ -447,7 +438,15 @@ def per_sample_summary():
                 order = ['sampleid', 'project', 'account-email',
                          'source-type', 'site-sampled', 'sample-date',
                          'sample-time', 'sample-status', 'sample-received',
-                         'ffq-taken', 'ffq-complete', 'vioscreen_username']
+                         'first-scan-status', 'first-scan-timestamp',
+                         'latest-scan-status', 'latest-scan-timestamp',
+                         'sample-has-inconsistencies', 'sample-is-valid',
+                         'no-associated-source', 'no-collection-info',
+                         'no-registered-account', 'received-unknown-validity',
+                         'ffq-taken', 'ffq-complete', 'vioscreen_username',
+                         'kit-id', 'outbound-tracking',
+                         'inbound-tracking'
+                         ]
                 order.extend(sorted(set(resource.columns) - set(order)))
                 resource = resource[order]
             else:

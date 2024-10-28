@@ -13,16 +13,20 @@
     };
 
     function handleFormSubmit(event) {
-        var fileInput = document.getElementById('file');
-        var textInput = document.getElementById('text_input');
+        var fileInput = document.getElementById('upload_list');
+        var textInput = document.getElementById('single_search');
 
-        if (fileInput.files.length > 0 || textInput.value.trim() !== "") {
-            remove_error_messages();
-            return true;
-        } else {
-            alert('Please provide either a file or text input.');
+        if (fileInput.files.length > 0 && textInput.value.trim() !== "") {
+            alert("Please provide either a text input or a file, not both.");
             event.preventDefault();
             return false;
+        } else if (fileInput.files.length === 0 && textInput.value.trim() === "") {
+            alert("Please provide either a text input or a file.");
+            event.preventDefault();
+            return false;
+        } else {
+            remove_error_messages();
+            return true;
         }
     }
 
@@ -55,22 +59,22 @@
                 <td colspan=3 style="text-align:left;padding:4px">
                     <label for="search_field">Select search field:</label>
                     <select id="search_field" name="search_field">
-                        <option value="sample_barcode">Barcode</option>
-                        <option value="kit_id">Kit ID</option>
-                        <option value="email">Email</option>
-                        <option value="outbound_tracking">Outbound Tracking Number</option>
-                        <option value="inbound_tracking">Inbound Tracking Number</option>
+                        <option value="sample_barcodes">Barcode</option>
+                        <option value="kit_ids">Kit ID</option>
+                        <option value="emails">Email</option>
+                        <option value="outbound_tracking_numbers">Outbound Tracking Number</option>
+                        <option value="inbound_tracking_numbers">Inbound Tracking Number</option>
                     </select>
                 </td>
             </tr>
             <tr>
                 <td colspan=3 style="text-align:left;padding:4px">
-                    <input type="text" name="text_input" placeholder="Enter value here" id="text_input">
+                    <input type="text" name="single_search" placeholder="Enter value here" id="single_search">
                 </td>
             </tr>
             <tr>
                 <td colspan=3 style="text-align:left;padding:4px">
-                    <input type="file" name="file" id="file">
+                    <input type="file" name="upload_list" id="upload_list">
                 </td>
             </tr>
             <tr>
@@ -78,8 +82,6 @@
                     <input type="submit" value="Retrieve">
                 </td>
             </tr>
-            <tr><td colspan=4></td></tr>
-            <tr><td colspan=4 style="text-align:center;padding:4px"><i>The selected search field must be in column "<span id="csv_column_name">sample_name</span>"<br>(max: 1000)</i> </td></tr>
             <tr><td colspan=4></td></tr>
             <tr>
                 <td colspan=3><label for="strip_sampleid">Check to remove sample IDs from summary</label></td>
