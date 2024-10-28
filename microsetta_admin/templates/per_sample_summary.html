@@ -13,14 +13,14 @@
     };
 
     function handleFormSubmit(event) {
-        var fileInput = document.getElementById('upload_list');
-        var textInput = document.getElementById('single_search');
+        var uploadList = document.getElementById('upload_list');
+        var singleSearch = document.getElementById('single_search');
 
-        if (fileInput.files.length > 0 && textInput.value.trim() !== "") {
+        if (uploadList.files.length > 0 && singleSearch.value.trim() !== "") {
             alert("Please provide either a text input or a file, not both.");
             event.preventDefault();
             return false;
-        } else if (fileInput.files.length === 0 && textInput.value.trim() === "") {
+        } else if (uploadList.files.length === 0 && singleSearch.value.trim() === "") {
             alert("Please provide either a text input or a file.");
             event.preventDefault();
             return false;
