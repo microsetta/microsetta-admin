@@ -11,6 +11,25 @@
             block.innerHTML = "";
         }
     };
+
+    function handleFormSubmit(event) {
+        var uploadList = document.getElementById('upload_list');
+        var singleSearch = document.getElementById('single_search');
+
+        if (uploadList.files.length > 0 && singleSearch.value.trim() !== "") {
+            alert("Please provide either a text input or a file, not both.");
+            event.preventDefault();
+            return false;
+        } else if (uploadList.files.length === 0 && singleSearch.value.trim() === "") {
+            alert("Please provide either a text input or a file.");
+            event.preventDefault();
+            return false;
+        } else {
+            remove_error_messages();
+            return true;
+        }
+    }
+
     $(document).ready(function() {
         {% if resource is not none %}
             $('#search_results').DataTable({
@@ -27,36 +46,50 @@
 {% block content %}
 <h3>Sample Summaries</h3>
 <hr class="dashed">
-<h5>Retrieve summary for a single sample</h5>
+{% if error_message %}
+<p style="color:red">
+    {{ error_message |e }}
+</p>
+{% endif %}
 <div style="height: 400px; width: 400px">
-    {% if error_message %}
-        <p style="color:red">
-            {{ error_message |e }}
-        </p>
-    {% endif %}
-    <form name="search_form" id="search_form" method="GET">
-        <table width=100% border=0>
-        <tr>
-            <td colspan=3 style="text-align:left;padding:4px"> <input type="text" name="sample_barcode" placeholder="Enter barcode here" id="sample_barcode" {% if info %} value="{{info.barcode}}"{% endif %}> </td>
-            <td colspan=1 style="text-align:right;padding:4px"> <input type="submit" value="Retrieve"> </td>
-        </tr>
-        </table>
-        <script> document.search_form.sample_barcode.focus() </script>
-    </form>
-    <hr class="dashed">
-    <h5>Retrieve summaries using a csv file</h5>
-    <form name="upload_csv" id="search_csv" method="POST" enctype="multipart/form-data" onsubmit="return remove_error_messages()">
+    <h5>Retrieve summary for a sample</h5>
+    <form name="search_form" id="search_form" method="POST" enctype="multipart/form-data" onsubmit="return handleFormSubmit(event)">
         <table width=100% border=0>
             <tr>
-                <td colspan=3 style="text-align:left;padding:4px"><input type=file name=file></td>
-                <td colspan=1 style="text-align:right;padding:4px"><input type=submit value=Upload></td>
+                <td colspan=4 style="text-align:left;padding:4px">
+                    <label for="search_field">Select search field:</label>
+                    <select id="search_field" name="search_field">
+                        <option value="sample_barcodes">Barcode</option>
+                        <option value="kit_ids">Kit ID</option>
+                        <option value="emails">Email</option>
+                        <option value="outbound_tracking_numbers">Outbound Tracking Number</option>
+                        <option value="inbound_tracking_numbers">Inbound Tracking Number</option>
+                    </select>
+                </td>
+            </tr>
+            <tr><td colspan=4>&nbsp;</td></tr>
+            <tr>
+                <td colspan=4 style="text-align:left;padding:4px">
+                    Single Value Search: <input type="text" name="single_search" placeholder="Enter value here" id="single_search">
+                </td>
+            </tr>
+            <tr><td colspan=4 style="text-align: center; padding: 4px">-- OR --</td></tr>
+            <tr>
+                <td colspan=4 style="text-align:left;padding:4px">
+                    Upload List: <input type="file" name="upload_list" id="upload_list">
+                </td>
+            </tr>
+            <tr>
+                <td colspan=4 style="text-align:right;padding:4px">
+                    <input type="submit" value="Retrieve">
+                </td>
             </tr>
             <tr><td colspan=4></td></tr>
-            <tr><td colspan=4 style="text-align:center;padding:4px"><i>Barcodes must be listed in column "sample_name"<br>(max: 1000)</i> </td></tr>
-            <tr><td colspan=4></td></tr>
             <tr>
-                <td colspan=3> <label for="strip_sampleid"> Check to remove sample IDs from summary</label> </td>
-                <td colspan=1 style="text-align:center;padding:4px"> <input type="checkbox" id="strip_sampleid" name="strip_sampleid"> </td>
+                <td colspan=3><label for="strip_sampleid">Check to remove sample IDs from summary</label></td>
+                <td colspan=1 style="text-align:center;padding:4px">
+                    <input type="checkbox" id="strip_sampleid" name="strip_sampleid">
+                </td>
             </tr>
         </table>
     </form>
