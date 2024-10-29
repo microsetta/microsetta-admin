@@ -56,7 +56,7 @@
     <form name="search_form" id="search_form" method="POST" enctype="multipart/form-data" onsubmit="return handleFormSubmit(event)">
         <table width=100% border=0>
             <tr>
-                <td colspan=3 style="text-align:left;padding:4px">
+                <td colspan=4 style="text-align:left;padding:4px">
                     <label for="search_field">Select search field:</label>
                     <select id="search_field" name="search_field">
                         <option value="sample_barcodes">Barcode</option>
@@ -67,18 +67,20 @@
                     </select>
                 </td>
             </tr>
+            <tr><td colspan=4>&nbsp;</td></tr>
             <tr>
-                <td colspan=3 style="text-align:left;padding:4px">
-                    <input type="text" name="single_search" placeholder="Enter value here" id="single_search">
+                <td colspan=4 style="text-align:left;padding:4px">
+                    Single Value Search: <input type="text" name="single_search" placeholder="Enter value here" id="single_search">
+                </td>
+            </tr>
+            <tr><td colspan=4 style="text-align: center; padding: 4px">-- OR --</td></tr>
+            <tr>
+                <td colspan=4 style="text-align:left;padding:4px">
+                    Upload List: <input type="file" name="upload_list" id="upload_list">
                 </td>
             </tr>
             <tr>
-                <td colspan=3 style="text-align:left;padding:4px">
-                    <input type="file" name="upload_list" id="upload_list">
-                </td>
-            </tr>
-            <tr>
-                <td colspan=3 style="text-align:right;padding:4px">
+                <td colspan=4 style="text-align:right;padding:4px">
                     <input type="submit" value="Retrieve">
                 </td>
             </tr>
