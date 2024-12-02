@@ -377,9 +377,18 @@ def per_sample_summary():
 
                 resource = pd.DataFrame(result['samples'])
                 order = ['sampleid', 'project', 'account-email',
+                         'account-first-name', 'account-last-name',
                          'source-type', 'site-sampled', 'sample-date',
                          'sample-time', 'sample-status', 'sample-received',
-                         'ffq-taken', 'ffq-complete', 'vioscreen_username']
+                         'first-scan-status', 'first-scan-timestamp',
+                         'latest-scan-status', 'latest-scan-timestamp',
+                         'sample-has-inconsistencies', 'sample-is-valid',
+                         'no-associated-source', 'no-collection-info',
+                         'no-registered-account', 'received-unknown-validity',
+                         'ffq-taken', 'ffq-complete', 'vioscreen_username',
+                         'kit-id', 'outbound-tracking',
+                         'inbound-tracking', 'daklapack-order-id'
+                         ]
                 order.extend(sorted(set(resource.columns) - set(order)))
                 resource = resource[order]
                 if unprocessed_barcodes:
@@ -436,6 +445,7 @@ def per_sample_summary():
             resource = pd.DataFrame(result['samples'])
             if not resource.empty:
                 order = ['sampleid', 'project', 'account-email',
+                         'account-first-name', 'account-last-name',
                          'source-type', 'site-sampled', 'sample-date',
                          'sample-time', 'sample-status', 'sample-received',
                          'first-scan-status', 'first-scan-timestamp',
@@ -445,7 +455,7 @@ def per_sample_summary():
                          'no-registered-account', 'received-unknown-validity',
                          'ffq-taken', 'ffq-complete', 'vioscreen_username',
                          'kit-id', 'outbound-tracking',
-                         'inbound-tracking'
+                         'inbound-tracking', 'daklapack-order-id'
                          ]
                 order.extend(sorted(set(resource.columns) - set(order)))
                 resource = resource[order]
