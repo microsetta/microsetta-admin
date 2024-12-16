@@ -514,68 +514,32 @@ def new_kits():
                                **build_login_variables())
 
     elif request.method == 'POST':
-        prefix = request.form['prefix']
-        selected_project_ids = request.form.getlist('project_ids')
         num_kits = int(request.form['number_of_kits'])
         num_samples = int(request.form['number_of_samples'])
+        prefix = request.form['prefix']
+        selected_project_ids = request.form.getlist('project_ids')
 
-        generate_barcodes = []
-        i = 1
-        while i <= num_samples:
-            barcode = request.form.get(f'generate_barcodes_sample_{i}')
-            if barcode:
-                generate_barcodes.append([barcode] * num_kits)
-            else:
-                generate_barcodes.append([])
-            i += 1
+        barcodes_container = []
 
-        user_barcodes = []
-        total_provided_samples = 0
-
-        for i in range(0, 25):
+        # Determine if each sample slot was provided or is to be generated.
+        # We default to generating novel barcodes.
+        for i in range(1, num_samples+1):
             barcode_file = request.files.get(f'upload_csv_{i}')
             if barcode_file:
-                barcode_file = barcode_file.read().decode('utf-8')
-                new_barcodes = [line.split(',')[0].strip('\ufeff\r')
-                                for line in barcode_file.split('\n')
-                                if line.strip()]
-                if len(new_barcodes) != num_kits:
-                    if len(new_barcodes) > num_kits:
-                        error_message = (f'Too many barcodes provided in '
-                                         f'file {barcode_file}.')
-                    else:
-                        error_message = (f'Not enough barcodes provided in '
-                                         f'file {barcode_file}.')
-                    return render_template('create_kits.html',
-                                           error_message=error_message,
-                                           projects=projects,
-                                           **build_login_variables())
+                # Barcodes provided for this slot
+                barcodes = _read_csv_file(barcode_file)
+            else:
+                # Generate barcodes for this slot
+                barcodes = []
 
-                user_barcodes.append(new_barcodes)
-                total_provided_samples += len(new_barcodes)
-
-        # Calculate remaining samples to be generated
-        total_needed_samples = num_kits * num_samples
-        remaining_samples_to_generate = total_needed_samples - \
-            total_provided_samples
-
-        if remaining_samples_to_generate < 0:
-            error_message = (f'Too many samples provided '
-                             f'({total_provided_samples}) '
-                             f'for the specified number of kits and samples '
-                             f'({total_needed_samples}).')
-            return render_template('create_kits.html',
-                                   error_message=error_message,
-                                   projects=projects,
-                                   **build_login_variables())
+            # Add this slot's barcodes (or empty list) to the container
+            barcodes_container.append(barcodes)
 
         payload = {
-            'action': 'create' if not user_barcodes else 'insert',
-            'project_ids': selected_project_ids,
             'number_of_kits': num_kits,
             'number_of_samples': num_samples,
-            'generate_barcodes': generate_barcodes,
-            'user_barcodes': user_barcodes
+            'project_ids': selected_project_ids,
+            'barcodes': barcodes_container
         }
 
         if prefix:
@@ -590,7 +554,7 @@ def new_kits():
                 error_message = result[start_index:]
                 error_message = error_message[:44]
             else:
-                error_message = "Error message not found in the results."
+                error_message = result
 
             return render_template('create_kits.html',
                                    error_message=error_message,
@@ -630,116 +594,71 @@ def _read_csv_file(file):
             if row]
 
 
-def _handle_add_barcodes_api_request(payload):
-    status, result = APIRequest.post('/api/admin/add_barcodes',
-                                     json=payload)
-    if status != 200 and status != 204:
-        return render_template('add_barcode_to_kit.html',
-                               error_message=result,
-                               **build_login_variables()), status
-    return result
-
-
-def _save_and_send_csv(kit_ids, barcodes):
-    with tempfile.NamedTemporaryFile(mode='w',
-                                     delete=False,
-                                     newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['Kit IDs', 'Barcode'])
-        writer.writerows(zip(kit_ids, barcodes))
-        filename = file.name
-
-    stamp = datetime.now().strftime('%d%b%Y-%H%M')
-    fname = f'kits-{stamp}.csv'
-    return send_file(filename,
-                     as_attachment=True,
-                     download_name=fname)
-
-
 @app.route('/add_barcode_to_kit', methods=['GET', 'POST'])
 def new_barcode_kit():
     if request.method == 'GET':
         return render_template('add_barcode_to_kit.html',
                                **build_login_variables())
 
-    kit_ids = []
-    barcodes = []
+    elif request.method == 'POST':
+        if 'add_single_barcode' in request.form:
+            kit_ids = [request.form['kit_id']]
+            if 'user_barcode' in request.form:
+                # User provided a barcode
+                barcodes = [request.form['user_barcode']]
+                generate_barcodes = False
+            else:
+                # Generate barcode
+                barcodes = []
+                generate_barcodes = True
 
-    if 'kit_ids' in request.form:
-        kit_ids = request.form['kit_ids']
-
-    if 'user_barcode' in request.form:
-        user_barcode = request.form['user_barcode']
-        barcodes.append(user_barcode)
-    else:
-        user_barcode = None
-
-    generate_barcode_single = \
-        request.form.get('generate_barcode_single')
-    generate_barcodes_multiple = \
-        request.form.get('generate_barcodes_multiple')
-
-    if 'kit_ids' in request.files:
-        kit_ids_file = request.files['kit_ids']
-        kit_ids = _read_csv_file(kit_ids_file)
-
-    if 'barcodes_file' in request.files:
-        barcodes_file = request.files['barcodes_file']
-        barcodes = _read_csv_file(barcodes_file)
-
-    if generate_barcode_single or user_barcode:
-        if not user_barcode:
-            payload = {
-                'action': 'create',
-                'kit_ids': kit_ids,
-                'generate_barcode_single': generate_barcode_single
-            }
-            barcodes = _handle_add_barcodes_api_request(payload)
-            if isinstance(barcodes, tuple):
-                return barcodes
+        elif 'add_multiple_barcodes' in request.form:
+            kit_ids_file = request.files['kit_ids']
+            kit_ids = _read_csv_file(kit_ids_file)
+            if 'barcodes_file' in request.files:
+                # User provided barcodes
+                barcodes = _read_csv_file(request.files['barcodes_file'])
+                generate_barcodes = False
+            else:
+                # Generate barcodes
+                barcodes = []
+                generate_barcodes = True
 
         payload = {
-            "action": "insert",
-            "barcodes": barcodes,
-            "kit_ids": kit_ids
-        }
-        result = _handle_add_barcodes_api_request(payload)
-        if isinstance(result, tuple):
-            return result
-
-        return render_template('add_barcode_to_kit.html',
-                               barcodes=barcodes,
-                               kit_id=kit_ids,
-                               **build_login_variables())
-
-    if generate_barcodes_multiple:
-        payload = {
-            'action': 'create',
             'kit_ids': kit_ids,
-            'generate_barcodes_multiple': generate_barcodes_multiple
+            'barcodes': barcodes,
+            'generate_barcodes': generate_barcodes
         }
-        barcodes = _handle_add_barcodes_api_request(payload)
-        if isinstance(barcodes, tuple):
-            return barcodes
 
-    if len(kit_ids) != len(barcodes):
-        error_message = f'The number of kit IDs ({len(kit_ids)}) '\
-                        f'does not match the number of barcodes '\
-                        f'({len(barcodes)}).'
-        return render_template('add_barcode_to_kit.html',
-                               error_message=error_message,
-                               **build_login_variables()), 400
+        status, result = APIRequest.post(
+            '/api/admin/add_barcodes_to_kits',
+            json=payload
+        )
 
-    payload = {
-        "action": "insert",
-        "barcodes": barcodes,
-        "kit_ids": kit_ids
-    }
-    result = _handle_add_barcodes_api_request(payload)
-    if isinstance(result, tuple):
-        return result
+        if status != 201:
+            return render_template(
+                'add_barcode_to_kit.html',
+                error_message=result,
+                **build_login_variables()
+            )
 
-    return _save_and_send_csv(kit_ids, barcodes)
+        with tempfile.NamedTemporaryFile(
+            mode='w',
+            delete=False,
+            newline=''
+        ) as file:
+            writer = csv.writer(file)
+            writer.writerow(['Kit ID', 'Barcode'])
+            writer.writerows(result)
+            filename = file.name
+
+        timestamp = datetime.now().strftime('%d%b%Y-%H%M')
+        fname = f'kit_ids-barcodes-{timestamp}.csv'
+        return send_file(
+            filename,
+            as_attachment=True,
+            download_name=fname
+        )
 
 
 def _check_sample_status(extended_barcode_info):

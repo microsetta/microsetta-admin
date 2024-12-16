@@ -4,7 +4,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.form/4.3.0/jquery.form.min.js"></script>
 <script>
     $(document).ready(function(){
-        // Initialize form validation on the form.
+        // Initialize form validation
         $("form[name='single_kit_form']").validate({
             rules: {
                 kit_id: "required",
@@ -87,27 +87,11 @@
             $(this).attr("clicked", "true");
         });
     });
-
-    function setBarcodeFromList() {
-        var barcodeList = document.getElementById("barcodeList");
-        if (barcodeList && barcodeList.children.length > 0) {
-            var barcode = barcodeList.children[0].innerText;
-            document.getElementById("user_barcode").value = barcode;
-        } else {
-            alert("No barcodes to generate");
-        }
-    }
 </script>
 {% endblock %}
 
 {% block content %}
-<h3>Add Barcode to Kit(s)</h3>
-<style>
-    select {
-        width: 250px;
-        margin: 10px;
-    }
-</style>
+<h3>Add Barcode(s) to Kit(s)</h3>
 <div style="height: 335px;">
     {% if error_message %}
         <p id="error_message" style="color:red">
@@ -121,20 +105,53 @@
     <form name="single_kit_form" id="single_kit_form" method="POST" style="display:none;">
         <table>
             <tr>
-                <td><label for="kit_ids">Kit ID: </label></td>
-                <td><input type="text" name="kit_ids" id="kit_ids" required></td>
+                <td colspan="2">
+                    <br />
+                </td>
             </tr>
             <tr>
-                <td><label for="user_barcode">Enter barcode: </label></td>
-                <td><input type="text" name="user_barcode" id="user_barcode"></td>
+                <td>
+                    <label for="kit_id" style="margin: auto;">Kit ID: </label>
+                </td>
+                <td>
+                    <input type="text" name="kit_id" id="kit_id" required>
+                </td>
             </tr>
             <tr>
-                <td><label for="generate_barcode_single">Or generate barcode: </label></td>
-                <td><input type="checkbox" name="generate_barcode_single" id="generate_barcode_single"></td>
+                <td colspan="2">
+                    <hr style="width: 100%" />
+                </td>
             </tr>
             <tr>
-                <td></td>
-                <td><input type="submit" name="add_single_barcode" value="Add Barcode"></td>
+                <td>
+                    <label for="user_barcode" style="margin: auto;">Enter Barcode: </label>
+                </td>
+                <td>
+                    <input type="text" name="user_barcode" id="user_barcode">
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: center; padding-top: 10px; padding-bottom: 10px;">
+                    -- OR --
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="generate_barcode_single" style="margin: auto;">Generate Barcode: </label>
+                </td>
+                <td>
+                    <input type="checkbox" name="generate_barcode_single" id="generate_barcode_single">
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <hr style="width: 100%" />
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: center;">
+                    <input type="submit" name="add_single_barcode" value="Add Barcode">
+                </td>
             </tr>
         </table>
     </form>
@@ -147,24 +164,56 @@
     {% endif %}
     <form name="multiple_kits_form" id="multiple_kits_form" method="POST" enctype="multipart/form-data" style="display:none;">
         <table>
-            <br>
-            Upload comma-separated value file(s) (CSV)
-            <br><br>
             <tr>
-                <td><label for="kit_ids">Upload Kit IDs: </label></td>
-                <td><input type="file" name="kit_ids" id="kit_ids" required></td>
+                <td colspan="2">
+                    <br />
+                    Upload comma-separated value file(s) (CSV)
+                    <br /><br />
+                </td>
             </tr>
             <tr>
-                <td><label for="barcodes_file">Upload Barcodes: </label></td>
-                <td><input type="file" name="barcodes_file" id="barcodes_file"></td>
+                <td>
+                    <label for="kit_ids" style="margin: auto;">Kit IDs: </label>
+                </td>
+                <td>
+                    <input type="file" name="kit_ids" id="kit_ids" required>
+                </td>
             </tr>
             <tr>
-                <td><label for="generate_barcodes_multiple">Or generate barcodes: </label></td>
-                <td><input type="checkbox" name="generate_barcodes_multiple" id="generate_barcodes_multiple"></td>
+                <td colspan="2">
+                    <hr style="width: 100%" />
+                </td>
             </tr>
             <tr>
-                <td></td>
-                <td><input type="submit" name="add_multiple_barcodes" value="Add Barcodes"></td>
+                <td>
+                    <label for="barcodes_file" style="margin: auto;">Barcodes: </label>
+                </td>
+                <td>
+                    <input type="file" name="barcodes_file" id="barcodes_file">
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: center; padding-top: 10px; padding-bottom: 10px;">
+                    -- OR --
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="generate_barcodes_multiple" style="margin: auto;">Generate Barcodes: </label>
+                </td>
+                <td>
+                    <input type="checkbox" name="generate_barcodes_multiple" id="generate_barcodes_multiple">
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <hr style="width: 100%" />
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: center;">
+                    <input type="submit" name="add_multiple_barcodes" value="Add Barcodes">
+                </td>
             </tr>
         </table>
     </form>

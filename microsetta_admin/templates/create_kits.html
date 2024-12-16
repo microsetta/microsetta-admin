@@ -6,25 +6,17 @@
         $("form[name='kit_form']").validate({
             rules: {
                 number_of_kits: "required",
-                number_of_samples: {
-                    required: true,
-                    max: 25
-                },
+                number_of_samples: "required",
                 project_ids: "required",
                 submitHandler: function (form) {
                     form.submit();
-                }
-            },
-            messages: {
-                number_of_samples: {
-                    max: "You cannot add more than 25 samples per kit."
                 }
             }
         });
 
         function adjustContainerHeight() {
             var numSamples = $("#number_of_samples").val();
-            var containerHeight = 400 + (numSamples * 150);
+            var containerHeight = 400 + (numSamples * 190);
             $("#kit_container").css("height", containerHeight + "px");
         }
 
@@ -59,10 +51,12 @@
                 newSections += `<div class="sample-section">
                                     <h4>Sample ${j}</h4>
                                     <p>Upload CSV with ${numKits} row(s) of barcode(s) for this sample:</p>
-                                    <label for="upload_csv_${j}">Upload CSV file:</label>
+                                    <label for="upload_csv_${j}">Barcodes:</label>
                                     <input type="file" name="upload_csv_${j}" id="upload_csv_${j}">
-                                    <br>
-                                    <label for="generate_barcodes_sample_${j}">Generate Barcodes</label>
+                                    <br />
+                                    <center>-- OR --</center>
+                                    <br />
+                                    <label for="generate_barcodes_sample_${j}">Generate Barcodes:</label>
                                     <input type="checkbox" name="generate_barcodes_sample_${j}" id="generate_barcodes_sample_${j}">
                                 </div>`;
             }
